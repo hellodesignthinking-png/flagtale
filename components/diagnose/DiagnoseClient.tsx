@@ -22,6 +22,7 @@ import type { VenuesResult } from "@/lib/connectors/venues";
 import type { SocialBuzz } from "@/lib/connectors/social";
 import type { YoutubeBuzz } from "@/lib/connectors/youtube";
 import type { DriverAttribution } from "@/lib/driver";
+import type { Sustainability } from "@/lib/sustainability";
 import { GradeBadge, MomentumChip, Pill, ProvisionalBadge, Stat } from "@/components/ui";
 import { KlaiGauge } from "@/components/charts/KlaiGauge";
 import { ScoreRadar } from "@/components/charts/ScoreRadar";
@@ -63,6 +64,7 @@ interface DiagnoseResult {
   social: SocialBuzz | null;
   youtube: YoutubeBuzz | null;
   drivers: DriverAttribution;
+  sustainability: Sustainability | null;
   periods: string[];
   reportId: string;
 }
@@ -284,6 +286,75 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd }: { initialQue
               accent={result.latest.negativeNarrative ? "warn" : "blue"}
             />
           </div>
+
+          {/* 매력 × 지속가능성 — 상생지수 4분면 (결론 한 장) */}
+          {result.sustainability && (
+            <Section
+              num="★"
+              title="매력 × 지속가능성 — 상생지수 4분면"
+              tone={result.sustainability.quadrant.key === "overheat" || result.sustainability.quadrant.key === "decline" ? "warn" : "grade-b"}
+            >
+              <div className="grid gap-5 lg:grid-cols-[1fr_1.05fr]">
+                <QuadrantMatrix s={result.sustainability} />
+                <div>
+                  <div className="mb-1 text-[11px] font-bold uppercase tracking-wider text-amber">진단 한 줄</div>
+                  <div className="text-xl font-black text-ink">
+                    {result.sustainability.quadrant.icon} {result.sustainability.quadrant.label}
+                  </div>
+                  <p className="mt-1 text-[12.5px] leading-relaxed text-muted">{result.sustainability.quadrant.advice}</p>
+
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <div className="rounded-lg border border-line bg-card2 px-3 py-2">
+                      <div className="text-[10px] text-muted2">매력 (KLAI)</div>
+                      <div className="text-lg font-black tabular-nums text-blue-l">{Math.round(result.sustainability.attractiveness)}</div>
+                    </div>
+                    <div className="rounded-lg border border-line bg-card2 px-3 py-2">
+                      <div className="text-[10px] text-muted2">상생지수 (지속가능성)</div>
+                      <div className="text-lg font-black tabular-nums" style={{ color: result.sustainability.score >= 50 ? "var(--green)" : "var(--warn)" }}>
+                        {result.sustainability.score}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 상생지수 구성 팩터 */}
+                  <div className="mt-3 space-y-1.5">
+                    {result.sustainability.factors.map((f) => (
+                      <div key={f.label} className="flex items-center gap-2">
+                        <span className="w-32 shrink-0 text-[11px] text-muted">{f.label}</span>
+                        <div className="h-2 flex-1 overflow-hidden rounded-full bg-navy2/60">
+                          <div
+                            className="h-full rounded-full"
+                            style={{ width: `${f.value}%`, background: f.value >= 50 ? "linear-gradient(90deg,#1e7a8c99,var(--green))" : "linear-gradient(90deg,#d4861e99,var(--warn))" }}
+                          />
+                        </div>
+                        <span className="w-7 text-right text-[11px] font-semibold tabular-nums text-muted2">{Math.round(f.value)}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* 대형화 + 수익성 가위 경보 */}
+                  {(result.sustainability.franchise?.alert || result.sustainability.scissors?.diverging) && (
+                    <div className="mt-3 space-y-1.5">
+                      {result.sustainability.franchise?.alert && (
+                        <div className="rounded-lg border border-warn/30 bg-warn/10 px-3 py-2 text-[12px]">
+                          <b className="text-warn">⚠ 대형화 경보</b> <span className="text-muted">프랜차이즈 {result.sustainability.franchise.ratio}% (&gt;35%) — 고유색 희석</span>
+                        </div>
+                      )}
+                      {result.sustainability.scissors?.diverging && (
+                        <div className="rounded-lg border border-warn/30 bg-warn/10 px-3 py-2 text-[12px]">
+                          <b className="text-warn">⚠ 수익성 가위</b>{" "}
+                          <span className="text-muted">임대료 {result.sustainability.scissors.rentChg}% vs 수요 {result.sustainability.scissors.demandMom}% — {result.sustainability.scissors.note}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="mt-2 text-[10.5px]" style={{ color: "var(--green)" }}>
+                실측보정 KLAI(매력) × 상생지수(독립성·다양성·공실·진정성·시장안정·소셜) · 커버리지 {result.sustainability.coverage} · &ldquo;뜨지만 위태&rdquo;를 한눈에
+              </div>
+            </Section>
+          )}
 
           {/* 01 방향 — 4축 구성 + 추세 */}
           <Section num="01" title="방향 (Trajectory)" tone="blue">
@@ -853,6 +924,51 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd }: { initialQue
 
 function signed(n: number) {
   return `${n > 0 ? "+" : ""}${n.toLocaleString()}`;
+}
+
+function QuadrantMatrix({ s }: { s: Sustainability }) {
+  const W = 300,
+    H = 268,
+    padL = 30,
+    padB = 28,
+    top = 8,
+    right = 8;
+  const cl = (v: number) => Math.max(0, Math.min(100, v));
+  const px = (v: number) => padL + (cl(v) / 100) * (W - padL - right);
+  const py = (v: number) => H - padB - (cl(v) / 100) * (H - padB - top);
+  const bx = px(55),
+    by = py(50);
+  const cells = [
+    { key: "potential", x: padL, y: top, w: bx - padL, h: by - top, c: "#4b9cd3", icon: "🌱", label: "잠재·안정" },
+    { key: "grow", x: bx, y: top, w: W - right - bx, h: by - top, c: "#34a853", icon: "⭐", label: "지속 성장" },
+    { key: "decline", x: padL, y: by, w: bx - padL, h: H - padB - by, c: "#a23a2a", icon: "🔻", label: "쇠퇴·소멸" },
+    { key: "overheat", x: bx, y: by, w: W - right - bx, h: H - padB - by, c: "#ff7a3d", icon: "⚠", label: "과열·위태" },
+  ];
+  const dx = px(s.attractiveness),
+    dy = py(s.score);
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="매력×지속가능성 4분면">
+      {cells.map((c) => {
+        const active = c.key === s.quadrant.key;
+        return (
+          <g key={c.key}>
+            <rect x={c.x} y={c.y} width={c.w} height={c.h} fill={c.c} fillOpacity={active ? 0.2 : 0.05} stroke={active ? c.c : "var(--line)"} strokeWidth={active ? 1.6 : 0.5} />
+            <text x={c.x + c.w / 2} y={c.y + 16} textAnchor="middle" fontSize="10.5" fontWeight={active ? 800 : 600} fill={active ? c.c : "var(--muted2)"}>
+              {c.icon} {c.label}
+            </text>
+          </g>
+        );
+      })}
+      <text x={(padL + W - right) / 2} y={H - 7} textAnchor="middle" fontSize="9.5" fill="var(--muted)">
+        매력 (KLAI) →
+      </text>
+      <text x={11} y={(top + H - padB) / 2} textAnchor="middle" fontSize="9.5" fill="var(--muted)" transform={`rotate(-90 11 ${(top + H - padB) / 2})`}>
+        지속가능성 →
+      </text>
+      <circle className="klai-pulse-ring" cx={dx} cy={dy} r={9} fill="none" stroke="#fff" strokeWidth={2} />
+      <circle cx={dx} cy={dy} r={6} fill="var(--ink)" stroke="#fff" strokeWidth={2} style={{ filter: "drop-shadow(0 0 6px rgba(255,255,255,0.55))" }} />
+    </svg>
+  );
 }
 
 function PosNegBar({
