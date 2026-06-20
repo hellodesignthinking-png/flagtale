@@ -21,7 +21,8 @@ export interface Corrected {
   momentum: number;
   buzz: number; // 0~100 인기(기사량 volume)
   mediaSentiment: number; // 미디어 센티먼트 -100~+100 (긍정-부정)
-  searchMomentum: number; // 검색 추세 % (3년)
+  searchMomentum: number; // 검색 추세 % (3년) — 1차(증감)
+  searchAccel: number; // 어텐션 가속도 — 2차(가속/감속). >0=가속(티핑 선행), <0=감속
   newsTotal: number;
   realAxes: ("d1" | "d4" | "momentum")[];
 }
@@ -46,6 +47,13 @@ export function computeCorrected(
   const searchMomentum = early ? Math.round(((recent - early) / early) * 1000) / 10 : 0;
   const momentum = Math.round(clamp(searchMomentum / 8, -10, 10) * 10) / 10;
 
+  // F. 어텐션 가속도 — 검색 추세의 2차 변화(가속/감속). 3구간 기울기 비교. >0=가속(티핑 선행).
+  const seg = Math.max(2, Math.floor(tr.length / 3));
+  const eAvg = avg(tr.slice(0, seg).map((t) => t.ratio));
+  const mAvg = avg(tr.slice(seg, 2 * seg).map((t) => t.ratio));
+  const rAvg = avg(tr.slice(-seg).map((t) => t.ratio));
+  const searchAccel = tr.length >= 6 ? Math.round((rAvg - mAvg - (mAvg - eAvg)) * 10) / 10 : 0;
+
   // D1 인구·지속성 — KOSIS 시군구 인구증감률
   const d1 = Math.round(clamp(55 + latest.popChangeRate * 9, 20, 90));
 
@@ -65,6 +73,7 @@ export function computeCorrected(
     buzz: Math.round(buzz),
     mediaSentiment: naver.sentiment,
     searchMomentum,
+    searchAccel,
     newsTotal,
     realAxes: ["d4", "momentum", "d1"],
   };

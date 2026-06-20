@@ -23,6 +23,7 @@ import type { SocialBuzz } from "@/lib/connectors/social";
 import type { YoutubeBuzz } from "@/lib/connectors/youtube";
 import type { DriverAttribution } from "@/lib/driver";
 import type { Sustainability } from "@/lib/sustainability";
+import type { TenantRx } from "@/lib/tenant";
 import { GradeBadge, MomentumChip, Pill, ProvisionalBadge, Stat } from "@/components/ui";
 import { KlaiGauge } from "@/components/charts/KlaiGauge";
 import { ScoreRadar } from "@/components/charts/ScoreRadar";
@@ -65,6 +66,7 @@ interface DiagnoseResult {
   youtube: YoutubeBuzz | null;
   drivers: DriverAttribution;
   sustainability: Sustainability | null;
+  tenantRx: TenantRx | null;
   periods: string[];
   reportId: string;
 }
@@ -210,7 +212,11 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd }: { initialQue
                   {result.corrected.mediaSentiment > 0 ? "+" : ""}{result.corrected.mediaSentiment}
                 </b>
                 (긍정−부정, D4에 반영) ·{" "}
-                <b className="text-ink">검색 추세 {result.corrected.searchMomentum > 0 ? "+" : ""}{result.corrected.searchMomentum}%</b>(3년) ·{" "}
+                <b className="text-ink">검색 추세 {result.corrected.searchMomentum > 0 ? "+" : ""}{result.corrected.searchMomentum}%</b>(3년){" "}
+                <b style={{ color: result.corrected.searchAccel > 0 ? "var(--green)" : result.corrected.searchAccel < 0 ? "var(--warn)" : "var(--muted2)" }}>
+                  {result.corrected.searchAccel > 0 ? "▲가속" : result.corrected.searchAccel < 0 ? "▼감속" : "→유지"} {result.corrected.searchAccel > 0 ? "+" : ""}{result.corrected.searchAccel}
+                </b>
+                <span className="text-muted2"> (가속도={result.corrected.searchAccel > 0 ? "티핑 선행" : result.corrected.searchAccel < 0 ? "관심 식는 중" : "평탄"})</span> ·{" "}
                 <b className="text-ink">KOSIS 인구</b>를 반영한 값입니다.
                 {Math.abs(result.corrected.klai - result.latest.klai) >= 15 && (
                   <>
@@ -874,6 +880,32 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd }: { initialQue
                 </div>
               ))}
             </div>
+            {/* 업종 처방 — 다양성 보강 추천 (모듈 D) */}
+            {result.tenantRx && result.tenantRx.gaps.length > 0 && (
+              <div className="mt-3 rounded-lg border border-line bg-card2 px-3 py-2.5">
+                <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                  <span className="text-[12.5px] font-bold text-ink">🧩 업종 처방 — 무엇을 넣어야 다양성이 유지되나</span>
+                  {result.tenantRx.overConcentrated && <Pill tone="warn">음식·카페 {result.tenantRx.foodCafeRatio}% 과집중</Pill>}
+                </div>
+                <div className="mb-2 text-[11.5px] leading-snug text-muted">{result.tenantRx.note}</div>
+                <div className="grid gap-1.5 sm:grid-cols-3">
+                  {result.tenantRx.gaps.map((g, i) => (
+                    <div key={g.name} className="rounded-lg border px-2.5 py-2" style={{ borderColor: "var(--green)", background: "color-mix(in srgb, var(--green) 8%, transparent)" }}>
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-[12.5px] font-bold" style={{ color: "var(--green)" }}>
+                          {i + 1}. {g.name}
+                        </span>
+                        <span className="text-[10.5px] text-warn">부족 {g.gap}%p</span>
+                      </div>
+                      <div className="mt-0.5 text-[11px] leading-snug text-muted2">{g.why}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-1.5 text-[10.5px] text-muted2">
+                  현재 다양성 {result.tenantRx.diversity}/100 · 최다 업종 {result.tenantRx.topCategory} · 보강 시 기대 다양성 <b className="text-grade-b">+{result.tenantRx.expectedDiversityGain}</b>
+                </div>
+              </div>
+            )}
             {/* 조달 상세 + PDF */}
             {result.procurement && result.procurement.records.length > 0 && (
               <div className="mt-4 border-t border-line pt-4">
