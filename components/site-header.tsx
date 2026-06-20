@@ -8,6 +8,7 @@ const NAV = [
   { href: "/", label: "지도" },
   { href: "/reports", label: "리포트" },
   { href: "/diagnose", label: "지번 진단" },
+  { href: "/contribute", label: "현장 리포트" },
   { href: "/dashboard", label: "대시보드" },
   { href: "/data", label: "데이터 출처" },
   { href: "/methodology", label: "방법론" },

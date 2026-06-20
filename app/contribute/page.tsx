@@ -1,0 +1,100 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { PageShell } from "@/components/page-shell";
+import { Panel, Pill, SectionHead, Stat } from "@/components/ui";
+import { ContributeForm } from "@/components/contribute/ContributeForm";
+import { getUser } from "@/lib/supabase/server";
+import { isSupabaseEnabled } from "@/lib/config";
+import { DEMO_REPORTS, VIBE_OPTS, fieldVitality } from "@/lib/fieldreport";
+
+export const metadata: Metadata = { title: "현장 리포트 — belocal 휴먼 센서 네트워크" };
+export const dynamic = "force-dynamic";
+
+export default async function ContributePage() {
+  const user = await getUser(); // Supabase 키 있을 때만 실제 사용자
+  const vibeLabel = (v: string) => VIBE_OPTS.find((o) => o.v === v) ?? { label: v, color: "var(--muted)" };
+
+  return (
+    <PageShell>
+      <div className="mb-6">
+        <span className="klai-eyebrow">Human Sensor Network</span>
+        <h1 className="mt-1 text-3xl font-black">현장 리포트 — 사람이 보강하는 데이터</h1>
+        <p className="mt-1.5 max-w-2xl text-[14px] leading-relaxed text-muted">
+          데이터로 못 잡는 것 — <b className="text-ink">객층·회전율·분위기·뜨는 가게</b>를 현장의 belocal 크리에이터·상인이 입력합니다.
+          이 <b className="text-ink">휴먼 센서망</b>이 KLAI의 D4 인식·내러티브를 <b className="text-ink">ground-truth로 보정</b>합니다.
+          (장소=KLAI · 사업자=belocal K-Local · 현장=크라우드 → 3중 데이터)
+        </p>
+      </div>
+
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Stat label="기여 보상" value={<span className="text-base">리포트 무료</span>} sub="고급 상권 리포트" accent="blue" />
+        <Stat label="검증 포인트" value={<span className="text-base">belocal P</span>} sub="검증이벤트 적립" accent="amber" />
+        <Stat label="기여자 배지" value={<span className="text-base">KLAI 기여자</span>} sub="프로필 배지" />
+        <Stat label="데이터 반영" value={<span className="text-base">D4·내러티브</span>} sub="현장 보정" accent="blue" />
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-[1.1fr_1fr]">
+        {/* 입력 폼 */}
+        <div>
+          <div className="mb-2 flex items-center gap-2">
+            <h2 className="text-[15px] font-extrabold text-ink">현장 체크리스트</h2>
+            {user ? (
+              <Pill tone="blue">{user.email ?? "로그인됨"}</Pill>
+            ) : isSupabaseEnabled ? (
+              <Link href="/auth" className="text-[12px] font-semibold text-blue-l hover:underline">
+                로그인하면 내 기여로 적립 →
+              </Link>
+            ) : (
+              <Pill tone="amber">데모 모드 (Supabase 연동 시 실등록)</Pill>
+            )}
+          </div>
+          <ContributeForm />
+        </div>
+
+        {/* 최근 현장 리포트 */}
+        <div>
+          <SectionHead title="최근 현장 리포트" desc={isSupabaseEnabled ? "실시간 기여" : "데모 예시 · 연동 시 실데이터"} />
+          <div className="space-y-2">
+            {DEMO_REPORTS.map((r, i) => {
+              const vb = vibeLabel(r.vibe);
+              return (
+                <div key={i} className="rounded-lg border border-line bg-card2 px-3 py-2.5">
+                  <div className="flex items-center justify-between">
+                    <Link href={`/diagnose?admCd=${r.admCd2}`} className="text-[13px] font-bold text-ink hover:text-amber">
+                      {r.placeName}
+                    </Link>
+                    <span className="text-[11.5px] font-bold" style={{ color: vb.color }}>
+                      {vb.label}
+                    </span>
+                  </div>
+                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11.5px] text-muted2">
+                    <span>회전율 {r.turnover === "high" ? "높음" : r.turnover === "mid" ? "보통" : "낮음"}</span>
+                    <span>신규 {r.newShops} · 폐업 {r.closedShops}</span>
+                    <span>체감 활력 {fieldVitality(r)}</span>
+                  </div>
+                  {r.hotShop && <div className="mt-1 text-[12px] text-muted">🔥 {r.hotShop}</div>}
+                  <div className="mt-1 text-[10.5px] text-muted2">
+                    {r.contributor} · {r.createdAt}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <Panel className="mt-5">
+        <SectionHead no="해자" title="왜 belocal 크라우드소싱이 해자인가" />
+        <p className="text-[12.5px] leading-relaxed text-muted">
+          데이터로 못 잡는 오프라인 신호를 <b className="text-ink">현장 사람들이 보강</b>하면, 경쟁자가 복제 못 하는 데이터 독점이 생깁니다.
+          belocal 크리에이터·상인 네트워크 = <b className="text-ink">인간 센서망</b>. 신뢰가 권위의 8할입니다.
+          {!isSupabaseEnabled && (
+            <span className="mt-2 block text-[11.5px] text-amber">
+              ⚠ 현재 Supabase 미연동 — 데모 모드(접수만, 비영속). NEXT_PUBLIC_SUPABASE_URL·ANON_KEY 연동 시 로그인·실등록·집계가 활성화됩니다.
+            </span>
+          )}
+        </p>
+      </Panel>
+    </PageShell>
+  );
+}

@@ -174,3 +174,22 @@ model ParcelMap {
   address String
   admCd2  String
 }
+
+// 현장 리포트(모듈 E) — belocal 휴먼 센서 네트워크. 객층·회전율·분위기·신규/폐업·뜨는가게.
+// Supabase `field_reports` 테이블과 1:1(스네이크케이스). D4·내러티브 ground-truth 보정.
+model FieldReport {
+  id          String   @id @default(cuid())
+  admCd2      String
+  placeName   String
+  crowd       String   // young | family | tourist | office | mixed
+  turnover    String   // high | mid | low
+  vibe        String   // hot | rising | calm | declining
+  newShops    Int      @default(0)
+  closedShops Int      @default(0)
+  hotShop     String?
+  note        String?
+  contributor String?  // 기여자(이메일/닉) — 집계만, 개인식별 금지(§15)
+  createdAt   DateTime @default(now())
+
+  @@index([admCd2, createdAt])
+}
