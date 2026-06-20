@@ -3,6 +3,7 @@
 //   · 각 점포의 네이버 블로그 글 수 = 회자도(버즈) 실측
 //   ⚠ 네이버 지도 '좋아요·리뷰 수'는 공식 API 미제공 → 블로그 글 수로 대체.
 import "server-only";
+import { naverJson } from "@/lib/connectors/naverFetch";
 
 const ID = process.env.NAVER_CLIENT_ID;
 const SEC = process.env.NAVER_CLIENT_SECRET;
@@ -45,17 +46,12 @@ export async function anchorStores(
   // 1) 점포 목록 — 맛집·카페 (리뷰순)
   const lists = await Promise.all(
     [`${area} 맛집`, `${area} 카페`, `${area} 음식점`].map((q) =>
-      fetch(`https://openapi.naver.com/v1/search/local.json?query=${encodeURIComponent(q)}&display=5&sort=comment`, {
-        headers: H,
-        signal: AbortSignal.timeout(4500),
-      })
-        .then((r) => r.json())
-        .catch(() => null)
+      naverJson(`https://openapi.naver.com/v1/search/local.json?query=${encodeURIComponent(q)}&display=5&sort=comment`, H)
     )
   );
   const stores = new Map<string, { name: string; category: string; lng?: number; lat?: number; address?: string }>();
   for (const lj of lists) {
-    for (const it of (lj?.items ?? []) as { title: string; category?: string; mapx?: string; mapy?: string; roadAddress?: string }[]) {
+    for (const it of ((lj as { items?: { title: string; category?: string; mapx?: string; mapy?: string; roadAddress?: string }[] } | null)?.items ?? [])) {
       const nm = String(it.title).replace(/<[^>]+>/g, "").trim();
       if (nm && !stores.has(nm)) {
         // 네이버 mapx/mapy = WGS84 × 10^7
@@ -81,13 +77,9 @@ export async function anchorStores(
   // 2) 점포별 블로그 버즈
   const buzz = await Promise.all(
     arr.map((s) =>
-      fetch(`https://openapi.naver.com/v1/search/blog.json?query=${encodeURIComponent(s.name)}&display=1`, {
-        headers: H,
-        signal: AbortSignal.timeout(4500),
-      })
-        .then((r) => r.json())
-        .then((j) => Number(j?.total ?? 0))
-        .catch(() => 0)
+      naverJson(`https://openapi.naver.com/v1/search/blog.json?query=${encodeURIComponent(s.name)}&display=1`, H).then(
+        (j) => Number((j as { total?: number } | null)?.total ?? 0)
+      )
     )
   );
   const ranked = arr

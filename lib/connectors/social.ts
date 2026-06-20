@@ -5,6 +5,7 @@
 // 전국 일괄은 일일한도 초과 → place/diagnose 조회 시 온디맨드 + 6h 캐시. 서버 전용.
 import "server-only";
 import { aggregateTones, cleanText, type ToneAgg } from "@/lib/sentiment";
+import { naverJson } from "@/lib/connectors/naverFetch";
 
 const ID = process.env.NAVER_CLIENT_ID;
 const SEC = process.env.NAVER_CLIENT_SECRET;
@@ -27,13 +28,11 @@ const cache = new Map<string, { at: number; data: SocialBuzz | null }>();
 const TTL = 1000 * 60 * 60 * 6;
 
 async function searchNaver(kind: "blog" | "cafearticle", query: string) {
-  return fetch(`https://openapi.naver.com/v1/search/${kind}.json?query=${encodeURIComponent(query)}&display=30&sort=date`, {
-    headers: H,
-    cache: "no-store",
-    signal: AbortSignal.timeout(4500),
-  })
-    .then((r) => r.json())
-    .catch(() => null);
+  // 공용 스로틀 경유(동시호출 제한 + 429 재시도) → 진단 병렬 부하에서도 안정
+  return naverJson(`https://openapi.naver.com/v1/search/${kind}.json?query=${encodeURIComponent(query)}&display=30&sort=date`, H) as Promise<{
+    total?: number;
+    items?: { title: string; description?: string; postdate?: string; link: string }[];
+  } | null>;
 }
 
 export async function socialBuzz(query: string): Promise<SocialBuzz | null> {
