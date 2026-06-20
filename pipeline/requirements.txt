@@ -1,0 +1,15 @@
+# KLAI 데이터 파이프라인 (Phase 5)
+# 인제스천·집계
+requests>=2.31
+pandas>=2.1
+geopandas>=0.14
+shapely>=2.0
+# 점수·진단
+scikit-learn>=1.4
+statsmodels>=0.14     # Granger, DiD(OLS)
+shap>=0.45            # 기여요인 분해
+# 공간 분석 (Moran's I 풍선효과)
+libpysal>=4.9
+esda>=2.5
+# 내러티브 토픽모델 (선택, 무거움)
+# bertopic>=0.16

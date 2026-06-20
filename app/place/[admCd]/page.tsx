@@ -1,0 +1,388 @@
+import { Suspense } from "react";
+import { notFound } from "next/navigation";
+import type { Metadata } from "next";
+import { getPeerAvg, getPlace, getRegionComparison, populationMeta } from "@/lib/data";
+import { NaverPanel } from "@/components/analysis/NaverPanel";
+import { PageShell } from "@/components/page-shell";
+import { Button, MomentumChip, Panel, Pill, ProvisionalBadge, SectionHead, Stat } from "@/components/ui";
+import { ScoreRadar } from "@/components/charts/ScoreRadar";
+import { SubBars } from "@/components/charts/SubBars";
+import { TrendChart, MomentumTrend } from "@/components/charts/TrendChart";
+import { GentriStageBar } from "@/components/charts/GentriStageBar";
+import { CausalLoop } from "@/components/charts/CausalLoop";
+import { PopulationTrend, MigrationBars } from "@/components/charts/PopulationTrend";
+import { BudgetFlow, BudgetCategoryBars } from "@/components/charts/BudgetFlow";
+import { ProcurementTable } from "@/components/charts/ProcurementTable";
+import { SignalAnalysis } from "@/components/analysis/SignalAnalysis";
+import { CityCompare, RatioCompare } from "@/components/charts/CityCompare";
+import { KlaiGauge } from "@/components/charts/KlaiGauge";
+import { CompositionDiagram } from "@/components/charts/CompositionDiagram";
+import { MethodologyFlow } from "@/components/diagram/MethodologyFlow";
+import { GRADE_LABEL, MARKET_LABEL, NARRATIVE_LABEL, TRAJECTORY_LABEL } from "@/lib/constants";
+import { formatKRW, signed } from "@/lib/utils";
+
+// 전국 수천 동 → 정적 프리렌더 대신 요청 시 온디맨드 렌더 (빌드 경량화)
+export const dynamic = "force-dynamic";
+
+export function generateMetadata({ params }: { params: { admCd: string } }): Metadata {
+  const b = getPlace(params.admCd);
+  if (!b) return { title: "동 리포트" };
+  return { title: `${b.props.name} 동 리포트 · ${b.latest.klai}점 ${b.latest.grade}등급` };
+}
+
+export default function PlacePage({ params }: { params: { admCd: string } }) {
+  const bundle = getPlace(params.admCd);
+  if (!bundle) notFound();
+  const { props, series, latest, diagnosis, demographics, procurement, signals } = bundle;
+  const peer = getPeerAvg(props.typology);
+  const periodLabels = series.map((s) => s.period);
+  const cmp = getRegionComparison(props.admCd2);
+
+  // 지역 흐름 요약치
+  const popFirst = demographics[0];
+  const popLast = demographics[demographics.length - 1];
+  const popDelta = popLast && popFirst ? popLast.totalPop - popFirst.totalPop : 0;
+  const procAnnual = procurement?.annual ?? [];
+  const procLast = procAnnual[procAnnual.length - 1];
+  const cumBudgetEok = Math.round(procAnnual.reduce((s, a) => s + a.total, 0) / 10000);
+  const popReal = populationMeta(); // 있으면 인구·세대수 = KOSIS 실데이터(시군구 단위)
+
+  return (
+    <PageShell>
+      {/* 헤더 */}
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-[13px] text-muted2">
+            <a href="/" className="hover:text-ink">
+              지도
+            </a>
+            <span>›</span>
+            <span>{props.sigungu}</span>
+          </div>
+          <div className="mt-1 flex items-center gap-3">
+            <h1 className="text-3xl font-black">{props.name}</h1>
+            <Pill tone="blue">{props.typology}</Pill>
+            <ProvisionalBadge />
+          </div>
+          <p className="mt-1 text-[13px] text-muted2">
+            {props.sido} {props.sigungu} · 행정코드 {props.admCd2}
+          </p>
+        </div>
+        <KlaiGauge klai={latest.klai} grade={latest.grade} momentum={latest.momentum} size={148} />
+      </div>
+
+      {/* 점수 요약 스탯 */}
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Stat label="등급 의미" value={latest.grade} sub={GRADE_LABEL[latest.grade]} />
+        <Stat label="모멘텀" value={<MomentumChip m={latest.momentum} />} accent="amber" />
+        <Stat
+          label="시장 활성도"
+          value={<span className="text-lg">{MARKET_LABEL[latest.marketVitality]}</span>}
+          accent={latest.marketVitality === "shrinking" ? "warn" : "blue"}
+        />
+        <Stat
+          label="내러티브 단계"
+          value={<span className="text-lg">{NARRATIVE_LABEL[latest.narrativeStage]}</span>}
+          sub={latest.negativeNarrative ? "부정 서사 확산" : undefined}
+          accent={latest.negativeNarrative ? "warn" : "blue"}
+        />
+      </div>
+
+      {/* 도시 평균 대비 — 기본 데이터(인구 10년) 기준 변화 */}
+      {cmp && (
+        <Panel className="mb-5">
+          <SectionHead
+            no="비교"
+            title="도시 평균 대비 — 이 동은 얼마나 변했나"
+            desc={`${cmp.years[0]}~${cmp.years[cmp.years.length - 1]} 인구 지수 · 기본 데이터 대비`}
+          />
+          <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
+            <div>
+              <div className="mb-1 text-[12px] font-bold text-ink">
+                인구 변화 지수 — 이 동 vs {cmp.sidoName} 평균 vs 전국
+              </div>
+              <CityCompare cmp={cmp} height={260} />
+            </div>
+            <div className="rounded-xl border border-line bg-card2/40 p-4">
+              <div className="mb-2 text-[11px] font-bold uppercase tracking-wider text-amber">연령 구조 격차 (현재)</div>
+              <RatioCompare cmp={cmp} />
+              <p className="mt-3 border-t border-line pt-2 text-[11px] leading-snug text-muted2">
+                도시·전국이라는 <b className="text-muted">기준선</b>이 있어야 이 동의 변화가 빠른지 느린지 알 수 있다.
+                실데이터 연동 시 통계청 시도·전국 평균으로 자동 대체.
+              </p>
+            </div>
+          </div>
+        </Panel>
+      )}
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        {/* 4축 레이더 + 12 Sub */}
+        <Panel>
+          <SectionHead title="4축 매력 구성" desc={`비교군: ${props.typology}형 평균`} />
+          <div className="mb-4">
+            <div className="mb-2 text-[11px] font-bold uppercase tracking-wider text-amber">합성 공식 (가중치 → KLAI)</div>
+            <CompositionDiagram score={latest} />
+          </div>
+          <div className="hairline my-3" />
+          <ScoreRadar score={latest} peerAvg={peer} height={240} />
+          <div className="mt-4 border-t border-line pt-4">
+            <div className="mb-2 text-[11px] font-bold uppercase tracking-wider text-amber">12 Sub-Dimension</div>
+            <SubBars admCd2={props.admCd2} score={latest} />
+          </div>
+        </Panel>
+
+        {/* 추세 */}
+        <Panel>
+          <SectionHead title="추세 (최근 시계열)" desc="KLAI · 모멘텀" />
+          <TrendChart series={series} height={220} />
+          <div className="mt-3 border-t border-line pt-3">
+            <div className="mb-1 text-[11px] font-bold uppercase tracking-wider text-amber">모멘텀</div>
+            <MomentumTrend series={series} height={120} />
+          </div>
+        </Panel>
+      </div>
+
+      {/* 신호 동조 분석 — 검색·기사·인구·임대료·매물 */}
+      {signals && (
+        <Panel className="mt-5">
+          <SectionHead
+            no="신호"
+            title="신호 동조 분석 — 검색·기사·인구·임대료·매물"
+            desc="함께 오를 때, 무엇이 먼저였나"
+          />
+          <SignalAnalysis signals={signals} periods={periodLabels} authenticityGap={latest.authenticityGap} />
+          {/* 네이버 실데이터(검색 관심도·기사량) — Suspense로 스트리밍, 페이지 렌더 막지 않음 */}
+          <div className="mt-4">
+            <Suspense
+              fallback={
+                <div className="rounded-xl border border-line bg-card2/40 p-4 text-[12px] text-muted2">
+                  네이버 실시간 관심도 불러오는 중…
+                </div>
+              }
+            >
+              {/* 행정동명 → 대표 동명 정규화(성수2가1동→성수동) : 네이버 검색 질의 정확도↑ */}
+              <NaverPanel query={props.name.replace(/(\d+가)?\d+동$/, "동")} />
+            </Suspense>
+          </div>
+        </Panel>
+      )}
+
+      {/* 지역 흐름 — 인구 + 공공예산 (장기 이력) */}
+      <Panel className="mt-5">
+        <SectionHead
+          no="흐름"
+          title="지역의 흐름 — 인구 · 공공예산"
+          desc={`인구 ${demographics[0]?.year}~${popLast?.year} · 나라장터 조달 ${procAnnual[0]?.year}~${procLast?.year}`}
+        />
+        {/* 요약치 */}
+        <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Stat
+            label={popReal ? `${props.sigungu} 인구 (${popLast?.year})` : `총인구 (${popLast?.year})`}
+            value={popLast ? popLast.totalPop.toLocaleString() : "—"}
+            sub={
+              popReal
+                ? `시군구 단위 · KOSIS${popDelta !== 0 ? ` · ${popFirst?.year}↔ ${signed(popDelta)}` : ""}`
+                : popDelta !== 0
+                  ? `${popFirst?.year} 대비 ${signed(popDelta)}명`
+                  : undefined
+            }
+            accent={popDelta >= 0 ? "blue" : "warn"}
+          />
+          <Stat
+            label="청년 / 고령 비율"
+            value={popLast ? <span className="text-lg">{popLast.youthRatio}% / {popLast.elderlyRatio}%</span> : "—"}
+            sub={popReal ? "20~39 / 65+ · 추정" : "20~39세 / 65세+"}
+          />
+          <Stat
+            label={`공공예산 (${procLast?.year})`}
+            value={procLast ? `${Math.round(procLast.total / 10000)}억` : "—"}
+            sub={procLast ? `입찰 ${Math.round(procLast.bid / 10000)}억 · 수의 ${Math.round(procLast.sole / 10000)}억` : undefined}
+            accent="amber"
+          />
+          <Stat
+            label={`누적 공공예산 (${procAnnual[0]?.year}~)`}
+            value={`${cumBudgetEok}억`}
+            sub={`${procAnnual.length}개년 합계`}
+            accent="amber"
+          />
+        </div>
+
+        <div className="grid gap-5 lg:grid-cols-2">
+          {/* 인구 */}
+          <div className="rounded-xl border border-line bg-card2/40 p-4">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <div className="text-[12px] font-bold text-ink">
+                {popReal ? `${props.sigungu} 인구 추세` : "인구 추세"} (총인구 · 청년/고령)
+              </div>
+              {popReal && (
+                <span
+                  className="rounded-full border px-2 py-0.5 text-[10px] font-bold"
+                  style={{ borderColor: "var(--green)", color: "var(--green)" }}
+                  title={`${popReal.source} · ${popReal.tables.join(", ")}`}
+                >
+                  KOSIS 실데이터
+                </span>
+              )}
+            </div>
+            <PopulationTrend data={demographics} height={230} />
+            {popReal && (
+              <div className="mt-2 text-[10.5px] leading-relaxed text-muted2">
+                <b className="text-muted">총인구·세대수</b> = KOSIS 실데이터(<b className="text-muted">시군구 단위</b>, {demographics[0]?.year}~{popLast?.year}) ·{" "}
+                <b className="text-muted">청년/고령·순이동</b> = 추정(시군구 연령·이동 통계 후속 연동)
+              </div>
+            )}
+            <div className="mt-3 border-t border-line pt-3">
+              <div className="mb-1 text-[11px] font-bold uppercase tracking-wider text-amber">
+                순이동 (유입·유출){popReal ? " · 추정" : ""}
+              </div>
+              <MigrationBars data={demographics} height={110} />
+            </div>
+          </div>
+
+          {/* 공공예산 */}
+          <div className="rounded-xl border border-line bg-card2/40 p-4">
+            <div className="mb-2 text-[12px] font-bold text-ink">공공예산 흐름 (입찰 공고 vs 수의계약)</div>
+            <BudgetFlow annual={procAnnual} height={230} />
+            <div className="mt-3 border-t border-line pt-3">
+              <div className="mb-2 text-[11px] font-bold uppercase tracking-wider text-amber">
+                분야별 공고예산 ({procLast?.year})
+              </div>
+              <BudgetCategoryBars annual={procAnnual} />
+            </div>
+          </div>
+        </div>
+
+        {/* 조달 기록 */}
+        <div className="mt-5 border-t border-line pt-4">
+          <div className="mb-2 flex items-center gap-2">
+            <span className="text-[12px] font-bold text-ink">나라장터 주요 조달 기록</span>
+            <span className="klai-tag klai-tag-sample">샘플</span>
+          </div>
+          <ProcurementTable records={procurement?.records ?? []} />
+        </div>
+
+        <p className="mt-3 text-[11px] leading-snug text-muted2">
+          공공예산 유입은 <b className="text-muted">정책 개입 신호</b> — 투입 전후 KLAI 변화를 DiD로 추정하면 정책 ROI를 읽을 수 있다(기획서 §5.7).
+          소멸 진행 동에 도시재생·소멸대응 예산이 집중되는 패턴이 보이면 <b className="text-muted">레버리지(일자리·정주여건)</b> 적중 여부를 점검한다.
+        </p>
+      </Panel>
+
+      {/* 진단 요약 (무료) */}
+      <Panel className="mt-5">
+        <SectionHead no="진단" title="진단 요약" desc="무료 요약 · 상세 원인·전략은 유료" />
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <div className="mb-2 text-[12px] font-bold text-muted">젠트리피케이션 단계</div>
+            <GentriStageBar current={diagnosis?.gentriStage ?? -1} compact />
+            {diagnosis && (
+              <p className="mt-3 text-[13px] leading-relaxed text-muted">
+                현재 <b className="text-ink">{diagnosis.gentriStageName}</b>. 다음 단계{" "}
+                <b className="text-ink">{diagnosis.gentriTransition.nextStageName}</b> 전이확률{" "}
+                <b className="text-amber">{Math.round(diagnosis.gentriTransition.prob * 100)}%</b> · 예상{" "}
+                {diagnosis.gentriTransition.etaMonths}개월.
+              </p>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <SummaryCell label="추세" value={diagnosis ? TRAJECTORY_LABEL[diagnosis.trajectory] : "—"} />
+            <SummaryCell label="레버리지" value={diagnosis?.leverage ?? "—"} />
+            <SummaryCell label="내러티브 주제" value={diagnosis?.narrativeTheme ?? "—"} />
+            <SummaryCell label="진정성 갭" value={diagnosis ? `${diagnosis.authenticityGap}` : "—"} />
+          </div>
+        </div>
+
+        {/* 기여요인 Top3 (무료 요약) */}
+        {diagnosis && (
+          <div className="mt-4 border-t border-line pt-4">
+            <div className="mb-2 text-[12px] font-bold text-muted">점수 기여요인 Top 3 (근사)</div>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {diagnosis.topFactors.map((f, i) => (
+                <div key={i} className="rounded-lg border border-line bg-card2 px-3 py-2">
+                  <div className="text-[12px] text-ink">{f.key}</div>
+                  <div className={`text-sm font-bold ${f.impact >= 0 ? "text-grade-b" : "text-warn"}`}>
+                    {f.impact >= 0 ? "+" : ""}
+                    {f.impact}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </Panel>
+
+      {/* 상세 (원인·전략) — 페이월 (스펙 §7) */}
+      <Panel className="relative mt-5 overflow-hidden">
+        <SectionHead no="유료" title="원인 · 위기 · 전략 (상세)" desc="결제 후 전체 열람 + PDF" />
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <div className="text-[12px] font-bold text-warn">위기 (Risk)</div>
+            {(diagnosis?.risks ?? []).slice(0, 3).map((r, i) => (
+              <div key={i} className="rounded-lg border border-warn/30 bg-warn/10 px-3 py-2">
+                <div className="text-[13px] font-bold text-warn">⚠ {r.title}</div>
+                <div className="mt-0.5 text-[12px] text-muted blur-[4px]">{r.detail}</div>
+              </div>
+            ))}
+            {(!diagnosis || diagnosis.risks.length === 0) && (
+              <div className="rounded-lg border border-line bg-card2 px-3 py-2 text-[12px] text-muted">
+                현재 임계 경보 없음 — 정상 범위
+              </div>
+            )}
+          </div>
+          <div className="space-y-2">
+            <div className="text-[12px] font-bold text-grade-b">전략 (Strategy)</div>
+            {(diagnosis?.strategy ?? []).map((s, i) => (
+              <div key={i} className="rounded-lg border border-line bg-card2 px-3 py-2">
+                <div className="text-[13px] font-bold text-ink">{s.title}</div>
+                <div className="mt-0.5 text-[12px] text-muted blur-[4px]">{s.detail}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 페이월 오버레이 */}
+        <div className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 bg-gradient-to-t from-navy via-navy/90 to-transparent px-4 pb-6 pt-16">
+          <span className="klai-tag">🔒 상세 진단은 유료</span>
+          <p className="max-w-md text-center text-[13px] text-muted">
+            방향·위기·전략 전체 분석과 PDF 리포트는 결제 후 제공됩니다.
+          </p>
+          <div className="flex gap-2">
+            <Button href={`/diagnose?admCd=${props.admCd2}`} variant="amber">
+              상세 진단 받기
+            </Button>
+            <Button href="/pricing" variant="outline">
+              가격 보기
+            </Button>
+          </div>
+        </div>
+      </Panel>
+
+      {/* 소멸/성공 루프 (유형별 표시) */}
+      {diagnosis && (diagnosis.trajectory === "declining" || diagnosis.trajectory === "rising") && (
+        <Panel className="mt-5">
+          <SectionHead
+            title={diagnosis.trajectory === "declining" ? "소멸 가속 — 악순환 루프" : "성공 상권 — 선순환 루프"}
+            desc="진단 엔진 (개념)"
+          />
+          <div className="mx-auto max-w-sm">
+            <CausalLoop kind={diagnosis.trajectory === "declining" ? "vicious" : "virtuous"} className="w-full" />
+          </div>
+        </Panel>
+      )}
+
+      {/* 방법론 — 이 점수는 어떻게 만들어지나 */}
+      <Panel className="mt-5 dotgrid">
+        <SectionHead title="이 점수는 어떻게 만들어지나" desc="데이터 → 합성 → 진단 → 출력" />
+        <MethodologyFlow />
+      </Panel>
+    </PageShell>
+  );
+}
+
+function SummaryCell({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-line bg-card2 px-3 py-2">
+      <div className="text-[10px] text-muted2">{label}</div>
+      <div className="text-[13px] font-semibold text-ink">{value}</div>
+    </div>
+  );
+}

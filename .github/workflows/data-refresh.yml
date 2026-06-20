@@ -1,0 +1,31 @@
+name: KLAI 데이터 갱신
+
+# 월 1회(구조축) — 인제스천 → 점수 → 진단 → Supabase upsert
+on:
+  schedule:
+    - cron: "0 18 1 * *" # 매월 1일 03:00 KST
+  workflow_dispatch: {}
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r pipeline/requirements.txt
+      - name: Run pipeline
+        env:
+          PIPELINE_MOCK: "0"
+          KOSIS_API_KEY: ${{ secrets.KOSIS_API_KEY }}
+          G2B_API_KEY: ${{ secrets.G2B_API_KEY }}
+          RONE_API_KEY: ${{ secrets.RONE_API_KEY }}
+          RTMS_API_KEY: ${{ secrets.RTMS_API_KEY }}
+          LOCALDATA_API_KEY: ${{ secrets.LOCALDATA_API_KEY }}
+          BIGKINDS_API_KEY: ${{ secrets.BIGKINDS_API_KEY }}
+          NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
+          NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m pipeline.run

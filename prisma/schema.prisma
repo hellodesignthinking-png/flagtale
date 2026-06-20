@@ -1,0 +1,176 @@
+// KLAI 앱 데이터 모델 (빌드 스펙 §5). 공간 컬럼(geom)은 PostGIS — supabase/migrations 의 raw SQL.
+// 활성화:  DATABASE_URL 설정 → npx prisma generate → npx prisma migrate dev
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Place {
+  admCd2      String   @id // 행안부 10자리
+  admCd       String? // 통계청 8자리
+  name        String
+  sido        String
+  sigungu     String
+  typology    String?
+  centroidLat Float
+  centroidLng Float
+  // geom geometry(MultiPolygon,4326) — PostGIS 컬럼은 migration 으로 추가
+
+  scores      PlaceScore[]
+  diagnoses   PlaceDiagnosis[]
+  alerts      Alert[]
+  demographics Demographic[]
+  procurements Procurement[]
+}
+
+model PlaceScore {
+  id             String  @id @default(cuid())
+  admCd2         String
+  period         String // "2026Q2"
+  klai           Float
+  d1             Float
+  d2             Float
+  d3             Float
+  d4             Float
+  momentum       Float
+  gentriG        Float
+  gentriStage    Int     @default(0)
+  marketVitality String // active | stable | shrinking
+  population     Int     @default(0)
+  popChangeRate  Float   @default(0)
+  budgetInflow   Float   @default(0) // 억원/년
+  provisional    Boolean @default(true)
+
+  place Place @relation(fields: [admCd2], references: [admCd2])
+
+  @@unique([admCd2, period])
+  @@index([period])
+}
+
+model PlaceDiagnosis {
+  id               String  @id @default(cuid())
+  admCd2           String
+  period           String
+  topFactors       Json
+  trajectory       String // rising | stable | declining | gentrifying
+  gentriStage      Int
+  gentriTransition Json
+  declineCauses    Json
+  leverage         String?
+  narrativeTheme   String?
+  authenticityGap  Float?
+  successPath      String?
+  risks            Json
+  strategy         Json
+
+  place Place @relation(fields: [admCd2], references: [admCd2])
+
+  @@unique([admCd2, period])
+}
+
+model Demographic {
+  id           String @id @default(cuid())
+  admCd2       String
+  year         Int
+  totalPop     Int
+  households    Int
+  youthRatio   Float
+  elderlyRatio Float
+  netMigration Int
+  changeRate   Float
+
+  place Place @relation(fields: [admCd2], references: [admCd2])
+
+  @@unique([admCd2, year])
+}
+
+model Procurement {
+  id       String @id @default(cuid())
+  admCd2   String
+  year     Int
+  type     String // bid | sole
+  category String // 행사·축제 | 도시재생·시설 | ...
+  title    String
+  amount   Int // 만원
+  agency   String
+
+  place Place @relation(fields: [admCd2], references: [admCd2])
+
+  @@index([admCd2, year])
+}
+
+model IndicatorRaw {
+  id     String @id @default(cuid())
+  admCd2 String
+  period String
+  key    String
+  value  Float
+  source String
+
+  @@index([admCd2, period])
+}
+
+model Alert {
+  id        String   @id @default(cuid())
+  admCd2    String
+  type      String // gentri | decline | transaction_cliff | negative_narrative
+  severity  String
+  message   String
+  createdAt DateTime @default(now())
+
+  place Place @relation(fields: [admCd2], references: [admCd2])
+}
+
+model Report {
+  id          String    @id @default(cuid())
+  kind        String // annual | weekly | parcel
+  title       String
+  slug        String    @unique
+  period      String
+  htmlPath    String?
+  pdfPath     String?
+  paywalled   Boolean   @default(false)
+  publishedAt DateTime?
+}
+
+model AppUser {
+  id      String   @id
+  email   String   @unique
+  plan    String   @default("free")
+  credits Int      @default(0)
+  createdAt DateTime @default(now())
+
+  purchases     ReportPurchase[]
+  subscriptions Subscription[]
+}
+
+model ReportPurchase {
+  id       String   @id @default(cuid())
+  userId   String
+  reportId String?
+  admCd2   String?
+  pnu      String?
+  paidAt   DateTime @default(now())
+
+  user AppUser @relation(fields: [userId], references: [id])
+}
+
+model Subscription {
+  id        String  @id @default(cuid())
+  userId    String
+  plan      String
+  status    String
+  portoneId String?
+
+  user AppUser @relation(fields: [userId], references: [id])
+}
+
+model ParcelMap {
+  pnu     String @id
+  address String
+  admCd2  String
+}

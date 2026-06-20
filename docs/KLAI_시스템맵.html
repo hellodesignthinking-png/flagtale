@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KLAI 시스템 맵 · 동네 매력도 진단 흐름도</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  :root{
+    --navy:#0B1B30; --navy2:#10273F; --card:#142B45; --card2:#173455;
+    --line:#26456B; --blue:#1E5FA8; --blue-l:#4B9CD3; --amber:#D4861E; --amber-d:#D35400;
+    --ink:#EAF1FA; --muted:#92A8C6; --muted2:#6E87A8;
+    --gS:#0F6E5C; --gA:#1E7A8C; --gB:#3E9AA8; --gC:#E2A33A; --gD:#D2691E; --gE:#A23A2A;
+    --warn:#FF7A3D;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--navy);color:var(--ink);font-family:'Pretendard',system-ui,sans-serif;
+    line-height:1.55;-webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(1200px 600px at 80% -10%,rgba(30,95,168,.18),transparent),
+      radial-gradient(900px 500px at -10% 110%,rgba(212,134,30,.10),transparent);}
+  .wrap{max-width:1120px;margin:0 auto;padding:40px 28px 80px}
+  .eyebrow{font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:var(--amber);font-weight:700}
+  h1{font-size:clamp(28px,4.4vw,46px);font-weight:800;letter-spacing:-.02em;line-height:1.08;margin:10px 0 14px}
+  h1 span{color:var(--blue-l)}
+  .lede{color:var(--muted);max-width:760px;font-size:16px}
+  section{margin-top:64px}
+  .sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:22px;border-bottom:1px solid var(--line);padding-bottom:12px}
+  .sec-no{font-size:13px;font-weight:800;color:var(--amber);letter-spacing:.1em}
+  .sec-head h2{font-size:22px;font-weight:800;letter-spacing:-.01em}
+  .sec-head p{color:var(--muted2);font-size:13px;margin-left:auto;text-align:right}
+
+  /* HERO MAP */
+  .mapgrid{display:grid;grid-template-columns:1.55fr 1fr;gap:24px;align-items:stretch}
+  .panel{background:linear-gradient(180deg,var(--card),var(--navy2));border:1px solid var(--line);
+    border-radius:18px;padding:22px}
+  .panel h3{font-size:15px;font-weight:700;margin-bottom:4px}
+  .panel .sub{color:var(--muted2);font-size:12.5px;margin-bottom:14px}
+  .legend{display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:16px;font-size:12.5px;color:var(--muted)}
+  .lg{display:flex;align-items:center;gap:7px}
+  .sw{width:14px;height:14px;border-radius:4px;display:inline-block}
+  .keycard{display:flex;flex-direction:column;gap:14px}
+  .kpi{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .kpi .big{font-size:26px;font-weight:800;color:var(--blue-l);letter-spacing:-.01em}
+  .kpi .lab{font-size:12px;color:var(--muted);margin-top:2px}
+  .kpi.amber .big{color:var(--amber)}
+  .kpi.warn .big{color:var(--warn)}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;
+    background:rgba(212,134,30,.16);color:var(--amber);border:1px solid rgba(212,134,30,.35)}
+
+  /* FLOW */
+  .flow{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding-bottom:8px}
+  .stage{flex:1 0 150px;min-width:150px;position:relative;padding:0 8px}
+  .stage:not(:last-child)::after{content:"→";position:absolute;right:-8px;top:34px;color:var(--muted2);font-size:18px;font-weight:700}
+  .stage .cap{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);font-weight:700;margin-bottom:8px;text-align:center}
+  .chip{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:8px 10px;
+    font-size:12px;color:var(--ink);margin-bottom:6px}
+  .chip.d1{border-left:3px solid var(--gA)} .chip.d2{border-left:3px solid var(--amber)}
+  .chip.d3{border-left:3px solid var(--blue-l)} .chip.d4{border-left:3px solid var(--gS)}
+  .chip.src{color:var(--muted);font-size:11.5px}
+  .scorebox{background:linear-gradient(180deg,var(--blue),#16467d);border:1px solid var(--blue-l);
+    border-radius:12px;padding:14px;text-align:center}
+  .scorebox .num{font-size:30px;font-weight:800}
+  .scorebox .lab{font-size:11px;color:#cfe2f5;letter-spacing:.1em}
+  .diagbox{background:rgba(212,134,30,.10);border:1px dashed var(--amber);border-radius:12px;padding:12px;text-align:center}
+  .diagbox .num{font-size:14px;font-weight:800;color:var(--amber)}
+
+  /* LOOPS */
+  .loops{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  .loops .full{grid-column:1/-1}
+  @media(max-width:880px){.mapgrid,.loops{grid-template-columns:1fr}}
+  .note{color:var(--muted2);font-size:12px;margin-top:10px}
+  .lvg{width:100%;height:auto;display:block}
+  .stagebar{display:flex;gap:6px;margin-top:6px}
+  .stp{flex:1;text-align:center;font-size:11px;color:var(--muted);}
+  .stp .bar{height:8px;border-radius:4px;margin-bottom:6px}
+  .stp .nm{font-weight:700;color:var(--ink);font-size:11.5px}
+  .stp .dt{font-size:10.5px;color:var(--muted2);line-height:1.35;margin-top:3px}
+  footer{margin-top:70px;border-top:1px solid var(--line);padding-top:18px;color:var(--muted2);font-size:12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+  .brand{font-weight:800;color:var(--muted);letter-spacing:.04em}
+  .lead-arrow{font-size:11px;color:var(--amber);font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow">K-Local Attractiveness Index · 시스템 맵</div>
+  <h1>동네의 매력을 <span>점수로</span> 재고,<br>그 변화의 <span>이유를</span> 진단한다</h1>
+  <p class="lede">시·군·구는 너무 거칠고, 핫플 지도는 인식만 본다. KLAI는 <b>행정동·생활권</b> 해상도로 인구·상권·공간·인식 4축을 합성해 매력도를 산출하고, 그 위에 <b>진단 엔진</b>을 얹어 "왜 떴는가 · 왜 지는가 · 곧 무엇이 올 것인가"를 읽어낸다.</p>
+
+  <!-- 1. MAP -->
+  <section>
+    <div class="sec-head"><span class="sec-no">01</span><h2>동(洞) 단위 매력도 지도</h2>
+      <p>같은 구 안에서도 뜨는 동과 지는 동은<br>공존한다 — KLAI는 그 격자를 본다</p></div>
+    <div class="mapgrid">
+      <div class="panel">
+        <h3>○○시 행정동 매력도 (KLAI 등급 · 개념도)</h3>
+        <div class="sub">색 = 매력 등급 · 화살표 = 모멘텀(상승/하락) · 고리 = 젠트리피케이션 경보</div>
+        <svg id="hexmap" viewBox="0 0 560 380" class="lvg" role="img" aria-label="동 단위 매력도 헥스 지도"></svg>
+        <div class="legend">
+          <span class="lg"><i class="sw" style="background:var(--gS)"></i>S 85+</span>
+          <span class="lg"><i class="sw" style="background:var(--gA)"></i>A 70–84</span>
+          <span class="lg"><i class="sw" style="background:var(--gB)"></i>B 55–69</span>
+          <span class="lg"><i class="sw" style="background:var(--gC)"></i>C 40–54</span>
+          <span class="lg"><i class="sw" style="background:var(--gD)"></i>D 25–39</span>
+          <span class="lg"><i class="sw" style="background:var(--gE)"></i>E –24</span>
+          <span class="lg"><span class="lead-arrow">▲▼</span> 모멘텀</span>
+          <span class="lg"><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="none" stroke="var(--warn)" stroke-width="2"/></svg> 젠트리 경보</span>
+        </div>
+      </div>
+      <div class="keycard">
+        <div class="kpi"><div class="big">62.4 <span style="font-size:14px;color:var(--muted)">B · ↑</span></div><div class="lab">내일동 — 모멘텀 +4.1 (성장 상권)</div></div>
+        <div class="kpi warn"><div class="big">71.8 <span style="font-size:14px;color:var(--warn)">A · ⚠</span></div><div class="lab">예술동 — 젠트리피케이션 3단계(과열) 감지</div></div>
+        <div class="kpi amber"><div class="big">33.1 <span style="font-size:14px;color:var(--muted)">D · ↓</span></div><div class="lab">노포동 — 소멸 악순환 진입, 레버리지=일자리</div></div>
+        <div style="font-size:12px;color:var(--muted);padding:2px 4px">
+          <span class="tag">핵심</span> 점수는 출발점일 뿐. KLAI의 가치는 <b>동마다 다른 처방</b>을 내는 진단에 있다.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. DATA FLOW -->
+  <section>
+    <div class="sec-head"><span class="sec-no">02</span><h2>데이터는 이렇게 흐르고 변한다</h2>
+      <p>원천 데이터 → 정규화 → 4축 → 합성 → 진단 → 지도·리포트</p></div>
+    <div class="panel">
+      <div class="flow">
+        <div class="stage">
+          <div class="cap">원천 데이터</div>
+          <div class="chip src">인구·이동 (통계청)</div>
+          <div class="chip src">상권·창업·폐업 (LOCALDATA·소진공)</div>
+          <div class="chip src">부동산·임대료 (부동산원·실거래·공시지가)</div>
+          <div class="chip src">소셜·검색·언론 (네이버·BIGKINDS)</div>
+          <div class="chip src">건물·GIS·생활인구</div>
+        </div>
+        <div class="stage">
+          <div class="cap">정제·정규화</div>
+          <div class="chip">행정동코드 매핑</div>
+          <div class="chip">Min-Max / 로그변환</div>
+          <div class="chip">역방향 지표 반전<br><span style="color:var(--muted2);font-size:11px">(폐업률·소멸위험)</span></div>
+          <div class="chip">부동산 역U·포화 처리</div>
+        </div>
+        <div class="stage">
+          <div class="cap">4축 합성</div>
+          <div class="chip d1">D1 인구·지속성 20%</div>
+          <div class="chip d2">D2 경제·상권 30%</div>
+          <div class="chip d3">D3 공간·물리 20%</div>
+          <div class="chip d4">D4 인식·감성 30%</div>
+        </div>
+        <div class="stage">
+          <div class="cap">종합 + 보정</div>
+          <div class="scorebox"><div class="num">KLAI</div><div class="lab">0–100 · 등급</div></div>
+          <div class="chip" style="margin-top:8px">+ 모멘텀 M (±)</div>
+          <div class="chip">⚠ 젠트리 경보 G</div>
+        </div>
+        <div class="stage">
+          <div class="cap">진단 엔진</div>
+          <div class="diagbox"><div class="num">왜?</div><div style="font-size:11px;color:var(--muted)">기여요인 분해 (SHAP)</div></div>
+          <div class="chip" style="margin-top:8px">젠트리 조기경보</div>
+          <div class="chip">소멸 가속 진단</div>
+          <div class="chip">성공 DNA 추출</div>
+        </div>
+        <div class="stage">
+          <div class="cap">출력</div>
+          <div class="chip">동네 리포트</div>
+          <div class="chip">상점 카드</div>
+          <div class="chip">지자체 조기경보 대시보드</div>
+          <div class="chip">처방·시뮬레이션</div>
+        </div>
+      </div>
+      <p class="note">색 띠 = 어느 축으로 들어가는지. 같은 부동산 데이터라도 <b>수준</b>은 D3(자산가치)로, <b>속도</b>는 모멘텀·젠트리경보로 분리되어 흐른다.</p>
+    </div>
+  </section>
+
+  <!-- 3. DIAGNOSTIC ENGINE -->
+  <section>
+    <div class="sec-head"><span class="sec-no">03</span><h2>진단 엔진 — 점수 너머의 "왜"</h2>
+      <p>예측 · 원인 · 처방</p></div>
+
+    <!-- 3a gentrification stages -->
+    <div class="panel full" style="margin-bottom:24px">
+      <h3>① 젠트리피케이션 조기경보 — 단계와 선행지표</h3>
+      <div class="sub">각 신호 사이엔 시차(lag)가 있다. 앞단 신호로 <b>다음 단계를 예측</b>한다.</div>
+      <div class="stagebar">
+        <div class="stp"><div class="bar" style="background:var(--gB)"></div><div class="nm">0 잠재</div><div class="dt">저렴한 임대료 + 노후·접근성 양호</div></div>
+        <div class="stp"><div class="bar" style="background:var(--gA)"></div><div class="nm">1 태동</div><div class="dt">청년·예술·독립상점 유입, 식음 다양화</div></div>
+        <div class="stp"><div class="bar" style="background:var(--gC)"></div><div class="nm">2 점화</div><div class="dt">미디어·SNS 버즈 급증, 외부유입 증가</div></div>
+        <div class="stp"><div class="bar" style="background:var(--gD)"></div><div class="nm">3 과열</div><div class="dt">자본·프랜차이즈 진입, 임대료 급등</div></div>
+        <div class="stp"><div class="bar" style="background:var(--gE)"></div><div class="nm">4 내몰림</div><div class="dt">초기 상점·원주민 이탈, 획일화</div></div>
+        <div class="stp"><div class="bar" style="background:#6b2b22"></div><div class="nm">5 쇠퇴</div><div class="dt">과잉임대료 → 공실 증가 → 매력 하락</div></div>
+      </div>
+      <p class="note" style="margin-top:14px">선행 체인: <b style="color:var(--amber)">독립업종 유입</b> <span class="lead-arrow">─12~24개월→</span> <b style="color:var(--amber)">미디어 버즈</b> <span class="lead-arrow">─6~12개월→</span> <b style="color:var(--amber)">임대료 상승</b> <span class="lead-arrow">─6~12개월→</span> <b style="color:var(--amber)">임차인 손바뀜·내몰림</b>. 1~2단계에서 잡아 임대료 안정 협약·앵커 보전으로 개입 가능.</p>
+    </div>
+
+    <div class="loops">
+      <!-- 3b vicious loop -->
+      <div class="panel">
+        <h3>② 소멸 가속 — 악순환 루프</h3>
+        <div class="sub">왜 한번 지면 빠르게 무너지는가</div>
+        <svg viewBox="0 0 360 300" class="lvg" id="vicious" role="img" aria-label="소멸 악순환 루프"></svg>
+        <p class="note">루프를 도는 힘을 분해해 <b style="color:var(--warn)">가장 센 고리(레버리지)</b>를 찾는다. 보통 '일자리 부재'가 트리거, '정주 인프라 공백'이 증폭자.</p>
+      </div>
+      <!-- 3c virtuous loop -->
+      <div class="panel">
+        <h3>③ 성공 상권 — 선순환 루프</h3>
+        <div class="sub">왜 어떤 동네는 계속 떠오르는가</div>
+        <svg viewBox="0 0 360 300" class="lvg" id="virtuous" role="img" aria-label="성공 선순환 루프"></svg>
+        <p class="note">고-KLAI 동들의 공통 구성에서 <b style="color:var(--gB)">성공 DNA(앵커·다양성·진정성·보행성)</b>를 채굴해 다른 동에 처방한다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. NARRATIVE x COMMERCE + LIQUIDITY -->
+  <section>
+    <div class="sec-head"><span class="sec-no">04</span><h2>내러티브와 상권 · 시장 활성도</h2>
+      <p>이야기가 상권을 띄우고, 유동성이<br>가격보다 먼저 쇠퇴를 알린다</p></div>
+
+    <div class="panel full" style="margin-bottom:24px">
+      <h3>내러티브 → 상권 결합 곡선 (티핑포인트 · 역티핑포인트)</h3>
+      <div class="sub">이야기(버즈)가 <b>먼저</b> 솟고 상권 활동이 뒤따른다. 부정 서사가 임계를 넘으면 떴던 속도로 식는다.</div>
+      <svg id="narr" viewBox="0 0 760 290" class="lvg" role="img" aria-label="내러티브-상권 생애주기 곡선"></svg>
+      <div class="legend">
+        <span class="lg"><i class="sw" style="background:var(--amber)"></i>내러티브 버즈(이야기)</span>
+        <span class="lg"><i class="sw" style="background:var(--blue-l)"></i>상권 활동(창업·매출)</span>
+        <span class="lg"><span style="color:var(--gS);font-weight:700">▲</span> 티핑포인트</span>
+        <span class="lg"><span style="color:var(--warn);font-weight:700">▼</span> 역(逆) 티핑포인트</span>
+      </div>
+    </div>
+
+    <div class="loops">
+      <div class="panel">
+        <h3>유동성이 가격보다 먼저 — 가로수길 실증</h3>
+        <div class="sub">임대료는 하방경직으로 버티는데, 공실은 먼저 폭증한다</div>
+        <svg id="vlp" viewBox="0 0 360 230" class="lvg" role="img" aria-label="임대료 대 공실률 발산"></svg>
+        <p class="note">그래서 KLAI는 <b>D2-6 시장 활성도</b>(거래량·공실기간·인허가)를 가격과 함께 본다. 거래 절벽·공실 급증 = 가격이 떨어지기 전의 쇠퇴 신호.</p>
+      </div>
+      <div class="panel">
+        <h3>티핑포인트 3법칙 → 상권 (Gladwell)</h3>
+        <div class="sub">거리를 띄우는 건 다수가 아니라 소수·이야기·맥락</div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:6px">
+          <div class="chip d2" style="padding:11px 13px"><b style="color:var(--amber)">소수의 법칙</b> — 커넥터·메이븐·세일즈맨. 전파자에게 매력적인 환경을 먼저 만든다.</div>
+          <div class="chip d4" style="padding:11px 13px"><b style="color:var(--gS)">고착성</b> — 한 줄 정체성·시그니처. 휘발성 이야기는 임계를 넘어도 금세 사라진다.</div>
+          <div class="chip d3" style="padding:11px 13px"><b style="color:var(--blue-l)">맥락의 힘</b> — 초기의 낮은 임대료가 창의적 임차인을 허용. 맥락이 무너지면 역티핑.</div>
+          <div class="chip" style="padding:11px 13px;border-left:3px solid var(--warn)"><b style="color:var(--warn)">진정성 갭</b> — "로컬 감성" 서사 vs 프랜차이즈·팝업 80% → 역티핑 선행 경보.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+  (function(){
+    const NS='http://www.w3.org/2000/svg';
+    // ---- narrative vs commerce ----
+    const P=[ /* t, narrative, commerce */
+      [0,.10,.05],[.08,.18,.07],[.16,.32,.12],[.24,.52,.20],[.32,.74,.34],
+      [.40,.92,.55],[.48,.86,.74],[.56,.72,.88],[.64,.58,.90],[.72,.46,.80],
+      [.80,.38,.62],[.88,.32,.45],[1,.28,.33]];
+    const svg=document.getElementById('narr');
+    const X=t=>70+t*650, Y=v=>250-v*200;
+    // phase bands
+    const bands=[[0,.24,'형성'],[.24,.42,'확산'],[.42,.66,'절정'],[.66,1,'쇠퇴']];
+    bands.forEach((b,i)=>{
+      const r=document.createElementNS(NS,'rect');
+      r.setAttribute('x',X(b[0]));r.setAttribute('y',40);r.setAttribute('width',X(b[1])-X(b[0]));
+      r.setAttribute('height',210);r.setAttribute('fill', i%2?'#ffffff':'#10273F');r.setAttribute('opacity', i%2?'.03':'.25');
+      svg.appendChild(r);
+      const t=document.createElementNS(NS,'text');
+      t.setAttribute('x',(X(b[0])+X(b[1]))/2);t.setAttribute('y',62);t.setAttribute('text-anchor','middle');
+      t.setAttribute('font-size','12');t.setAttribute('font-weight','700');t.setAttribute('fill','#92A8C6');t.setAttribute('font-family','Pretendard');
+      t.textContent=b[2];svg.appendChild(t);
+    });
+    function line(idx,color,fill){
+      let d='M'+X(P[0][0])+','+Y(P[0][idx]);
+      for(let i=1;i<P.length;i++){const px=X(P[i-1][0]),py=Y(P[i-1][idx]),cx=X(P[i][0]),cy=Y(P[i][idx]);const mx=(px+cx)/2;d+=' C'+mx+','+py+' '+mx+','+cy+' '+cx+','+cy;}
+      const p=document.createElementNS(NS,'path');
+      p.setAttribute('d',d);p.setAttribute('fill','none');p.setAttribute('stroke',color);
+      p.setAttribute('stroke-width','3');p.setAttribute('stroke-linecap','round');svg.appendChild(p);
+    }
+    line(2,'#4B9CD3');line(1,'#D4861E');
+    // tipping markers
+    function marker(t,label,color,up){
+      const x=X(t);
+      const ln=document.createElementNS(NS,'line');
+      ln.setAttribute('x1',x);ln.setAttribute('y1',46);ln.setAttribute('x2',x);ln.setAttribute('y2',250);
+      ln.setAttribute('stroke',color);ln.setAttribute('stroke-width','1.5');ln.setAttribute('stroke-dasharray','4 4');ln.setAttribute('opacity','.7');
+      svg.appendChild(ln);
+      const tr=document.createElementNS(NS,'text');
+      tr.setAttribute('x',x);tr.setAttribute('y',up?40:266);tr.setAttribute('text-anchor','middle');
+      tr.setAttribute('font-size','11.5');tr.setAttribute('font-weight','800');tr.setAttribute('fill',color);tr.setAttribute('font-family','Pretendard');
+      tr.textContent=label;svg.appendChild(tr);
+    }
+    marker(.30,'▲ 티핑포인트','#0F6E5C',true);
+    marker(.72,'▼ 역 티핑포인트','#FF7A3D',false);
+
+    // ---- volume leads price ----
+    const Q=[ /* t, rent(sticky), vacancy(spike) */
+      [0,.55,.12],[.2,.68,.14],[.4,.78,.20],[.55,.80,.34],[.7,.79,.55],[.85,.76,.74],[1,.72,.86]];
+    const v=document.getElementById('vlp');
+    const VX=t=>40+t*290, VY=val=>195-val*160;
+    [['임대료(하방경직)','#D4861E',1],['공실률(먼저 폭증)','#FF7A3D',2]].forEach(([nm,col,idx])=>{
+      let d='M'+VX(Q[0][0])+','+VY(Q[0][idx]);
+      for(let i=1;i<Q.length;i++){const px=VX(Q[i-1][0]),py=VY(Q[i-1][idx]),cx=VX(Q[i][0]),cy=VY(Q[i][idx]);const mx=(px+cx)/2;d+=' C'+mx+','+py+' '+mx+','+cy+' '+cx+','+cy;}
+      const p=document.createElementNS(NS,'path');p.setAttribute('d',d);p.setAttribute('fill','none');
+      p.setAttribute('stroke',col);p.setAttribute('stroke-width','2.6');p.setAttribute('stroke-linecap','round');v.appendChild(p);
+      const lbl=document.createElementNS(NS,'text');lbl.setAttribute('x',VX(1)+2);lbl.setAttribute('y',VY(Q[6][idx])+(idx===1?-4:4));
+      lbl.setAttribute('font-size','9.5');lbl.setAttribute('fill',col);lbl.setAttribute('text-anchor','end');lbl.setAttribute('font-family','Pretendard');
+    });
+    // divergence shading
+    const dv=document.createElementNS(NS,'rect');dv.setAttribute('x',VX(.55));dv.setAttribute('y',30);
+    dv.setAttribute('width',VX(1)-VX(.55));dv.setAttribute('height',165);dv.setAttribute('fill','#FF7A3D');dv.setAttribute('opacity','.07');v.appendChild(dv);
+    const dt=document.createElementNS(NS,'text');dt.setAttribute('x',VX(.78));dt.setAttribute('y',48);dt.setAttribute('text-anchor','middle');
+    dt.setAttribute('font-size','10.5');dt.setAttribute('font-weight','700');dt.setAttribute('fill','#FF7A3D');dt.setAttribute('font-family','Pretendard');
+    dt.textContent='발산 = 쇠퇴 신호';v.appendChild(dt);
+    [['임대료','#D4861E',58],['공실률','#FF7A3D',74]].forEach(([t,c,y])=>{
+      const r=document.createElementNS(NS,'rect');r.setAttribute('x',46);r.setAttribute('y',y-9);r.setAttribute('width',11);r.setAttribute('height',11);r.setAttribute('rx',2);r.setAttribute('fill',c);v.appendChild(r);
+      const tx=document.createElementNS(NS,'text');tx.setAttribute('x',62);tx.setAttribute('y',y);tx.setAttribute('font-size','11');tx.setAttribute('fill','#92A8C6');tx.setAttribute('font-family','Pretendard');tx.textContent=t;v.appendChild(tx);
+    });
+  })();
+  </script>
+
+  <footer>
+    <span class="brand">ZeroSite · NutUnion — KLAI 시스템 맵 v0.3</span>
+    <span>개념도(샘플 수치) · 야놀자 축제지수 + 도시활력·상권활력·소멸·젠트리 연구 결합</span>
+  </footer>
+</div>
+
+<script>
+/* ---------- HEX CHOROPLETH ---------- */
+(function(){
+  const C={S:'#0F6E5C',A:'#1E7A8C',B:'#3E9AA8',C:'#E2A33A',D:'#D2691E',E:'#A23A2A'};
+  // col,row,grade,momentum(1 up,-1 down,0 flat),warn(gentrification)
+  const cells=[
+    [0,1,'C',0,0],[0,2,'D',-1,0],[0,3,'D',-1,0],
+    [1,0,'B',1,0],[1,1,'B',1,0],[1,2,'C',0,0],[1,3,'E',-1,0],
+    [2,0,'A',1,0],[2,1,'S',1,0],[2,2,'B',1,0],[2,3,'D',-1,0],
+    [3,0,'A',1,1],[3,1,'S',1,0],[3,2,'A',1,0],[3,3,'C',0,0],
+    [4,0,'B',0,1],[4,1,'A',1,1],[4,2,'B',1,0],[4,3,'C',-1,0],
+    [5,0,'C',0,0],[5,1,'B',0,0],[5,2,'C',-1,0],[5,3,'D',-1,0],
+    [6,1,'C',0,0],[6,2,'D',-1,0]
+  ];
+  const s=34, ox=70, oy=40;
+  const svg=document.getElementById('hexmap');
+  const NS='http://www.w3.org/2000/svg';
+  function hexPts(cx,cy){let p='';for(let i=0;i<6;i++){const a=Math.PI/180*(60*i);p+=(cx+s*Math.cos(a))+','+(cy+s*Math.sin(a))+' ';}return p;}
+  cells.forEach(([col,row,g,m,w])=>{
+    const cx=ox+col*1.5*s;
+    const cy=oy+row*Math.sqrt(3)*s+(col%2?Math.sqrt(3)*s/2:0);
+    const poly=document.createElementNS(NS,'polygon');
+    poly.setAttribute('points',hexPts(cx,cy));
+    poly.setAttribute('fill',C[g]);
+    poly.setAttribute('stroke','#0B1B30');poly.setAttribute('stroke-width','2.5');
+    poly.setAttribute('opacity','.92');
+    svg.appendChild(poly);
+    const t=document.createElementNS(NS,'text');
+    t.setAttribute('x',cx);t.setAttribute('y',cy+1);t.setAttribute('text-anchor','middle');
+    t.setAttribute('font-size','13');t.setAttribute('font-weight','800');
+    t.setAttribute('fill', (g==='C'?'#3a2a08':'#eaf1fa'));t.setAttribute('font-family','Pretendard');
+    t.textContent=g;svg.appendChild(t);
+    if(m!==0){
+      const ar=document.createElementNS(NS,'text');
+      ar.setAttribute('x',cx);ar.setAttribute('y',cy+16);ar.setAttribute('text-anchor','middle');
+      ar.setAttribute('font-size','11');ar.setAttribute('font-weight','900');
+      ar.setAttribute('fill', m>0?'#bdf0df':'#ffd9c2');
+      ar.textContent=m>0?'▲':'▼';svg.appendChild(ar);
+    }
+    if(w){
+      const ring=document.createElementNS(NS,'circle');
+      ring.setAttribute('cx',cx);ring.setAttribute('cy',cy);ring.setAttribute('r',s*0.82);
+      ring.setAttribute('fill','none');ring.setAttribute('stroke','#FF7A3D');ring.setAttribute('stroke-width','3');
+      ring.setAttribute('opacity','.9');
+      const an=document.createElementNS(NS,'animate');
+      an.setAttribute('attributeName','opacity');an.setAttribute('values','.35;1;.35');
+      an.setAttribute('dur','2.2s');an.setAttribute('repeatCount','indefinite');
+      ring.appendChild(an);svg.appendChild(ring);
+    }
+  });
+  // labels
+  const labels=[[2,1,'예술동'],[0,2,'노포동'],[4,1,'내일동']];
+  labels.forEach(([col,row,nm])=>{
+    const cx=ox+col*1.5*s, cy=oy+row*Math.sqrt(3)*s+(col%2?Math.sqrt(3)*s/2:0);
+    const t=document.createElementNS(NS,'text');
+    t.setAttribute('x',cx);t.setAttribute('y',cy-s-4);t.setAttribute('text-anchor','middle');
+    t.setAttribute('font-size','10.5');t.setAttribute('fill','#92A8C6');t.setAttribute('font-family','Pretendard');
+    t.textContent=nm;svg.appendChild(t);
+  });
+})();
+
+/* ---------- CAUSAL LOOPS ---------- */
+(function(){
+  const NS='http://www.w3.org/2000/svg';
+  function loop(id, nodes, color, leverageIdx){
+    const svg=document.getElementById(id);
+    const cx=180, cy=150, R=105;
+    // arrowhead marker
+    const defs=document.createElementNS(NS,'defs');
+    defs.innerHTML='<marker id="ah-'+id+'" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="'+color+'"/></marker>';
+    svg.appendChild(defs);
+    const pos=nodes.map((n,i)=>{const a=-Math.PI/2+i*2*Math.PI/nodes.length;return {x:cx+R*Math.cos(a),y:cy+R*Math.sin(a)};});
+    // arcs between consecutive nodes
+    pos.forEach((p,i)=>{
+      const q=pos[(i+1)%pos.length];
+      const mx=(p.x+q.x)/2, my=(p.y+q.y)/2;
+      // curve outward
+      const dx=mx-cx, dy=my-cy, len=Math.hypot(dx,dy)||1;
+      const ctrlx=mx+dx/len*26, ctrly=my+dy/len*26;
+      const path=document.createElementNS(NS,'path');
+      // shorten endpoints toward node radius
+      function shrink(a,b){const vx=b.x-a.x,vy=b.y-a.y,l=Math.hypot(vx,vy);return {x:a.x+vx/l*30,y:a.y+vy/l*30};}
+      const s1=shrink(p,{x:ctrlx,y:ctrly}), s2=shrink(q,{x:ctrlx,y:ctrly});
+      path.setAttribute('d','M'+s1.x+','+s1.y+' Q'+ctrlx+','+ctrly+' '+s2.x+','+s2.y);
+      path.setAttribute('fill','none');path.setAttribute('stroke',color);
+      path.setAttribute('stroke-width','2');path.setAttribute('opacity','.6');
+      path.setAttribute('marker-end','url(#ah-'+id+')');
+      svg.appendChild(path);
+    });
+    // center loop sign
+    const ct=document.createElementNS(NS,'text');
+    ct.setAttribute('x',cx);ct.setAttribute('y',cy+5);ct.setAttribute('text-anchor','middle');
+    ct.setAttribute('font-size','22');ct.setAttribute('font-weight','900');ct.setAttribute('fill',color);
+    ct.setAttribute('opacity','.5');ct.setAttribute('font-family','Pretendard');
+    ct.textContent= id==='vicious'?'↻ R−':'↻ R+';svg.appendChild(ct);
+    // nodes
+    nodes.forEach((n,i)=>{
+      const p=pos[i];const lev=(i===leverageIdx);
+      const g=document.createElementNS(NS,'g');
+      const c=document.createElementNS(NS,'circle');
+      c.setAttribute('cx',p.x);c.setAttribute('cy',p.y);c.setAttribute('r',lev?27:24);
+      c.setAttribute('fill',lev?color:'#142B45');
+      c.setAttribute('stroke',color);c.setAttribute('stroke-width',lev?'3':'2');
+      g.appendChild(c);
+      if(lev){
+        const ring=document.createElementNS(NS,'circle');
+        ring.setAttribute('cx',p.x);ring.setAttribute('cy',p.y);ring.setAttribute('r','32');
+        ring.setAttribute('fill','none');ring.setAttribute('stroke',color);ring.setAttribute('stroke-width','1.4');
+        ring.setAttribute('stroke-dasharray','3 4');g.appendChild(ring);
+      }
+      n.split('\n').forEach((line,k,arr)=>{
+        const t=document.createElementNS(NS,'text');
+        t.setAttribute('x',p.x);t.setAttribute('y',p.y+4+(k-(arr.length-1)/2)*12);
+        t.setAttribute('text-anchor','middle');t.setAttribute('font-size','10.5');
+        t.setAttribute('font-weight','700');
+        t.setAttribute('fill', lev?'#0B1B30':'#EAF1FA');t.setAttribute('font-family','Pretendard');
+        t.textContent=line;g.appendChild(t);
+      });
+      svg.appendChild(g);
+    });
+  }
+  loop('vicious',
+    ['청년·여성\n유출','출산↓\n학교·의료 축소','상점\n폐업','정주여건\n악화'],
+    '#D2691E', 0);
+  loop('virtuous',
+    ['앵커·다양성\n진정성','버즈·\n방문 증가','신규창업\n유입','소득·\n활력 상승'],
+    '#3E9AA8', 0);
+})();
+</script>
+</body>
+</html>
