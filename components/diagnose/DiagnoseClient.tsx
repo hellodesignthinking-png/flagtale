@@ -24,6 +24,7 @@ import type { YoutubeBuzz } from "@/lib/connectors/youtube";
 import type { DriverAttribution } from "@/lib/driver";
 import type { Sustainability } from "@/lib/sustainability";
 import type { TenantRx } from "@/lib/tenant";
+import type { DiffusionResult } from "@/lib/diffusion";
 import { GradeBadge, MomentumChip, Pill, ProvisionalBadge, Stat } from "@/components/ui";
 import { KlaiGauge } from "@/components/charts/KlaiGauge";
 import { ScoreRadar } from "@/components/charts/ScoreRadar";
@@ -67,6 +68,7 @@ interface DiagnoseResult {
   drivers: DriverAttribution;
   sustainability: Sustainability | null;
   tenantRx: TenantRx | null;
+  diffusion: DiffusionResult | null;
   periods: string[];
   reportId: string;
 }
@@ -358,6 +360,63 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd }: { initialQue
               </div>
               <div className="mt-2 text-[10.5px]" style={{ color: "var(--green)" }}>
                 실측보정 KLAI(매력) × 상생지수(독립성·다양성·공실·진정성·시장안정·소셜) · 커버리지 {result.sustainability.coverage} · &ldquo;뜨지만 위태&rdquo;를 한눈에
+              </div>
+            </Section>
+          )}
+
+          {/* 확산 경로 — 다음 뜰 동 예측 (모듈 A) */}
+          {result.diffusion && (result.diffusion.sources.length > 0 || result.diffusion.candidates.length > 0) && (
+            <Section num="★" title="확산 경로 — 다음 뜰 동 (Spatial Diffusion)" tone="blue">
+              <div
+                className="mb-3 rounded-lg border px-3 py-2 text-[12.5px]"
+                style={{
+                  borderColor: result.diffusion.selfRole === "source" ? "var(--green)" : result.diffusion.selfRole === "candidate" ? "var(--blue-l)" : "var(--line)",
+                  background: "color-mix(in srgb, var(--card2) 70%, transparent)",
+                }}
+              >
+                <b style={{ color: result.diffusion.selfRole === "source" ? "var(--green)" : result.diffusion.selfRole === "candidate" ? "var(--blue-l)" : "var(--muted)" }}>
+                  {result.diffusion.selfRole === "source" ? "🔥 확산 원천" : result.diffusion.selfRole === "candidate" ? "🌱 확장 후보" : "● 정체"}
+                </b>{" "}
+                <span className="text-muted">{result.diffusion.note}</span>
+              </div>
+              <div className="grid gap-5 lg:grid-cols-2">
+                {/* 인접 핫 동 — 확산 원천 */}
+                <div>
+                  <div className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-amber">인접 핫 동 — 확산 원천</div>
+                  {result.diffusion.sources.length ? (
+                    <div className="space-y-1.5">
+                      {result.diffusion.sources.map((s) => (
+                        <a key={s.admCd2} href={`/diagnose?admCd=${s.admCd2}`} className="flex items-center gap-2 rounded-lg border border-line bg-card2 px-2.5 py-1.5 hover:border-blue">
+                          <span className="min-w-0 flex-1 truncate text-[12.5px] font-semibold text-ink">{s.name}</span>
+                          <span className="shrink-0 text-[10.5px] text-muted2">{s.distM}m</span>
+                          <span className="shrink-0 text-[11px] font-bold text-grade-b">▲ +{s.momentum}</span>
+                        </a>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-line bg-card2 px-3 py-2 text-[12px] text-muted2">인접권 뚜렷한 핫동 없음</div>
+                  )}
+                </div>
+                {/* 다음 확장 후보 */}
+                <div>
+                  <div className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-amber">다음 확장 후보 Top {result.diffusion.candidates.length}</div>
+                  <div className="space-y-1.5">
+                    {result.diffusion.candidates.map((c, i) => (
+                      <a key={c.admCd2} href={`/diagnose?admCd=${c.admCd2}`} className="flex items-center gap-2 rounded-lg border border-line bg-card2 px-2.5 py-1.5 hover:border-blue">
+                        <span className="w-4 shrink-0 text-center text-[11px] font-bold text-muted2">{i + 1}</span>
+                        <span className="min-w-0 flex-1 truncate text-[12.5px] font-semibold text-ink">{c.name}</span>
+                        <span className="shrink-0 text-[10px] text-muted2">{c.distM}m</span>
+                        <div className="hidden h-1.5 w-14 shrink-0 overflow-hidden rounded-full bg-navy2/60 sm:block">
+                          <div className="h-full rounded-full" style={{ width: `${c.readiness}%`, background: "linear-gradient(90deg,#4b9cd399,var(--blue-l))" }} />
+                        </div>
+                        <span className="w-7 shrink-0 text-right text-[11px] font-bold tabular-nums text-blue-l">{c.readiness}</span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-2 text-[10.5px]" style={{ color: "var(--green)" }}>
+                인접 동(같은 시도·중심 2.8km) 그래프 · 후보 점수=저평가·잠재(젠트리0~1)·모멘텀·근접·핫동인접 · 클릭→그 동 진단. ⚠ 인접 점수는 샘플 — 실데이터 bulk 후 정밀화.
               </div>
             </Section>
           )}

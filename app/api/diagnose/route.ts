@@ -15,6 +15,7 @@ import { computeCorrected, searchName } from "@/lib/corrected";
 import { attributeDrivers } from "@/lib/driver";
 import { computeSustainability } from "@/lib/sustainability";
 import { prescribeTenants } from "@/lib/tenant";
+import { diffusionFor } from "@/lib/diffusion";
 
 // 스펙 §13: POST /api/diagnose {address|pnu} → (auth+credit) {trajectory, risks, strategy, reportId}
 // VWorld 실지오코딩(주소→좌표→행정동) → 동 매핑 → 진단. demoPaid 플래그로 권한(페이월) 시뮬레이션.
@@ -70,6 +71,7 @@ export async function POST(req: NextRequest) {
   // 매력 × 지속가능성 2축 — 상생지수·4분면·대형화·수익성 가위 (모듈 B/C)
   const sustainability = computeSustainability({ latest: bundle.latest, corrected, sangga, reb, social });
   const tenantRx = prescribeTenants(sangga); // 업종 처방(부족 업종 추천) — 모듈 D
+  const diffusion = diffusionFor(place.admCd2); // 확산 경로(다음 확장 후보 동) — 모듈 A
 
   return NextResponse.json({
     query,
@@ -100,6 +102,7 @@ export async function POST(req: NextRequest) {
     drivers, // 활성화 동인 분해(로컬크리에이터/공공지원/자본)
     sustainability, // 매력×지속가능성 2축(상생지수·4분면·대형화·수익성 가위)
     tenantRx, // 업종 처방(부족 업종 추천 Top3) — 모듈 D
+    diffusion, // 확산 경로(인접 핫동 + 다음 확장 후보 동) — 모듈 A
     periods: bundle.series.map((s) => s.period),
     entitled,
     reportId: `parcel_${place.admCd2}_${bundle.latest.period}`,
