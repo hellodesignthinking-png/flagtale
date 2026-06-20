@@ -606,6 +606,22 @@ export function MapExplorer({ highlights }: { highlights: MapHighlights }) {
     setIntroOpen(false);
   };
 
+  // 장소·역·랜드마크 검색 → 그 좌표로 이동 + 포함 행정동 선택(데이터가 그 지점 중심으로)
+  const goToPlaceSearch = async (query: string): Promise<boolean> => {
+    try {
+      const r = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`);
+      if (!r.ok) return false;
+      const g = (await r.json()) as { admCd2: string; lng: number; lat: number };
+      if (!Number.isFinite(g.lng) || !Number.isFinite(g.lat)) return false;
+      mapRef.current?.flyTo({ center: [g.lng, g.lat], zoom: 14.5, duration: 1400, essential: true });
+      setIntroOpen(false);
+      if (g.admCd2) select(g.admCd2);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const loadingData = features.length === 0 || !data;
 
   return (
@@ -628,7 +644,7 @@ export function MapExplorer({ highlights }: { highlights: MapHighlights }) {
 
       {/* 우상단: 검색 + 권역 프리셋 */}
       <div className="absolute right-3 top-3 z-10 flex flex-col items-end gap-2">
-        <SearchBox places={places} onSelect={goToPlace} />
+        <SearchBox places={places} onSelect={goToPlace} onSearchPlace={goToPlaceSearch} />
         <div className="klai-panel flex max-w-[260px] flex-wrap justify-end gap-1 p-1.5">
           {REGION_PRESETS.map((r) => (
             <button

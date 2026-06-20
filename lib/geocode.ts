@@ -2,15 +2,37 @@
 // 키 없거나 매칭 실패 시 호출부가 기존 이름 매칭(geocodeToPlace)으로 폴백.
 import "server-only";
 import { loadDistricts } from "@/lib/data";
+import { naverJson } from "@/lib/connectors/naverFetch";
 import type { DistrictProps } from "@/lib/types";
 
 const VWORLD_KEY = process.env.VWORLD_KEY;
+const NAVER_ID = process.env.NAVER_CLIENT_ID;
+const NAVER_SEC = process.env.NAVER_CLIENT_SECRET;
 
 export interface GeoHit {
   lng: number;
   lat: number;
-  matched: string; // VWorld가 정제한 주소
-  kind: "road" | "parcel";
+  matched: string; // 정제된 주소 또는 장소명
+  kind: "road" | "parcel" | "place"; // place = 역·랜드마크·POI(네이버 지역검색)
+}
+
+// 네이버 지역검색 — 역·랜드마크·상호 등 POI 이름 → 좌표 (VWorld가 못 잡는 유명 장소).
+//   예: "강남역", "홍대입구", "롯데월드타워", "성수동 카페거리"
+export async function geocodePlace(query: string): Promise<GeoHit | null> {
+  const q = query.trim();
+  if (!NAVER_ID || !NAVER_SEC || !q) return null;
+  const H = { "X-Naver-Client-Id": NAVER_ID, "X-Naver-Client-Secret": NAVER_SEC };
+  const j = (await naverJson(`https://openapi.naver.com/v1/search/local.json?query=${encodeURIComponent(q)}&display=1&sort=random`, H)) as {
+    items?: { title?: string; mapx?: string; mapy?: string; roadAddress?: string; address?: string }[];
+  } | null;
+  const it = j?.items?.[0];
+  if (!it?.mapx || !it?.mapy) return null;
+  return {
+    lng: Number(it.mapx) / 1e7, // 네이버 좌표 = WGS84 × 10^7
+    lat: Number(it.mapy) / 1e7,
+    matched: String(it.title ?? q).replace(/<[^>]+>/g, "") + (it.roadAddress ? ` · ${it.roadAddress}` : ""),
+    kind: "place",
+  };
 }
 
 // VWorld 지오코더 — 도로명 우선, 실패 시 지번
@@ -87,11 +109,15 @@ export function pointToDistrict(lng: number, lat: number): DistrictProps | null 
   return null;
 }
 
-// 주소/지번 → 실제 행정동 + 좌표. (VWorld 미작동/미매칭 시 null → 호출부 폴백)
+// 주소/지번/장소 → 실제 행정동 + 좌표.
+//   1) VWorld 주소·지번 지오코딩  2) 실패 시 네이버 지역검색(역·랜드마크·POI)
+//   → 좌표 point-in-polygon으로 행정동 확정. point는 검색한 '그 장소'의 좌표 →
+//     반경 데이터(상권·앵커·문화인프라)가 그 지점 중심으로 나온다.
 export async function geocodeToDistrict(
   query: string
 ): Promise<{ props: DistrictProps; point: GeoHit } | null> {
-  const point = await geocodeAddress(query);
+  let point = await geocodeAddress(query); // 주소/지번
+  if (!point) point = await geocodePlace(query); // 역·랜드마크·POI
   if (!point) return null;
   const props = pointToDistrict(point.lng, point.lat);
   if (!props) return null;

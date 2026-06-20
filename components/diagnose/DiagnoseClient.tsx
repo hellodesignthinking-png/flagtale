@@ -120,7 +120,7 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd }: { initialQue
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && runDiagnose(query)}
-            placeholder="예: 서울 성동구 성수이로 66 / 성수동 / 한들동 123-4"
+            placeholder="주소·지번·동명 또는 역·장소 (예: 강남역 / 홍대입구 / 성수동 / 성수이로 66)"
             className="h-11 flex-1 rounded-lg border border-line bg-navy px-3.5 text-[14px] text-ink placeholder:text-muted2 focus:border-blue focus:outline-none"
           />
           <button
@@ -133,7 +133,7 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd }: { initialQue
         </div>
         {error && <p className="mt-2 text-[13px] text-warn">⚠ {error}</p>}
         <p className="mt-2 text-[11.5px] text-muted2">
-          입력 → VWorld 실지오코딩 → 행정동 매핑 → 방향·위기·전략 + 2016~2026 변화. (전체 데이터 공개 · 점수/신호는 샘플 · 인구는 KOSIS 실데이터)
+          입력 → VWorld(주소·지번)·네이버(역·장소) 지오코딩 → 행정동 매핑 → 그 지점 중심 진단. 방향·위기·전략 + 2016~2026 변화. (점수/신호는 샘플 · 인구는 KOSIS 실데이터)
         </p>
       </div>
 
