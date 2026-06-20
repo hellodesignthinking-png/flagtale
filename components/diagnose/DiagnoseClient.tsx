@@ -19,6 +19,8 @@ import type { LivingPop } from "@/lib/connectors/livingpop";
 import type { CultureInfo } from "@/lib/connectors/culture";
 import type { AnchorStore } from "@/lib/connectors/anchor";
 import type { VenuesResult } from "@/lib/connectors/venues";
+import type { SocialBuzz } from "@/lib/connectors/social";
+import type { YoutubeBuzz } from "@/lib/connectors/youtube";
 import type { DriverAttribution } from "@/lib/driver";
 import { GradeBadge, MomentumChip, Pill, ProvisionalBadge, Stat } from "@/components/ui";
 import { KlaiGauge } from "@/components/charts/KlaiGauge";
@@ -58,6 +60,8 @@ interface DiagnoseResult {
   culture: CultureInfo | null;
   anchor: AnchorStore[] | null;
   venues: VenuesResult | null;
+  social: SocialBuzz | null;
+  youtube: YoutubeBuzz | null;
   drivers: DriverAttribution;
   periods: string[];
   reportId: string;
@@ -469,6 +473,71 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd }: { initialQue
             );
           })()}
 
+          {/* 소셜 네트워크 신호 — 등록수·검색량·유튜브 (긍정/부정 함께) */}
+          {result.social && (
+            <Section num="★" title="소셜 네트워크 신호 — 블로그·카페·유튜브 (긍정/부정)" tone="grade-b">
+              <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <Stat label="블로그 등록수" value={result.social.blog.total.toLocaleString()} accent="blue" />
+                <Stat label="카페 등록수" value={result.social.cafe.total.toLocaleString()} accent="blue" />
+                <Stat
+                  label="검색 관심도(0~100)"
+                  value={result.naver?.searchTrend?.length ? result.naver.searchTrend[result.naver.searchTrend.length - 1].ratio : "—"}
+                  sub="네이버 DataLab"
+                  accent="amber"
+                />
+                <Stat
+                  label="유튜브 영상(추정)"
+                  value={result.youtube ? result.youtube.videoTotal.toLocaleString() : "키 필요"}
+                  sub={result.youtube ? "YouTube" : "YOUTUBE_API_KEY"}
+                  accent={result.youtube ? "amber" : "warn"}
+                />
+              </div>
+
+              {/* 채널별 긍정/부정 분해 */}
+              <div className="space-y-2.5">
+                {[
+                  { label: "블로그", a: result.social.blog.agg },
+                  { label: "카페", a: result.social.cafe.agg },
+                  ...(result.youtube ? [{ label: "유튜브", a: result.youtube.agg }] : []),
+                  { label: "통합", a: result.social.combined, strong: true },
+                ].map((ch) => (
+                  <PosNegBar key={ch.label} label={ch.label} agg={ch.a} strong={(ch as { strong?: boolean }).strong} />
+                ))}
+              </div>
+
+              {/* 최근 긍정/부정 표본 */}
+              {result.social.recent.length > 0 && (
+                <div className="mt-3 border-t border-line pt-3">
+                  <div className="mb-2 text-[11px] font-bold uppercase tracking-wider text-amber">최근 게시물 (긍정·부정 우선)</div>
+                  <div className="grid gap-1.5 sm:grid-cols-2">
+                    {result.social.recent.map((r, i) => (
+                      <a
+                        key={i}
+                        href={r.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 rounded-lg border border-line bg-card2 px-2.5 py-1.5 hover:border-blue"
+                      >
+                        <span
+                          className="shrink-0 text-[11px]"
+                          style={{ color: r.tone > 0 ? "var(--green)" : r.tone < 0 ? "var(--warn)" : "var(--muted2)" }}
+                        >
+                          {r.tone > 0 ? "▲긍정" : r.tone < 0 ? "▼부정" : "중립"}
+                        </span>
+                        <span className="min-w-0 flex-1 truncate text-[12px] text-ink">{r.title}</span>
+                        <span className="shrink-0 text-[10px] text-muted2">{r.channel === "blog" ? "블로그" : "카페"}</span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-2 text-[10.5px]" style={{ color: "var(--green)" }}>
+                실데이터 · 네이버 블로그·카페 등록수 + 검색량(DataLab){result.youtube ? " + 유튜브 영상" : " · 유튜브는 YOUTUBE_API_KEY 발급 시 활성화"} · 긍정(활성화)/부정(사건·쇠퇴) 동시 분류
+              </div>
+            </Section>
+          )}
+
           {/* 유동인구 — 시간대 활력 (서울 생활인구) */}
           {result.living && (
             <Section num="★" title="유동인구 — 시간대 활력 (서울 생활인구)" tone="grade-b">
@@ -784,6 +853,41 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd }: { initialQue
 
 function signed(n: number) {
   return `${n > 0 ? "+" : ""}${n.toLocaleString()}`;
+}
+
+function PosNegBar({
+  label,
+  agg,
+  strong,
+}: {
+  label: string;
+  agg: { pos: number; neg: number; neut: number; sentiment: number };
+  strong?: boolean;
+}) {
+  const total = agg.pos + agg.neg + agg.neut || 1;
+  const pp = (agg.pos / total) * 100;
+  const np = (agg.neut / total) * 100;
+  const gp = (agg.neg / total) * 100;
+  return (
+    <div className="flex items-center gap-2">
+      <span className={`w-10 shrink-0 text-[11.5px] ${strong ? "font-extrabold text-ink" : "font-semibold text-muted"}`}>{label}</span>
+      <div className="flex h-3 flex-1 overflow-hidden rounded-full bg-navy2/60">
+        <div style={{ width: `${pp}%`, background: "var(--green)" }} />
+        <div style={{ width: `${np}%`, background: "var(--muted2)", opacity: 0.35 }} />
+        <div style={{ width: `${gp}%`, background: "var(--warn)" }} />
+      </div>
+      <span className="w-20 shrink-0 text-right text-[10.5px] tabular-nums">
+        <span style={{ color: "var(--green)" }}>긍{agg.pos}</span> <span style={{ color: "var(--warn)" }}>부{agg.neg}</span>
+      </span>
+      <span
+        className="w-9 shrink-0 text-right text-[11px] font-bold tabular-nums"
+        style={{ color: agg.sentiment >= 0 ? "var(--green)" : "var(--warn)" }}
+      >
+        {agg.sentiment > 0 ? "+" : ""}
+        {agg.sentiment}
+      </span>
+    </div>
+  );
 }
 
 function Section({

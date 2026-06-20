@@ -9,6 +9,8 @@ import { seoulSales } from "@/lib/connectors/seoulsales";
 import { livingPop } from "@/lib/connectors/livingpop";
 import { cultureInfo } from "@/lib/connectors/culture";
 import { localVenues } from "@/lib/connectors/venues";
+import { socialBuzz } from "@/lib/connectors/social";
+import { youtubeBuzz } from "@/lib/connectors/youtube";
 import { computeCorrected, searchName } from "@/lib/corrected";
 import { attributeDrivers } from "@/lib/driver";
 
@@ -45,9 +47,9 @@ export async function POST(req: NextRequest) {
   const sLat = geo?.point.lat ?? bundle.props.centroidLat;
   const sname = searchName(bundle.props.name);
 
-  // 외부 커넥터 7종 병렬 호출 — 순차 await 시 도달 불가한 서울 API 타임아웃(각 7~8s)이
+  // 외부 커넥터 병렬 호출 — 순차 await 시 도달 불가한 서울 API 타임아웃(각 7~8s)이
   // 누적돼 콜드 17s+. 병렬이면 가장 느린 커넥터(~8s)로 수렴. 각자 graceful null.
-  const [naver, sangga, anchor, reb, sales, living, culture, venues] = await Promise.all([
+  const [naver, sangga, anchor, reb, sales, living, culture, venues, social, youtube] = await Promise.all([
     naverInterest(sname).catch(() => null), // D4·모멘텀(검색·기사)
     sanggaStats(sLng, sLat).catch(() => null), // 소진공 점포 업종·다양성
     anchorStores(sname, { lng: sLng, lat: sLat }, 1000).catch(() => null), // 반경 1km 앵커 버즈
@@ -55,7 +57,9 @@ export async function POST(req: NextRequest) {
     seoulSales(bundle.props.name, bundle.props.sido).catch(() => null), // 우리마을가게 매출(서울)
     livingPop(bundle.props.admCd2, bundle.props.sido).catch(() => null), // 생활인구 시간대(서울)
     cultureInfo(bundle.props.sido, bundle.props.sigungu).catch(() => null), // 문화 공연·전시·축제
-    localVenues(sname, { lng: sLng, lat: sLat }, 1200).catch(() => null), // 갤러리·도서관·책방·공연장·체육관(공공/민간)
+    localVenues(sname, { lng: sLng, lat: sLat }, 1200).catch(() => null), // 갤러리·도서관·책방·공연장·체육관·공원
+    socialBuzz(sname).catch(() => null), // 소셜 등록수(블로그·카페) + 긍부정
+    youtubeBuzz(sname).catch(() => null), // 유튜브 영상 + 긍부정 (YOUTUBE_API_KEY 필요)
   ]);
 
   // 실측 보정(네이버 D4·모멘텀)·동인 분해는 위 결과에 의존 → 병렬 후 계산
@@ -85,7 +89,9 @@ export async function POST(req: NextRequest) {
     living, // 서울 생활인구 시간대 패턴(주간/야간 활력) — 서울만
     culture, // 지역 문화 활력(공연·전시·축제) — 반영 대기 시 null
     anchor, // 앵커 점포(블로그 버즈 상위) — 지역 활성화 견인 점포
-    venues, // 지역 문화 인프라(갤러리·도서관·책방·공연장·체육관, 공공/민간) — 강점 자산
+    venues, // 지역 문화 인프라(갤러리·도서관·책방·공연장·체육관·공원, 공공/민간) — 강점 자산
+    social, // 소셜 등록수(블로그·카페) + 긍정/부정
+    youtube, // 유튜브 영상 + 긍정/부정 (키 없으면 null)
     drivers, // 활성화 동인 분해(로컬크리에이터/공공지원/자본)
     periods: bundle.series.map((s) => s.period),
     entitled,
