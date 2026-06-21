@@ -3,6 +3,7 @@
 //   · 이름 휴리스틱으로 공공(구립/시립/국립…) vs 민간/재단 분류
 //   · 진단 지점 반경 내 시설 → 동네 '문화 인프라 강도' 산출
 import "server-only";
+import { naverJson } from "@/lib/connectors/naverFetch";
 
 const ID = process.env.NAVER_CLIENT_ID;
 const SEC = process.env.NAVER_CLIENT_SECRET;
@@ -59,13 +60,10 @@ function distM(lng1: number, lat1: number, lng2: number, lat2: number): number {
   return 2 * R * Math.asin(Math.sqrt(a));
 }
 
+// 공용 스로틀(naverJson) 경유 — 진단 시 anchor·social·naverInterest와 동시 호출되므로
+// 직접 fetch면 429(레이트리밋)로 간헐 실패. throttle(동시3·429재시도)로 안정화.
 async function search(query: string) {
-  return fetch(`https://openapi.naver.com/v1/search/local.json?query=${encodeURIComponent(query)}&display=5&sort=comment`, {
-    headers: H,
-    signal: AbortSignal.timeout(4500),
-  })
-    .then((r) => r.json())
-    .catch(() => null);
+  return naverJson(`https://openapi.naver.com/v1/search/local.json?query=${encodeURIComponent(query)}&display=5&sort=comment`, H, 4500);
 }
 
 // area=동명, center=진단 좌표(반경 필터), radiusM=최대 거리(기본 1.2km)
@@ -84,19 +82,20 @@ export async function localVenues(
   const results = await Promise.all(tasks.map((t) => search(t.q)));
 
   const seen = new Set<string>();
-  const venues: Venue[] = [];
+  const cand: Venue[] = [];
   results.forEach((rj, i) => {
     const kind = tasks[i].kind;
-    for (const it of (rj?.items ?? []) as { title: string; category?: string; mapx?: string; mapy?: string; roadAddress?: string; address?: string }[]) {
+    const items = (rj as { items?: { title: string; category?: string; mapx?: string; mapy?: string; roadAddress?: string; address?: string }[] } | null)?.items ?? [];
+    for (const it of items) {
       const name = String(it.title).replace(/<[^>]+>/g, "").trim();
       if (!name || seen.has(name)) continue;
       const lng = it.mapx ? Number(it.mapx) / 1e7 : undefined;
       const lat = it.mapy ? Number(it.mapy) / 1e7 : undefined;
       const addr = it.roadAddress || it.address || "";
       const distance = center && lng != null && lat != null ? Math.round(distM(center.lng, center.lat, lng, lat)) : undefined;
-      if (center && (distance == null || distance > radiusM)) continue; // 반경 밖 제외
+      if (center && distance == null) continue; // 좌표 없어 거리판단 불가 → 제외
       seen.add(name);
-      venues.push({
+      cand.push({
         name,
         kind,
         category: it.category ?? "",
@@ -111,6 +110,15 @@ export async function localVenues(
       });
     }
   });
+
+  // 반경 내 우선. 저밀도 지역(반경 내 0개)이면 인근 최대 3배 반경 최근접으로 폴백 — 소도시도 인프라가 보이도록.
+  let venues: Venue[];
+  if (center) {
+    const within = cand.filter((v) => (v.distanceM ?? 9e9) <= radiusM);
+    venues = within.length ? within : cand.filter((v) => (v.distanceM ?? 9e9) <= radiusM * 3);
+  } else {
+    venues = cand;
+  }
 
   if (!venues.length) {
     cache.set(ck, { at: Date.now(), data: null });

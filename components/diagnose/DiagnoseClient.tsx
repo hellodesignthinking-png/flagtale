@@ -565,7 +565,7 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd }: { initialQue
               <Section num="★" title="지역 문화·생활 인프라 — 갤러리·도서관·책방·공연장·체육관·공원" tone="grade-b">
                 <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
                   <Stat label="문화 인프라 강도" value={result.venues.cultureScore} sub="0~100 (밀도·다양·근접)" accent="blue" />
-                  <Stat label="총 시설" value={result.venues.total} sub="반경 1.2km" />
+                  <Stat label="총 시설" value={result.venues.total} sub="인근(반경 1.2km~)" />
                   <Stat
                     label="공공 / 민간·재단"
                     value={<span className="text-base">{result.venues.publicCount} / {result.venues.privateCount}</span>}
@@ -749,12 +749,13 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd }: { initialQue
             </Section>
           )}
 
-          {/* 앵커 점포 — 지역 버즈를 끄는 대표 점포 */}
-          {result.anchor && result.anchor.length > 0 && (
-            <Section num="★" title="앵커 점포 — 지역 버즈를 끄는 대표 점포" tone="grade-b">
+          {/* 지역 지도 — 앵커 점포·문화 인프라 (소도시·읍면 포함 항상 표시) */}
+          {result.place && (
+            <Section num="★" title="지역 지도 — 앵커 점포·문화 인프라" tone="grade-b">
               <p className="mb-2 text-[11.5px] text-muted2">
-                진단 지점 <b className="text-muted">반경 1km 이내</b> 점포 × 블로그 회자도. (네이버 지도 &lsquo;좋아요·리뷰 수&rsquo;는 공식 API 미제공 → 블로그 글 수로 대체)
+                진단 지점 인근 <b className="text-muted">대표 점포(블로그 회자도)</b>와 문화·생활 인프라를 지도에 표시. (네이버 지도 &lsquo;좋아요·리뷰 수&rsquo;는 공식 API 미제공 → 블로그 글 수로 대체)
               </p>
+              {result.anchor && result.anchor.length > 0 ? (
               <div className="space-y-1">
                 {result.anchor.map((s, i) => {
                   const max = result.anchor![0].blogBuzz || 1;
@@ -804,21 +805,23 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd }: { initialQue
                   );
                 })}
               </div>
+              ) : (
+                <div className="rounded-lg border border-line bg-card2 px-3 py-2.5 text-[11.5px] text-muted2">
+                  이 지역은 블로그 버즈가 잡히는 대표 점포가 적습니다(소도시·읍면). 아래 지도·골목상권·문화 인프라로 강점을 확인하세요.
+                </div>
+              )}
               {(() => {
-                const a0 = result.anchor!.find((s) => Number.isFinite(s.lng) && Number.isFinite(s.lat));
-                const center: [number, number] | null = result.geocoded
+                const center: [number, number] = result.geocoded
                   ? [result.geocoded.lng, result.geocoded.lat]
-                  : a0
-                    ? [a0.lng as number, a0.lat as number]
-                    : null;
-                return center ? (
+                  : [result.place.centroidLng, result.place.centroidLat];
+                return (
                   <div className="mt-3">
-                    <DiagnoseMap stores={result.anchor!} center={center} venues={result.venues?.venues ?? []} selected={selAnchor} onSelect={setSelAnchor} />
+                    <DiagnoseMap stores={result.anchor ?? []} center={center} venues={result.venues?.venues ?? []} selected={selAnchor} onSelect={setSelAnchor} />
                   </div>
-                ) : null;
+                );
               })()}
               <div className="mt-2 text-[10.5px]" style={{ color: "var(--green)" }}>
-                실데이터 · 네이버 지역검색+블로그 · 초록 번호핀=앵커 점포(버즈 순위) · 색 점=문화·생활 인프라(갤러리·도서관·책방·공연장·체육관·공원) · 흰 외곽링=공공
+                실데이터 · 네이버 지역검색+블로그 · 초록 번호핀=앵커 점포(버즈 순위) · 색 점=문화·생활 인프라(갤러리·도서관·책방·공연장·체육관·공원) · 흰 외곽링=공공 · 파란 핀=진단 지점
               </div>
             </Section>
           )}

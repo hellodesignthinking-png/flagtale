@@ -61,12 +61,17 @@ export async function anchorStores(
       }
     }
   }
-  // 위치 기반: 진단 지점 반경(기본 1km) 내 점포만. 거리 계산 후 필터.
+  // 위치 기반: 진단 지점 반경(기본 1km) 내 점포 우선. 저밀도 지역(반경 내 0개)이면
+  // 인근 최대 4배 반경(예: 4km)의 '최근접' 점포로 폴백 — 소도시·읍면도 대표 점포가 보이도록.
   let arr = [...stores.values()].map((s) => ({
     ...s,
     distanceM: center && s.lng != null && s.lat != null ? Math.round(distM(center.lng, center.lat, s.lng, s.lat)) : undefined,
   }));
-  if (center) arr = arr.filter((s) => s.distanceM != null && s.distanceM <= radiusM);
+  if (center) {
+    const within = arr.filter((s) => s.distanceM != null && s.distanceM <= radiusM);
+    if (within.length) arr = within;
+    else arr = arr.filter((s) => s.distanceM != null && s.distanceM <= radiusM * 4).sort((a, b) => (a.distanceM as number) - (b.distanceM as number));
+  }
   arr = arr.slice(0, 12);
 
   if (!arr.length) {
