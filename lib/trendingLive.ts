@@ -12,7 +12,7 @@ export interface LocalLive {
   headlines: { title: string; date: string; link: string; tone: 1 | 0 | -1 }[];
 }
 
-async function fetchAll(): Promise<Record<string, LocalLive>> {
+export async function fetchTrendingLive(): Promise<Record<string, LocalLive>> {
   const out: Record<string, LocalLive> = {};
   // 뉴스 단독 12개 병렬(고한도·버스트 안전) + 데이터랩 트렌드 배치(3요청) — 동시 실행
   const [newsRes, trends] = await Promise.all([
@@ -35,4 +35,4 @@ async function fetchAll(): Promise<Record<string, LocalLive>> {
   return out;
 }
 
-export const getTrendingLive = unstable_cache(fetchAll, ["trending-locals-live-v4"], { revalidate: 21600 });
+export const getTrendingLive = unstable_cache(fetchTrendingLive, ["trending-locals-live-v4"], { revalidate: 21600 });
