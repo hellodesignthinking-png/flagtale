@@ -67,7 +67,7 @@ export function SiteHeader() {
           </Link>
           <Link
             href="/diagnose"
-            className="btn-glow rounded-lg bg-amber px-3.5 py-1.5 text-[13.5px] font-bold text-[#06210d] hover:bg-[#0fb53e]"
+            className="btn-glow rounded-lg bg-amber px-3.5 py-1.5 text-[13.5px] font-bold text-[#ffffff] hover:bg-[#4338ca]"
           >
             지번 진단
           </Link>

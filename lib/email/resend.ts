@@ -16,7 +16,7 @@ export async function sendWeeklyReport(report: Report, recipients: string[]) {
       <div style="color:#d4861e;font-weight:700;letter-spacing:.1em;font-size:12px">FLAGTALE WEEKLY</div>
       <h1 style="margin:6px 0;font-size:22px">${report.title}</h1>
       <p style="color:#92a8c6;font-size:14px">${report.summary}</p>
-      <a href="https://klai.local/reports/${report.slug}" style="display:inline-block;margin-top:12px;background:#d4861e;color:#1a1206;padding:10px 16px;border-radius:8px;text-decoration:none;font-weight:700">웹진 열람 →</a>
+      <a href="https://klai.local/reports/${report.slug}" style="display:inline-block;margin-top:12px;background:#d4861e;color:#ffffff;padding:10px 16px;border-radius:8px;text-decoration:none;font-weight:700">웹진 열람 →</a>
     </div>`;
 
   if (!resend) {

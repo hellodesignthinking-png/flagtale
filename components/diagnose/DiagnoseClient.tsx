@@ -210,7 +210,7 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd, mode = "parcel
               <button
                 onClick={() => searchBrand(query)}
                 disabled={searching || loading}
-                className="h-11 rounded-lg bg-amber px-5 text-[14px] font-bold text-[#1a1206] hover:bg-[#0fb53e] disabled:opacity-50"
+                className="h-11 rounded-lg bg-amber px-5 text-[14px] font-bold text-[#ffffff] hover:bg-[#4338ca] disabled:opacity-50"
               >
                 {searching ? "검색 중…" : "매장 검색"}
               </button>
@@ -234,7 +234,7 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd, mode = "parcel
               <button
                 onClick={() => runDiagnose(query)}
                 disabled={loading}
-                className="h-11 rounded-lg bg-amber px-5 text-[14px] font-bold text-[#1a1206] hover:bg-[#0fb53e] disabled:opacity-50"
+                className="h-11 rounded-lg bg-amber px-5 text-[14px] font-bold text-[#ffffff] hover:bg-[#4338ca] disabled:opacity-50"
               >
                 {loading ? "분석 중…" : "진단 실행"}
               </button>
@@ -928,7 +928,7 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd, mode = "parcel
                         aria-expanded={open}
                         className={`flex w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left text-[12px] transition-colors ${open ? "bg-green/10 ring-1 ring-green/40" : "hover:bg-card2"}`}
                       >
-                        <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] font-bold" style={{ background: "var(--green)", color: "#06210d" }}>{i + 1}</span>
+                        <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] font-bold" style={{ background: "var(--green)", color: "#ffffff" }}>{i + 1}</span>
                         <span className="w-24 shrink-0 truncate font-bold text-ink sm:w-28">{s.name}</span>
                         {s.distanceM != null && (
                           <span className="w-12 shrink-0 text-right text-[10.5px] text-muted2">{s.distanceM}m</span>

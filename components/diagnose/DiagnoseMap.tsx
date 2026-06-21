@@ -141,7 +141,7 @@ export function DiagnoseMap({
         if (!Number.isFinite(s.lng) || !Number.isFinite(s.lat)) return;
         const el = document.createElement("div");
         el.style.cssText =
-          "width:22px;height:22px;border-radius:50%;background:#00c43a;color:#06210d;font:700 11px/22px system-ui;text-align:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);cursor:pointer;transition:box-shadow .15s,background .15s";
+          "width:22px;height:22px;border-radius:50%;background:#00c43a;color:#ffffff;font:700 11px/22px system-ui;text-align:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);cursor:pointer;transition:box-shadow .15s,background .15s";
         el.textContent = String(i + 1);
         const popup = new maplibregl.Popup({ offset: 16, closeButton: true, maxWidth: "260px" }).setHTML(anchorPopupHTML(s, i + 1));
         popup.on("close", () => {

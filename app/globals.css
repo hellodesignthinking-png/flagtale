@@ -7,32 +7,32 @@
    ───────────────────────────────────────────────────────────── */
 /* ── 다크 테마 (지도·기본) — 공간디자인페어 '다크 섹션' 중성 차콜 ── */
 :root {
-  --navy: #0e1217;   /* 메인 배경 (네이비→중성 차콜) */
-  --navy2: #141a20;
-  --card: #171e25;
-  --card2: #1e2730;
-  --line: #2b333d;
-  --blue: #1e5fa8;
-  --blue-l: #4b9cd3;
-  /* 브랜드 액센트 = 일렉트릭 그린 (구 amber 토큰 재지정) */
-  --amber: #18e24a;
-  --amber-d: #0fb53e;
-  --green: #00ff3b;
-  --green-soft: #65bc7b;
-  --ink: #eef1f4;
-  --muted: #9aa6b2;
-  --muted2: #6b7682;
-  --warn: #ff7a3d;
+  /* 미니멀 뉴트럴 (다크) — 중성 zinc/near-black + 단일 강조색 인디고 */
+  --navy: #0a0a0c;   /* 메인 배경 (중성 near-black) */
+  --navy2: #121215;
+  --card: #161619;
+  --card2: #1d1d22;
+  --line: #2a2a31;
+  --blue: #6366f1;   /* 단일 강조색 = 인디고 */
+  --blue-l: #818cf8;
+  /* CTA/브랜드 강조(구 amber 토큰) = 인디고로 통일 */
+  --amber: #6366f1;
+  --amber-d: #4f46e5;
+  --green: #34d399;  /* 긍정/성공(emerald) — 보조 시맨틱 */
+  --green-soft: #6ee7b7;
+  --ink: #f4f4f5;
+  --muted: #a1a1aa;
+  --muted2: #71717a;
+  --warn: #fb7185;   /* 경고(rose) */
 
-  /* 불투명도 수정자(bg-navy/95 등)용 RGB 채널 — Tailwind가 rgb(var(--x-rgb)/<alpha>)로 사용.
-     hex 변수는 직접 var() 사용처(SVG fill·inline)용으로 유지(동일 색). */
-  --navy-rgb: 14 18 23;
-  --navy2-rgb: 20 26 32;
-  --card2-rgb: 30 39 48;
-  --line-rgb: 43 51 61;
-  --blue-rgb: 30 95 168;
-  --amber-rgb: 24 226 74;
-  --warn-rgb: 255 122 61;
+  /* 불투명도 수정자(bg-navy/95 등)용 RGB 채널 — Tailwind가 rgb(var(--x-rgb)/<alpha>)로 사용. */
+  --navy-rgb: 10 10 12;
+  --navy2-rgb: 18 18 21;
+  --card2-rgb: 29 29 34;
+  --line-rgb: 42 42 49;
+  --blue-rgb: 99 102 241;
+  --amber-rgb: 99 102 241;
+  --warn-rgb: 251 113 133;
 
   /* 등급 발산 스케일 (S→E) — 데이터 색, 양 테마 공통 */
   --gS: #0f6e5c;
@@ -48,29 +48,30 @@
 
 /* ── 라이트 에디토리얼 (콘텐츠 페이지) — 공간디자인페어 화이트 캔버스 ── */
 .theme-light {
+  /* 미니멀 뉴트럴 (라이트) — 화이트 + zinc 그레이 + 인디고 강조 */
   --navy: #ffffff;
-  --navy2: #f6f7f9;
+  --navy2: #fafafa;
   --card: #ffffff;
-  --card2: #f5f6f8;
-  --line: #e6e7ea;
-  --blue: #1456a0;
-  --blue-l: #1f74c4;
-  --amber: #07b53a;   /* 화이트 위 가독 그린 */
-  --amber-d: #059a31;
-  --green: #00c43a;
-  --green-soft: #65bc7b;
-  --ink: #15181d;     /* 차콜 텍스트 */
-  --muted: #5b6470;
-  --muted2: #8b95a1;
-  --warn: #e0521f;
+  --card2: #f4f4f5;   /* zinc-100 */
+  --line: #e4e4e7;    /* zinc-200 */
+  --blue: #4f46e5;    /* 인디고 */
+  --blue-l: #6366f1;
+  --amber: #4f46e5;   /* 인디고 CTA */
+  --amber-d: #4338ca;
+  --green: #059669;   /* emerald 긍정 */
+  --green-soft: #34d399;
+  --ink: #18181b;     /* zinc-900 */
+  --muted: #52525b;   /* zinc-600 */
+  --muted2: #a1a1aa;  /* zinc-400 */
+  --warn: #e11d48;    /* rose */
   /* 불투명도 수정자용 RGB 채널 (라이트) */
   --navy-rgb: 255 255 255;
-  --navy2-rgb: 246 247 249;
-  --card2-rgb: 245 246 248;
-  --line-rgb: 230 231 234;
-  --blue-rgb: 20 86 160;
-  --amber-rgb: 7 181 58;
-  --warn-rgb: 224 82 31;
+  --navy2-rgb: 250 250 250;
+  --card2-rgb: 244 244 245;
+  --line-rgb: 228 228 231;
+  --blue-rgb: 79 70 229;
+  --amber-rgb: 79 70 229;
+  --warn-rgb: 225 29 72;
 }
 
 * {
@@ -89,10 +90,10 @@ body {
   -webkit-font-smoothing: antialiased;
   background-image: radial-gradient(
       1200px 600px at 80% -10%,
-      rgba(30, 95, 168, 0.16),
+      rgba(99, 102, 241, 0.13),
       transparent
     ),
-    radial-gradient(900px 500px at -10% 110%, rgba(0, 255, 59, 0.08), transparent);
+    radial-gradient(900px 520px at -10% 110%, rgba(99, 102, 241, 0.05), transparent);
   background-attachment: fixed;
 }
 
@@ -149,9 +150,9 @@ h3 {
     font-weight: 700;
     padding: 3px 10px;
     border-radius: 999px;
-    background: rgba(212, 134, 30, 0.16);
+    background: rgba(99, 102, 241, 0.14);
     color: var(--amber);
-    border: 1px solid rgba(212, 134, 30, 0.35);
+    border: 1px solid rgba(99, 102, 241, 0.32);
   }
   .klai-tag-sample {
     background: rgba(146, 168, 198, 0.14);
@@ -163,7 +164,7 @@ h3 {
 @layer utilities {
   /* 그라데이션 텍스트 (트렌디 헤드라인) */
   .gradient-text {
-    background: linear-gradient(92deg, var(--blue-l), #7fbce6 35%, var(--amber));
+    background: linear-gradient(92deg, var(--blue-l), #a5b4fc 45%, var(--blue));
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -356,8 +357,8 @@ h3 {
   transition: box-shadow 0.2s, transform 0.1s, filter 0.2s;
 }
 .btn-glow:hover {
-  box-shadow: 0 10px 28px -10px color-mix(in srgb, var(--green) 70%, transparent);
-  filter: brightness(1.04);
+  box-shadow: 0 10px 28px -10px color-mix(in srgb, var(--blue) 60%, transparent);
+  filter: brightness(1.05);
 }
 .btn-glow:active {
   transform: translateY(1px) scale(0.985);

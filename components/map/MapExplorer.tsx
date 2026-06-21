@@ -858,7 +858,7 @@ export function MapExplorer({ highlights }: { highlights: MapHighlights }) {
             <div className="mt-5 flex items-center gap-2">
               <button
                 onClick={() => setIntroOpen(false)}
-                className="rounded-lg bg-blue px-4 py-2 text-sm font-bold text-white hover:bg-[#2a6fbd]"
+                className="rounded-lg bg-blue px-4 py-2 text-sm font-bold text-white hover:bg-[#4338ca]"
               >
                 지도 탐색 시작 →
               </button>
