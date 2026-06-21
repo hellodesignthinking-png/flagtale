@@ -27,7 +27,7 @@ const FOOTER_NAV: { title: string; links: { href: string; label: string }[] }[] 
   {
     title: "탐색",
     links: [
-      { href: "/", label: "매력도 지도" },
+      { href: "/map", label: "매력도 지도" },
       { href: "/reports", label: "리포트" },
       { href: "/data", label: "데이터 출처" },
       { href: "/methodology", label: "방법론" },

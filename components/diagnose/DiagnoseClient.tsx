@@ -1199,7 +1199,7 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd, mode = "parcel
             동명/지번을 입력하고 <b className="text-ink">진단 실행</b>을 누르세요.
           </p>
           <p className="mt-2 text-[12px] text-muted2">
-            지도에서 동을 선택해 <Link href="/" className="text-blue-l hover:underline">탐색</Link>할 수도 있습니다.
+            지도에서 동을 선택해 <Link href="/map" className="text-blue-l hover:underline">탐색</Link>할 수도 있습니다.
           </p>
         </div>
       )}

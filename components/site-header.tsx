@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const NAV = [
-  { href: "/", label: "지도" },
+  { href: "/map", label: "지도" },
   { href: "/reports", label: "리포트" },
   { href: "/diagnose", label: "지번 진단" },
   { href: "/brand", label: "브랜드 진단" },
@@ -18,7 +18,7 @@ const NAV = [
 
 export function SiteHeader() {
   const pathname = usePathname();
-  const onMap = pathname === "/";
+  const onMap = pathname === "/map";
 
   return (
     <header
@@ -42,7 +42,7 @@ export function SiteHeader() {
 
         <nav className="ml-2 hidden items-center gap-1 md:flex">
           {NAV.map((n) => {
-            const active = n.href === "/" ? pathname === "/" : pathname.startsWith(n.href);
+            const active = pathname === n.href || pathname.startsWith(n.href + "/");
             return (
               <Link
                 key={n.href}
