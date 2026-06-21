@@ -3,6 +3,7 @@ import { loadDistricts, loadScores } from "@/lib/data";
 import { SiteFooter } from "@/components/page-shell";
 import { ArticleCard, toCardItem } from "@/components/landing/ArticleCard";
 import { Carousel } from "@/components/landing/Carousel";
+import { FeedTabs } from "@/components/landing/FeedTabs";
 import { NationalScatter, type ScatterPoint } from "@/components/landing/NationalScatter";
 import { CountUp } from "@/components/landing/CountUp";
 import { Reveal } from "@/components/landing/Reveal";
@@ -23,6 +24,14 @@ export default function LandingPage() {
   const declining = rows.filter((r) => r.s.momentum < -1).length;
   const feat = risers[0];
   const sideTwo = risers.slice(1, 3);
+  // 탭 피드용 풀: 상승 + 하락 + 젠트리(중복 제거)
+  const allItems = rows.map((r) => toCardItem(r.cd, r.p, r.s));
+  const byMom = [...allItems].sort((a, b) => b.momentum - a.momentum);
+  const poolMap = new Map<string, ReturnType<typeof toCardItem>>();
+  for (const it of [...byMom.slice(0, 12), ...byMom.slice(-12), ...allItems.filter((i) => i.gentriStage >= 3).sort((a, b) => b.gentriStage - a.gentriStage || b.klai - a.klai).slice(0, 12)]) {
+    poolMap.set(it.cd, it);
+  }
+  const pool = [...poolMap.values()].sort((a, b) => Math.abs(b.momentum) - Math.abs(a.momentum));
   const scatterPoints: ScatterPoint[] = [
     ...risers.map((r) => ({ name: r.name, momentum: r.momentum, lng: r.lng, lat: r.lat, kind: "riser" as const })),
     ...fallers.map((r) => ({ name: r.name, momentum: r.momentum, lng: r.lng, lat: r.lat, kind: "faller" as const })),
@@ -65,17 +74,13 @@ export default function LandingPage() {
           </Carousel>
         </Reveal>
 
-        {/* 식어가는 동네 캐러셀 */}
-        <Reveal as="section" className="py-6">
+        {/* 전국 동네 피드 — 카테고리 탭 필터 */}
+        <Reveal as="section" className="py-8">
           <div className="mb-4 flex items-end justify-between">
-            <h2 className="text-[1.4rem] font-extrabold tracking-tight sm:text-[1.7rem]">📉 식어가는 동네</h2>
-            <span className="text-[12px] font-bold text-muted2">← 화살표로 탐색 →</span>
+            <h2 className="text-[1.4rem] font-extrabold tracking-tight sm:text-[1.7rem]">🗂 전국 동네 피드</h2>
+            <span className="text-[12px] font-bold text-muted2">카테고리로 골라보기</span>
           </div>
-          <Carousel>
-            {fallers.map((it) => (
-              <ArticleCard key={it.cd} item={it} />
-            ))}
-          </Carousel>
+          <FeedTabs items={pool} />
         </Reveal>
 
         {/* 전국 한눈에 — 지도 + 카운트업 */}
