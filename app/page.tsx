@@ -4,6 +4,7 @@ import { SiteFooter } from "@/components/page-shell";
 import { ArticleCard, toCardItem, reasonInfo } from "@/components/landing/ArticleCard";
 import { Carousel } from "@/components/landing/Carousel";
 import { FeedTabs } from "@/components/landing/FeedTabs";
+import { TrendingLocals } from "@/components/landing/TrendingLocals";
 import { LiveMapSection } from "@/components/landing/LiveMapSection";
 import type { Hero3DPoint } from "@/components/landing/LandingHero3DMap";
 import { Reveal } from "@/components/landing/Reveal";
@@ -82,6 +83,11 @@ export default function LandingPage() {
               <ArticleCard key={it.cd} item={it} />
             ))}
           </Carousel>
+        </Reveal>
+
+        {/* 뉴스·블로그로 뜨는 로컬 동네 (에디토리얼 큐레이션) */}
+        <Reveal as="section" className="py-8">
+          <TrendingLocals />
         </Reveal>
 
         {/* 전국 동네 피드 — 카테고리 탭 필터 */}
