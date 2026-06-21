@@ -237,23 +237,25 @@ export function getPeerAvg(typology: string): { d1: number; d2: number; d3: numb
   };
 }
 
-/** 주소/지번/동명 → 동 매핑 (목업 지오코딩). 동명·자치구 부분일치. */
+/** 동명 → 동 매핑 (이름 매칭 전용 폴백). 주소·지번·도로명은 VWorld 실지오코딩(geocodeToDistrict)이 담당. */
 export function geocodeToPlace(query: string): DistrictProps | null {
   const q = query.trim();
   if (!q) return null;
   const places = listPlaces();
-  // 동명 정확/부분 일치 우선
+  // 1) 동명 정확 일치 (역삼1동 등 숫자 포함 동명도 여기서 처리)
   const exact = places.find((p) => p.name === q || p.name === q + "동");
   if (exact) return exact;
-  const partial = places.find(
-    (p) => p.name.includes(q) || q.includes(p.name.replace("동", ""))
-  );
-  if (partial) return partial;
-  // 지번 형태(숫자 포함)면 결정론적으로 한 동에 매핑 (데모)
-  const digits = q.replace(/\D/g, "");
-  if (digits) {
-    const idx = parseInt(digits.slice(-3) || "0", 10) % places.length;
-    return places[idx];
+  // 2) 주소·지번·도로명(숫자/로/길/번지 포함)인데 정확 동명이 아니면 → 동명 퍼지매칭 금지.
+  //    과거 "월드컵북로 120" → 임의 동(places[120%N]=월곡1동) 오매핑 버그의 원인. 좌표 매핑은 VWorld 전용.
+  if (/[0-9]|로\s|길\s|번지|번길/.test(q)) return null;
+  // 3) 순수 동명 부분 일치 (시·도/구 접미사 제거 후 동명과 대조)
+  const base = q.replace(/^(서울특별시|부산광역시|대구광역시|인천광역시|광주광역시|대전광역시|울산광역시|세종특별자치시|경기도|강원특별자치도|충청북도|충청남도|전북특별자치도|전라남도|경상북도|경상남도|제주특별자치도)\s*/, "").trim();
+  const tokens = base.split(/\s+/).filter(Boolean);
+  const last = tokens[tokens.length - 1] ?? base; // 보통 마지막 토큰이 동명
+  const cand = last.replace(/\d?동$/, "");
+  if (cand.length >= 2) {
+    const partial = places.find((p) => p.name === last || p.name === cand || p.name === cand + "동" || p.name.replace(/\d?동$/, "") === cand);
+    if (partial) return partial;
   }
   return null;
 }

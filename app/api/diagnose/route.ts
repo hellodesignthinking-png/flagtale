@@ -17,6 +17,12 @@ import { computeSustainability } from "@/lib/sustainability";
 import { prescribeTenants } from "@/lib/tenant";
 import { diffusionFor } from "@/lib/diffusion";
 
+// 한국 정부 API(VWorld 지오코딩·KOSIS 등)는 한국 IP에서만 안정. Vercel 기본 리전 iad1(미국)이면
+// VWorld가 실패 → 좌표 매핑 불가 → 엉뚱한 동. 서울 리전(icn1)으로 고정해 정확한 행정동 매핑 보장.
+export const preferredRegion = "icn1";
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 // 스펙 §13: POST /api/diagnose {address|pnu} → (auth+credit) {trajectory, risks, strategy, reportId}
 // VWorld 실지오코딩(주소→좌표→행정동) → 동 매핑 → 진단. demoPaid 플래그로 권한(페이월) 시뮬레이션.
 export async function POST(req: NextRequest) {

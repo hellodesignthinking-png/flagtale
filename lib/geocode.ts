@@ -44,7 +44,7 @@ export async function geocodeAddress(query: string): Promise<GeoHit | null> {
       `https://api.vworld.kr/req/address?service=address&request=getcoord&version=2.0` +
       `&crs=epsg:4326&address=${encodeURIComponent(q)}&format=json&type=${kind}&key=${VWORLD_KEY}`;
     try {
-      const res = await fetch(url, { cache: "no-store" });
+      const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(6000) });
       const j = await res.json();
       const p = j?.response?.result?.point;
       if (j?.response?.status === "OK" && p) {
@@ -79,32 +79,35 @@ function inPolygon(lng: number, lat: number, rings: Ring[]): boolean {
   return true;
 }
 
-// bbox 인덱스 (1회 계산 캐시)
-type Indexed = { props: DistrictProps; rings: Ring[]; bbox: [number, number, number, number] };
+// bbox 인덱스 (1회 계산 캐시). Polygon·MultiPolygon 모두 지원 (전국 89개 동이 MultiPolygon —
+// 과거 단일 Polygon 가정으로 이 89개 동은 좌표 매핑 자체가 실패했음).
+type Indexed = { props: DistrictProps; polys: Ring[][]; bbox: [number, number, number, number] };
 let _idx: Indexed[] | null = null;
 function index(): Indexed[] {
   if (_idx) return _idx;
   _idx = loadDistricts().features.map((f) => {
-    // 데이터는 단일 Polygon
-    const rings = f.geometry.coordinates as unknown as Ring[];
+    const g = f.geometry as unknown as { type: string; coordinates: unknown };
+    // Polygon: coordinates = Ring[]  /  MultiPolygon: coordinates = Ring[][]
+    const polys: Ring[][] = g.type === "MultiPolygon" ? (g.coordinates as Ring[][]) : [g.coordinates as Ring[]];
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    for (const [x, y] of rings[0]) {
-      if (x < minX) minX = x;
-      if (x > maxX) maxX = x;
-      if (y < minY) minY = y;
-      if (y > maxY) maxY = y;
-    }
-    return { props: f.properties, rings, bbox: [minX, minY, maxX, maxY] };
+    for (const poly of polys)
+      for (const [x, y] of poly[0]) {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    return { props: f.properties, polys, bbox: [minX, minY, maxX, maxY] };
   });
   return _idx;
 }
 
-// 좌표 → 행정동 (bbox 프리필터 후 PIP)
+// 좌표 → 행정동 (bbox 프리필터 후 PIP, 멀티폴리곤은 구성 폴리곤 중 하나라도 포함하면 매칭)
 export function pointToDistrict(lng: number, lat: number): DistrictProps | null {
   for (const it of index()) {
     const [minX, minY, maxX, maxY] = it.bbox;
     if (lng < minX || lng > maxX || lat < minY || lat > maxY) continue;
-    if (inPolygon(lng, lat, it.rings)) return it.props;
+    for (const poly of it.polys) if (inPolygon(lng, lat, poly)) return it.props;
   }
   return null;
 }
