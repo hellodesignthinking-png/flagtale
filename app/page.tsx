@@ -2,6 +2,7 @@ import Link from "next/link";
 import { loadDistricts, loadScores } from "@/lib/data";
 import { SiteFooter } from "@/components/page-shell";
 import { ArticleCard, toCardItem } from "@/components/landing/ArticleCard";
+import { Carousel } from "@/components/landing/Carousel";
 import { NationalScatter, type ScatterPoint } from "@/components/landing/NationalScatter";
 import { CountUp } from "@/components/landing/CountUp";
 import { Reveal } from "@/components/landing/Reveal";
@@ -22,7 +23,6 @@ export default function LandingPage() {
   const declining = rows.filter((r) => r.s.momentum < -1).length;
   const feat = risers[0];
   const sideTwo = risers.slice(1, 3);
-  const gridSix = risers.slice(3, 9);
   const scatterPoints: ScatterPoint[] = [
     ...risers.map((r) => ({ name: r.name, momentum: r.momentum, lng: r.lng, lat: r.lat, kind: "riser" as const })),
     ...fallers.map((r) => ({ name: r.name, momentum: r.momentum, lng: r.lng, lat: r.lat, kind: "faller" as const })),
@@ -58,24 +58,24 @@ export default function LandingPage() {
             <h2 className="text-[1.4rem] font-extrabold tracking-tight sm:text-[1.7rem]">🔥 지금 뜨는 동네</h2>
             <Link href="/reports" className="text-[13px] font-bold text-blue-l hover:underline">주간 리포트 전체 →</Link>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {gridSix.map((it) => (
+          <Carousel>
+            {risers.map((it) => (
               <ArticleCard key={it.cd} item={it} />
             ))}
-          </div>
+          </Carousel>
         </Reveal>
 
         {/* 식어가는 동네 캐러셀 */}
         <Reveal as="section" className="py-6">
           <div className="mb-4 flex items-end justify-between">
             <h2 className="text-[1.4rem] font-extrabold tracking-tight sm:text-[1.7rem]">📉 식어가는 동네</h2>
-            <span className="text-[12px] font-bold text-muted2">옆으로 →</span>
+            <span className="text-[12px] font-bold text-muted2">← 화살표로 탐색 →</span>
           </div>
-          <div className="snap-row pb-2">
+          <Carousel>
             {fallers.map((it) => (
               <ArticleCard key={it.cd} item={it} />
             ))}
-          </div>
+          </Carousel>
         </Reveal>
 
         {/* 전국 한눈에 — 지도 + 카운트업 */}
