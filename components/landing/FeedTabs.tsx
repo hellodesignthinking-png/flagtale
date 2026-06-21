@@ -12,16 +12,12 @@ const TABS = [
 
 type TabKey = (typeof TABS)[number]["key"];
 
+const matches = (it: CardItem, key: TabKey) => (key === "rise" ? it.kind === "rise" : key === "fall" ? it.kind === "fall" : key === "gentri" ? it.gentriStage >= 3 : true);
+
 export function FeedTabs({ items }: { items: CardItem[] }) {
   const [tab, setTab] = useState<TabKey>("all");
-  const filtered = items
-    .filter((it) => {
-      if (tab === "rise") return it.kind === "rise";
-      if (tab === "fall") return it.kind === "fall";
-      if (tab === "gentri") return it.gentriStage >= 3;
-      return true;
-    })
-    .slice(0, 15);
+  const counts = Object.fromEntries(TABS.map((t) => [t.key, items.filter((it) => matches(it, t.key)).length])) as Record<TabKey, number>;
+  const filtered = items.filter((it) => matches(it, tab)).slice(0, 15);
 
   return (
     <div>
@@ -34,9 +30,10 @@ export function FeedTabs({ items }: { items: CardItem[] }) {
               type="button"
               onClick={() => setTab(t.key)}
               aria-pressed={active}
-              className={`rounded-full px-4 py-2 text-[13px] font-bold transition ${active ? "bg-amber text-onaccent" : "border border-line bg-card2 text-muted hover:border-blue/40 hover:text-ink"}`}
+              className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-bold transition ${active ? "bg-amber text-onaccent" : "border border-line bg-card2 text-muted hover:border-blue/40 hover:text-ink"}`}
             >
               {t.label}
+              <span className={`rounded-full px-1.5 text-[11px] font-extrabold ${active ? "bg-black/15" : "bg-navy/60 text-muted2"}`}>{counts[t.key]}</span>
             </button>
           );
         })}
