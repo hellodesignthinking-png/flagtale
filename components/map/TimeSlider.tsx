@@ -21,7 +21,7 @@ export function TimeSlider() {
     <div className="klai-panel flex items-center gap-3 px-4 py-2.5">
       <button
         onClick={togglePlay}
-        className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-amber text-[#ffffff] transition-transform hover:scale-105"
+        className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-amber text-onaccent transition-transform hover:scale-105"
         aria-label={playing ? "일시정지" : "재생"}
       >
         {playing ? (

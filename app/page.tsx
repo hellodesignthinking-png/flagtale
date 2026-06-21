@@ -42,7 +42,7 @@ export default function LandingPage() {
             전국 {total.toLocaleString()}개 행정동·로컬 매장의 활력·성장·위기를 13개 실데이터로 진단하고, <b className="text-ink">왜 뜨고 왜 지는지</b>까지 설명합니다.
           </p>
           <div className="fade-up mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Link href="/map" className="btn-glow rounded-full bg-amber px-7 py-3.5 text-[15px] font-extrabold text-white">🗺️ 매력도 지도 탐색</Link>
+            <Link href="/map" className="btn-glow rounded-full bg-amber px-7 py-3.5 text-[15px] font-extrabold text-onaccent">🗺️ 매력도 지도 탐색</Link>
             <Link href="/diagnose" className="rounded-full border border-line bg-card2 px-7 py-3.5 text-[15px] font-extrabold text-ink transition-colors hover:border-blue/50">우리 동네 진단 →</Link>
           </div>
         </section>
@@ -129,7 +129,7 @@ export default function LandingPage() {
             <h2 className="display-hero relative mt-2 text-3xl sm:text-[2.6rem]">매주 월요일, <span className="hl-mark">전국 동네 변화</span>를 메일로</h2>
             <p className="relative mx-auto mt-3 max-w-xl text-[14px] font-medium text-muted">성장·쇠퇴 동네와 그 이유를 연구자 관점으로 — 무료로 지도부터 둘러보세요.</p>
             <div className="relative mt-7 flex flex-wrap items-center justify-center gap-3">
-              <Link href="/reports" className="btn-glow rounded-full bg-amber px-7 py-3.5 text-[15px] font-extrabold text-white">주간 리포트 보기</Link>
+              <Link href="/reports" className="btn-glow rounded-full bg-amber px-7 py-3.5 text-[15px] font-extrabold text-onaccent">주간 리포트 보기</Link>
               <Link href="/auth" className="rounded-full border border-line bg-navy px-7 py-3.5 text-[15px] font-extrabold text-ink transition-colors hover:border-blue/50">회원가입 →</Link>
             </div>
           </div>

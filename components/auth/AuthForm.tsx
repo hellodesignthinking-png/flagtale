@@ -116,7 +116,7 @@ export function AuthForm() {
         <button
           onClick={submit}
           disabled={busy}
-          className="h-11 w-full rounded-lg bg-blue font-bold text-white hover:bg-[#4338ca] disabled:opacity-50"
+          className="h-11 w-full rounded-lg bg-blue font-bold text-white hover:bg-[#65a30d] disabled:opacity-50"
         >
           {busy ? "처리 중…" : mode === "signup" ? "회원가입" : "로그인"}
         </button>

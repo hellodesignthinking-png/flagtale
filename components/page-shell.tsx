@@ -31,6 +31,7 @@ const FOOTER_NAV: { title: string; links: { href: string; label: string }[] }[] 
       { href: "/reports", label: "리포트" },
       { href: "/data", label: "데이터 출처" },
       { href: "/methodology", label: "방법론" },
+      { href: "/design", label: "디자인 시스템" },
     ],
   },
   {

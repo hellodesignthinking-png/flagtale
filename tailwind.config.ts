@@ -24,6 +24,8 @@ const config: Config = {
         "blue-l": "var(--blue-l)",
         amber: "rgb(var(--amber-rgb) / <alpha-value>)",
         "amber-d": "var(--amber-d)",
+        onaccent: "var(--on-accent)", // 라임 위 텍스트(다크)
+        "accent-bright": "rgb(var(--accent-bright-rgb) / <alpha-value>)", // 비비드 라임(형광·배지)
         green: "var(--green)",
         "green-soft": "var(--green-soft)",
         ink: "var(--ink)",

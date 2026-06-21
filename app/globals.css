@@ -7,31 +7,33 @@
    ───────────────────────────────────────────────────────────── */
 /* ── 다크 테마 (지도·기본) — 공간디자인페어 '다크 섹션' 중성 차콜 ── */
 :root {
-  /* 미니멀 뉴트럴 (다크) — 중성 zinc/near-black + 단일 강조색 인디고 */
-  --navy: #0a0a0c;   /* 메인 배경 (중성 near-black) */
-  --navy2: #121215;
-  --card: #161619;
-  --card2: #1d1d22;
-  --line: #2a2a31;
-  --blue: #6366f1;   /* 단일 강조색 = 인디고 */
-  --blue-l: #818cf8;
-  /* CTA/브랜드 강조(구 amber 토큰) = 인디고로 통일 */
-  --amber: #6366f1;
-  --amber-d: #4f46e5;
-  --green: #34d399;  /* 긍정/성공(emerald) — 보조 시맨틱 */
+  /* ── careet 룩 (다크/지도) — near-black 중성 + 라임 강조 ── */
+  --navy: #0a0a0b;   /* 메인 배경 */
+  --navy2: #121214;
+  --card: #161618;
+  --card2: #1c1c1f;
+  --line: #2a2a2e;
+  --blue: #4d7c0f;   /* 다크 프라이머리(흰 텍스트 가독) */
+  --blue-l: #b6f24e; /* 링크·텍스트 강조(다크 위 밝은 라임) */
+  --amber: #a3e635;  /* 강조 채움(라임-400) */
+  --amber-d: #84cc16;
+  --on-accent: #14210a; /* 라임 위 텍스트(다크 그린-블랙) */
+  --accent-bright: #bef264; /* 비비드 라임(형광·배지) */
+  --green: #34d399;  /* 긍정(emerald) */
   --green-soft: #6ee7b7;
   --ink: #f4f4f5;
   --muted: #a1a1aa;
   --muted2: #71717a;
   --warn: #fb7185;   /* 경고(rose) */
 
-  /* 불투명도 수정자(bg-navy/95 등)용 RGB 채널 — Tailwind가 rgb(var(--x-rgb)/<alpha>)로 사용. */
-  --navy-rgb: 10 10 12;
-  --navy2-rgb: 18 18 21;
-  --card2-rgb: 29 29 34;
-  --line-rgb: 42 42 49;
-  --blue-rgb: 99 102 241;
-  --amber-rgb: 99 102 241;
+  /* 불투명도 수정자용 RGB 채널 */
+  --navy-rgb: 10 10 11;
+  --navy2-rgb: 18 18 20;
+  --card2-rgb: 28 28 31;
+  --line-rgb: 42 42 46;
+  --blue-rgb: 77 124 15;
+  --amber-rgb: 163 230 53;
+  --accent-bright-rgb: 190 242 100;
   --warn-rgb: 251 113 133;
 
   /* 등급 발산 스케일 (S→E) — 데이터 색, 양 테마 공통 */
@@ -48,16 +50,18 @@
 
 /* ── 라이트 에디토리얼 (콘텐츠 페이지) — 공간디자인페어 화이트 캔버스 ── */
 .theme-light {
-  /* 미니멀 뉴트럴 (라이트) — 화이트 + zinc 그레이 + 인디고 강조 */
+  /* ── careet 룩 (라이트/콘텐츠) — 화이트 + zinc + 라임 강조 ── */
   --navy: #ffffff;
   --navy2: #fafafa;
   --card: #ffffff;
-  --card2: #f4f4f5;   /* zinc-100 */
-  --line: #e4e4e7;    /* zinc-200 */
-  --blue: #4f46e5;    /* 인디고 */
-  --blue-l: #6366f1;
-  --amber: #4f46e5;   /* 인디고 CTA */
-  --amber-d: #4338ca;
+  --card2: #f5f6f3;   /* 라임 기운 살짝 도는 뉴트럴 */
+  --line: #e6e7e2;
+  --blue: #3f6212;    /* 다크 프라이머리(lime-800, 흰 텍스트 가독) */
+  --blue-l: #4d7c0f;  /* 링크·텍스트 강조(lime-700, 화이트 위 가독) */
+  --amber: #84cc16;   /* 강조 채움(lime-500) */
+  --amber-d: #65a30d; /* hover(lime-600) */
+  --on-accent: #1a2e05; /* 라임 위 텍스트(다크) */
+  --accent-bright: #a3e635; /* 비비드 라임(형광·배지) */
   --green: #059669;   /* emerald 긍정 */
   --green-soft: #34d399;
   --ink: #18181b;     /* zinc-900 */
@@ -67,10 +71,11 @@
   /* 불투명도 수정자용 RGB 채널 (라이트) */
   --navy-rgb: 255 255 255;
   --navy2-rgb: 250 250 250;
-  --card2-rgb: 244 244 245;
-  --line-rgb: 228 228 231;
-  --blue-rgb: 79 70 229;
-  --amber-rgb: 79 70 229;
+  --card2-rgb: 245 246 243;
+  --line-rgb: 230 231 226;
+  --blue-rgb: 63 98 18;
+  --amber-rgb: 132 204 22;
+  --accent-bright-rgb: 163 230 53;
   --warn-rgb: 225 29 72;
 }
 
@@ -90,10 +95,10 @@ body {
   -webkit-font-smoothing: antialiased;
   background-image: radial-gradient(
       1200px 600px at 80% -10%,
-      rgba(99, 102, 241, 0.13),
+      rgba(132, 204, 22, 0.14),
       transparent
     ),
-    radial-gradient(900px 520px at -10% 110%, rgba(99, 102, 241, 0.05), transparent);
+    radial-gradient(900px 520px at -10% 110%, rgba(132, 204, 22, 0.06), transparent);
   background-attachment: fixed;
 }
 
@@ -139,8 +144,8 @@ h3 {
     font-size: 12px;
     letter-spacing: 0.28em;
     text-transform: uppercase;
-    color: var(--amber);
-    font-weight: 700;
+    color: var(--blue-l); /* 라임은 채움 전용 — 텍스트는 가독 라임(lime-700) */
+    font-weight: 800;
   }
   .klai-tag {
     display: inline-flex;
@@ -150,9 +155,9 @@ h3 {
     font-weight: 700;
     padding: 3px 10px;
     border-radius: 999px;
-    background: rgba(99, 102, 241, 0.14);
-    color: var(--amber);
-    border: 1px solid rgba(99, 102, 241, 0.32);
+    background: rgba(132, 204, 22, 0.16);
+    color: var(--blue-l);
+    border: 1px solid rgba(132, 204, 22, 0.4);
   }
   .klai-tag-sample {
     background: rgba(146, 168, 198, 0.14);
@@ -164,7 +169,7 @@ h3 {
 @layer utilities {
   /* 그라데이션 텍스트 (트렌디 헤드라인) */
   .gradient-text {
-    background: linear-gradient(92deg, var(--blue-l), #a5b4fc 45%, var(--blue));
+    background: linear-gradient(92deg, var(--amber-d), var(--blue-l) 55%, var(--blue));
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -357,8 +362,8 @@ h3 {
   transition: box-shadow 0.2s, transform 0.1s, filter 0.2s;
 }
 .btn-glow:hover {
-  box-shadow: 0 10px 28px -10px color-mix(in srgb, var(--blue) 60%, transparent);
-  filter: brightness(1.05);
+  box-shadow: 0 10px 28px -10px color-mix(in srgb, var(--amber) 70%, transparent);
+  filter: brightness(1.04);
 }
 .btn-glow:active {
   transform: translateY(1px) scale(0.985);
@@ -467,7 +472,7 @@ h3 {
 }
 /* 형광펜 강조(careet 시그니처) */
 .hl-mark {
-  background-image: linear-gradient(transparent 56%, color-mix(in srgb, var(--blue) 24%, transparent) 0);
+  background-image: linear-gradient(transparent 54%, color-mix(in srgb, var(--accent-bright) 65%, transparent) 0);
   padding: 0 2px;
   border-radius: 2px;
 }
