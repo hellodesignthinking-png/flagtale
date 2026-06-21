@@ -210,7 +210,7 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd, mode = "parcel
               <button
                 onClick={() => searchBrand(query)}
                 disabled={searching || loading}
-                className="h-11 rounded-lg bg-amber px-5 text-[14px] font-bold text-[#1a1206] hover:bg-[#e0951f] disabled:opacity-50"
+                className="h-11 rounded-lg bg-amber px-5 text-[14px] font-bold text-[#1a1206] hover:bg-[#0fb53e] disabled:opacity-50"
               >
                 {searching ? "검색 중…" : "매장 검색"}
               </button>
@@ -234,7 +234,7 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd, mode = "parcel
               <button
                 onClick={() => runDiagnose(query)}
                 disabled={loading}
-                className="h-11 rounded-lg bg-amber px-5 text-[14px] font-bold text-[#1a1206] hover:bg-[#e0951f] disabled:opacity-50"
+                className="h-11 rounded-lg bg-amber px-5 text-[14px] font-bold text-[#1a1206] hover:bg-[#0fb53e] disabled:opacity-50"
               >
                 {loading ? "분석 중…" : "진단 실행"}
               </button>

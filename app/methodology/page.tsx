@@ -189,7 +189,7 @@ export default function MethodologyPage() {
         </ul>
         <div className="mt-4 flex flex-wrap gap-2 border-t border-line pt-4 text-[13px]">
           <Link href="/data" className="rounded-lg border border-line px-3 py-1.5 font-semibold text-ink hover:bg-card2">데이터 출처·연동 상태 →</Link>
-          <Link href="/diagnose" className="rounded-lg bg-amber px-3 py-1.5 font-bold text-[#1a1206] hover:bg-[#e0951f]">진단 리포트 보기 →</Link>
+          <Link href="/diagnose" className="rounded-lg bg-amber px-3 py-1.5 font-bold text-[#1a1206] hover:bg-[#0fb53e]">진단 리포트 보기 →</Link>
         </div>
       </Panel>
     </PageShell>

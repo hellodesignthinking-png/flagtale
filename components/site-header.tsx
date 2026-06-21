@@ -48,8 +48,8 @@ export function SiteHeader() {
                 key={n.href}
                 href={n.href}
                 className={cn(
-                  "rounded-md px-3 py-1.5 text-[13.5px] font-medium transition-colors",
-                  active ? "bg-card2 text-ink" : "text-muted hover:text-ink"
+                  "rounded-lg px-3 py-1.5 text-[13.5px] font-medium transition-all",
+                  active ? "bg-amber/12 text-ink ring-1 ring-amber/30" : "text-muted hover:bg-card2/70 hover:text-ink"
                 )}
               >
                 {n.label}
@@ -67,7 +67,7 @@ export function SiteHeader() {
           </Link>
           <Link
             href="/diagnose"
-            className="rounded-lg bg-amber px-3.5 py-1.5 text-[13.5px] font-bold text-[#1a1206] transition-colors hover:bg-[#e0951f]"
+            className="btn-glow rounded-lg bg-amber px-3.5 py-1.5 text-[13.5px] font-bold text-[#06210d] hover:bg-[#0fb53e]"
           >
             지번 진단
           </Link>
