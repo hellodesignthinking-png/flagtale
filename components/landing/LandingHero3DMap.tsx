@@ -14,18 +14,22 @@ export interface Hero3DPoint {
   cd: string;
   name: string;
   sigungu?: string;
+  typology?: string;
   lng: number;
   lat: number;
   klai: number;
   grade: string;
   momentum: number;
   reason?: string;
+  reasonDetail?: string;
   d1: number;
   d2: number;
   d3: number;
   d4: number;
   gentriStage: number;
   marketVitality: string;
+  popChangeRate?: number;
+  budgetInflow?: number;
   kind: "riser" | "faller";
 }
 
@@ -41,16 +45,16 @@ const GRADE_C: Record<string, string> = { S: "#0F6E5C", A: "#1E7A8C", B: "#3E9AA
 
 type Filter = "all" | "rise" | "fall";
 
-export default function LandingHero3DMap({ points }: { points: Hero3DPoint[] }) {
+export default function LandingHero3DMap({ points, onPick }: { points: Hero3DPoint[]; onPick?: (p: Hero3DPoint) => void }) {
   const mapEl = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const overlayRef = useRef<MapboxOverlay | null>(null);
   const draggingRef = useRef(false);
-  const autoRef = useRef(true);
+  const autoRef = useRef(false);
   const rafRef = useRef(0);
   const [ready, setReady] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
-  const [auto, setAuto] = useState(true);
+  const [auto, setAuto] = useState(false);
   const [labels, setLabels] = useState(true);
   const [selected, setSelected] = useState<Hero3DPoint | null>(points[0] ?? null);
   const [tip, setTip] = useState<{ x: number; y: number; p: Hero3DPoint } | null>(null);
@@ -86,6 +90,16 @@ export default function LandingHero3DMap({ points }: { points: Hero3DPoint[] }) 
     const overlay = new MapboxOverlay({ interleaved: true, effects: [LIGHTING], layers: [] });
     overlayRef.current = overlay;
     map.addControl(overlay);
+    // 지도페이지와 동일한 마우스 조작: 드래그=이동 · 우클릭/Ctrl+드래그=회전+기울이기 · 휠=줌
+    map.scrollZoom.enable();
+    map.doubleClickZoom.enable();
+    map.keyboard.enable();
+    map.dragPan.enable();
+    map.dragRotate.enable();
+    map.touchZoomRotate.enable();
+    map.touchZoomRotate.enableRotation();
+    map.touchPitch.enable();
+    map.getCanvasContainer().style.cursor = "grab";
     map.on("dragstart", () => (draggingRef.current = true));
     map.on("dragend", () => (draggingRef.current = false));
     map.on("load", () => {
@@ -138,8 +152,10 @@ export default function LandingHero3DMap({ points }: { points: Hero3DPoint[] }) 
           onHover: (info) => setTip(info.object ? { x: info.x, y: info.y, p: info.object as Hero3DPoint } : null),
           onClick: (info) => {
             if (info.object) {
-              selRef.current = info.object as Hero3DPoint;
-              setSelected(info.object as Hero3DPoint);
+              const o = info.object as Hero3DPoint;
+              selRef.current = o;
+              setSelected(o);
+              onPick?.(o);
             }
           },
           updateTriggers: { getFillColor: [selCd], getLineColor: [selCd] },
@@ -219,6 +235,10 @@ export default function LandingHero3DMap({ points }: { points: Hero3DPoint[] }) 
         <div className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full rounded-lg bg-[#0D2B5E] px-2.5 py-1.5 text-white shadow-xl ring-1 ring-white/10" style={{ left: tip.x, top: tip.y - 12 }}>
           <div className="text-[12px] font-extrabold">{tip.p.name}</div>
           <div className="text-[10.5px] text-[#cdd8ec]">KLAI {tip.p.klai} · 모멘텀 {tip.p.momentum >= 0 ? "+" : ""}{tip.p.momentum}</div>
+          {tip.p.reason && (
+            <div className="mt-0.5 text-[10.5px] font-bold" style={{ color: tip.p.kind === "riser" ? "#86efac" : "#fda4af" }}>{tip.p.reason}</div>
+          )}
+          <div className="mt-0.5 text-[10px] text-white/50">클릭 = 상세 팝업</div>
         </div>
       )}
 
@@ -255,7 +275,10 @@ export default function LandingHero3DMap({ points }: { points: Hero3DPoint[] }) 
             <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10.5px] font-bold text-white/85">시장 {VIT[selected.marketVitality] ?? "—"}</span>
             {selected.reason && <span className="rounded-full px-2 py-0.5 text-[10.5px] font-bold" style={{ background: "rgba(155,225,93,.18)", color: "#bef264" }}>{selected.reason}</span>}
           </div>
-          <Link href={`/diagnose?admCd=${selected.cd}`} className="btn-glow mt-3 block rounded-full bg-amber py-2 text-center text-[13px] font-extrabold text-onaccent">이 동네 지번 진단 →</Link>
+          {onPick && (
+            <button type="button" onClick={() => onPick(selected)} className="mt-3 w-full rounded-full border border-white/20 py-2 text-[12.5px] font-bold text-white/90 transition hover:bg-white/10">📊 전체 데이터 팝업</button>
+          )}
+          <Link href={`/diagnose?admCd=${selected.cd}`} className="btn-glow mt-2 block rounded-full bg-amber py-2 text-center text-[13px] font-extrabold text-onaccent">이 동네 지번 진단 →</Link>
         </div>
       )}
 

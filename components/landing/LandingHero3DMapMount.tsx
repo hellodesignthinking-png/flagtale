@@ -16,6 +16,6 @@ const Map = dynamic(() => import("./LandingHero3DMap"), {
   ),
 });
 
-export function LandingHero3DMapMount({ points }: { points: Hero3DPoint[] }) {
-  return <Map points={points} />;
+export function LandingHero3DMapMount({ points, onPick }: { points: Hero3DPoint[]; onPick?: (p: Hero3DPoint) => void }) {
+  return <Map points={points} onPick={onPick} />;
 }

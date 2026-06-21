@@ -4,10 +4,8 @@ import { SiteFooter } from "@/components/page-shell";
 import { ArticleCard, toCardItem, reasonInfo } from "@/components/landing/ArticleCard";
 import { Carousel } from "@/components/landing/Carousel";
 import { FeedTabs } from "@/components/landing/FeedTabs";
-import { LandingHero3DMapMount } from "@/components/landing/LandingHero3DMapMount";
+import { LiveMapSection } from "@/components/landing/LiveMapSection";
 import type { Hero3DPoint } from "@/components/landing/LandingHero3DMap";
-import { MomentumBars, type BarItem } from "@/components/landing/MomentumBars";
-import { CountUp } from "@/components/landing/CountUp";
 import { Reveal } from "@/components/landing/Reveal";
 
 const SOURCES = ["KOSIS 인구", "네이버 검색·기사", "소진공 상권", "한국부동산원 임대", "한국문화정보원", "나라장터 예산", "VWorld 지오코딩", "서울 생활인구", "카드 매출", "건축HUB"];
@@ -34,41 +32,26 @@ export default function LandingPage() {
     poolMap.set(it.cd, it);
   }
   const pool = [...poolMap.values()].sort((a, b) => Math.abs(b.momentum) - Math.abs(a.momentum));
-  const toHero = (r: ReturnType<typeof toCardItem>, kind: "riser" | "faller"): Hero3DPoint => ({
-    cd: r.cd, name: r.name, sigungu: r.sigungu, lng: r.lng, lat: r.lat,
-    klai: r.klai, grade: r.grade, momentum: r.momentum, reason: reasonInfo(r).label,
-    d1: r.d1, d2: r.d2, d3: r.d3, d4: r.d4, gentriStage: r.gentriStage, marketVitality: r.marketVitality, kind,
-  });
-  const hero3DPoints: Hero3DPoint[] = [...risers.map((r) => toHero(r, "riser")), ...fallers.map((r) => toHero(r, "faller"))];
-  const barItems: BarItem[] = [
-    ...risers.slice(0, 5).map((r) => ({ name: r.name, sigungu: r.sigungu, momentum: r.momentum, kind: "rise" as const })),
-    ...fallers.slice(0, 3).map((r) => ({ name: r.name, sigungu: r.sigungu, momentum: r.momentum, kind: "fall" as const })),
-  ];
+  const toHero = (r: ReturnType<typeof toCardItem>, kind: "riser" | "faller"): Hero3DPoint => {
+    const ri = reasonInfo(r);
+    return {
+      cd: r.cd, name: r.name, sigungu: r.sigungu, typology: r.typology, lng: r.lng, lat: r.lat,
+      klai: r.klai, grade: r.grade, momentum: r.momentum, reason: ri.label, reasonDetail: ri.detail,
+      d1: r.d1, d2: r.d2, d3: r.d3, d4: r.d4, gentriStage: r.gentriStage, marketVitality: r.marketVitality,
+      popChangeRate: r.popChangeRate, budgetInflow: r.budgetInflow, kind,
+    };
+  };
+  const livePoints: Hero3DPoint[] = [...risers.map((r) => toHero(r, "riser")), ...fallers.map((r) => toHero(r, "faller"))];
 
   return (
     <div className="theme-light relative min-h-screen overflow-hidden bg-navy pt-14 text-ink">
       <div className="deco-bg" aria-hidden />
 
-      {/* 풀폭 3D 라이브 맵 히어로 (상단·넓이 제한 없음) */}
-      <section className="relative z-10 h-[74vh] min-h-[560px] w-full border-b border-line">
-        <LandingHero3DMapMount points={hero3DPoints} />
-      </section>
+      {/* 풀폭 3D 라이브 맵 히어로 + 요약 + 상세 팝업 (넓이 제한 없음) */}
+      <LiveMapSection points={livePoints} total={total} rising={rising} declining={declining} />
 
       <main className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6">
-        {/* 이번 주 요약 — 카운트업 스탯 + 모멘텀 그래프 */}
-        <Reveal as="section" className="py-8">
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="grid grid-cols-2 content-center gap-3">
-              <Stat to={total} label="분석 행정동" />
-              <Stat to={13} label="실데이터 소스" />
-              <Stat to={rising} label="상승 동네" />
-              <Stat to={declining} label="위기 동네" warn />
-            </div>
-            <MomentumBars items={barItems} />
-          </div>
-        </Reveal>
-
-        <div className="flex flex-wrap items-end justify-between gap-3 pt-2 pb-5">
+        <div className="flex flex-wrap items-end justify-between gap-3 pt-6 pb-5">
           <div>
             <span className="klai-eyebrow">Local Trend Intelligence</span>
             <h1 className="mt-1.5 text-[1.7rem] font-extrabold tracking-tight sm:text-[2rem]">
@@ -154,15 +137,6 @@ export default function LandingPage() {
         </Reveal>
       </main>
       <SiteFooter />
-    </div>
-  );
-}
-
-function Stat({ to, label, warn }: { to: number; label: string; warn?: boolean }) {
-  return (
-    <div className="rounded-2xl border border-line bg-card2/50 px-4 py-5 text-center">
-      <CountUp to={to} className={`text-[1.7rem] font-black tracking-tight ${warn ? "text-warn" : "text-blue-l"}`} />
-      <div className="mt-1 text-[12px] text-muted2">{label}</div>
     </div>
   );
 }
