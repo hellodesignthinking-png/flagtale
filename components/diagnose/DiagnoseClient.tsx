@@ -39,6 +39,8 @@ import { GentriStageBar } from "@/components/charts/GentriStageBar";
 import { CausalLoop } from "@/components/charts/CausalLoop";
 import { SignalAnalysis } from "@/components/analysis/SignalAnalysis";
 import { DiagnoseMap } from "@/components/diagnose/DiagnoseMap";
+import { BrandReportView } from "@/components/diagnose/BrandReportView";
+import type { BrandReport } from "@/lib/brandReport";
 import { GRADE_LABEL, MARKET_LABEL, NARRATIVE_LABEL, TRAJECTORY_LABEL } from "@/lib/constants";
 
 interface DiagnoseResult {
@@ -69,6 +71,7 @@ interface DiagnoseResult {
   sustainability: Sustainability | null;
   tenantRx: TenantRx | null;
   diffusion: DiffusionResult | null;
+  brand: BrandReport | null;
   periods: string[];
   reportId: string;
 }
@@ -162,7 +165,7 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd, mode = "parcel
       const res = await fetch("/api/diagnose", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lng: c.lng, lat: c.lat, label: c.name }),
+        body: JSON.stringify({ lng: c.lng, lat: c.lat, label: c.name, category: c.category }),
       });
       if (!res.ok) {
         const e = await res.json();
@@ -301,6 +304,9 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd, mode = "parcel
               </a>
             </div>
           )}
+
+          {/* 브랜드(매장) 중심 진단 — 신호·경쟁력·임대료·성장·위기 */}
+          {result.brand && <BrandReportView brand={result.brand} dongName={result.place.name} />}
 
           {/* 매핑 헤더 */}
           <div className="klai-panel flex flex-wrap items-center justify-between gap-4 p-5">

@@ -16,6 +16,7 @@ import { attributeDrivers } from "@/lib/driver";
 import { computeSustainability } from "@/lib/sustainability";
 import { prescribeTenants } from "@/lib/tenant";
 import { diffusionFor } from "@/lib/diffusion";
+import { buildBrandReport } from "@/lib/brandReport";
 
 // 한국 정부 API(VWorld 지오코딩·KOSIS 등)는 한국 IP에서만 안정. Vercel 기본 리전 iad1(미국)이면
 // VWorld가 실패 → 좌표 매핑 불가 → 엉뚱한 동. 서울 리전(icn1)으로 고정해 정확한 행정동 매핑 보장.
@@ -26,7 +27,7 @@ export const dynamic = "force-dynamic";
 // 스펙 §13: POST /api/diagnose {address|pnu} → (auth+credit) {trajectory, risks, strategy, reportId}
 // VWorld 실지오코딩(주소→좌표→행정동) → 동 매핑 → 진단. demoPaid 플래그로 권한(페이월) 시뮬레이션.
 export async function POST(req: NextRequest) {
-  let body: { admCd?: string; address?: string; pnu?: string; demoPaid?: boolean; lng?: number; lat?: number; label?: string } = {};
+  let body: { admCd?: string; address?: string; pnu?: string; demoPaid?: boolean; lng?: number; lat?: number; label?: string; category?: string } = {};
   try {
     body = await req.json();
   } catch {
@@ -66,7 +67,8 @@ export async function POST(req: NextRequest) {
 
   // 외부 커넥터 병렬 호출 — 순차 await 시 도달 불가한 서울 API 타임아웃(각 7~8s)이
   // 누적돼 콜드 17s+. 병렬이면 가장 느린 커넥터(~8s)로 수렴. 각자 graceful null.
-  const [naver, sangga, anchor, reb, sales, living, culture, venues, social, youtube] = await Promise.all([
+  const storeName = body.label ?? ""; // 브랜드 진단이면 매장명 — 매장 신호도 같은 병렬 배치로(타임아웃 방지)
+  const [naver, sangga, anchor, reb, sales, living, culture, venues, social, youtube, storeSocial, storeInterest] = await Promise.all([
     naverInterest(sname).catch(() => null), // D4·모멘텀(검색·기사)
     sanggaStats(sLng, sLat).catch(() => null), // 소진공 점포 업종·다양성
     anchorStores(sname, { lng: sLng, lat: sLat }, 1000).catch(() => null), // 반경 1km 앵커 버즈
@@ -77,6 +79,8 @@ export async function POST(req: NextRequest) {
     localVenues(sname, { lng: sLng, lat: sLat }, 1200).catch(() => null), // 갤러리·도서관·책방·공연장·체육관·공원
     socialBuzz(sname).catch(() => null), // 소셜 등록수(블로그·카페) + 긍부정
     youtubeBuzz(sname).catch(() => null), // 유튜브 영상 + 긍부정 (YOUTUBE_API_KEY 필요)
+    storeName ? socialBuzz(storeName).catch(() => null) : Promise.resolve(null), // 매장명 블로그·카페 등록수 + 감성
+    storeName ? naverInterest(storeName).catch(() => null) : Promise.resolve(null), // 매장명 검색 관심도 추세
   ]);
 
   // 실측 보정(네이버 D4·모멘텀)·동인 분해는 위 결과에 의존 → 병렬 후 계산
@@ -86,6 +90,21 @@ export async function POST(req: NextRequest) {
   const sustainability = computeSustainability({ latest: bundle.latest, corrected, sangga, reb, social });
   const tenantRx = prescribeTenants(sangga); // 업종 처방(부족 업종 추천) — 모듈 D
   const diffusion = diffusionFor(place.admCd2); // 확산 경로(다음 확장 후보 동) — 모듈 A
+
+  // 브랜드(매장) 진단 — 매장명(label)이 오면 그 매장 자체의 신호·경쟁력·성장·위기 분석
+  const brand = body.label
+    ? buildBrandReport({
+        name: body.label,
+        category: body.category ?? "",
+        storeSocial,
+        storeSearchTrend: storeInterest?.searchTrend ?? null,
+        anchor,
+        sangga,
+        reb,
+        latest: bundle.latest,
+        gentriStage: bundle.diagnosis?.gentriStage ?? bundle.latest.gentriStage,
+      })
+    : null;
 
   return NextResponse.json({
     query,
@@ -117,6 +136,7 @@ export async function POST(req: NextRequest) {
     sustainability, // 매력×지속가능성 2축(상생지수·4분면·대형화·수익성 가위)
     tenantRx, // 업종 처방(부족 업종 추천 Top3) — 모듈 D
     diffusion, // 확산 경로(인접 핫동 + 다음 확장 후보 동) — 모듈 A
+    brand, // 브랜드 진단(매장 신호·경쟁력·임대료·성장·위기) — label 있을 때만
     periods: bundle.series.map((s) => s.period),
     entitled,
     reportId: `parcel_${place.admCd2}_${bundle.latest.period}`,
