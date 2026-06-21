@@ -14,6 +14,8 @@ export interface WeeklyRiser {
   grade: Grade;
   momentum: number;
   reason: string; // 연구자 한 줄 — 왜 뜨/지는가
+  lng: number; // 행정동 중심 좌표(전국 지도 핀)
+  lat: number;
 }
 export interface WeeklyNational {
   totalDongs: number;
@@ -35,7 +37,7 @@ export interface WeeklyBlocks {
   cliffs: { admCd2: string; name: string; sigungu: string; klai: number; reason: string }[];
   narrativesHot: string[];
   narrativesCold: string[];
-  spotlight: { admCd2: string; name: string; sigungu: string; klai: number; grade: Grade; momentum: number; writeup: string };
+  spotlight: { admCd2: string; name: string; sigungu: string; klai: number; grade: Grade; momentum: number; writeup: string; lng: number; lat: number };
   methodologyNote: string;
 }
 
@@ -90,7 +92,7 @@ function seedFrom(iso: string): number {
 }
 
 type NatBase = {
-  rows: { p: PlaceScore; name: string; sigungu: string; typology: string; admCd2: string }[];
+  rows: { p: PlaceScore; name: string; sigungu: string; typology: string; admCd2: string; lng: number; lat: number }[];
   national: Omit<WeeklyNational, "topTypology"> & { topTypology: string };
 };
 let _natBase: NatBase | null = null;
@@ -109,7 +111,7 @@ function nationalBase(): NatBase {
     const p = series[series.length - 1];
     const props = propByCd.get(admCd2);
     if (!props) continue;
-    rows.push({ p, name: props.name, sigungu: props.sigungu, typology: props.typology || "주거", admCd2 });
+    rows.push({ p, name: props.name, sigungu: props.sigungu, typology: props.typology || "주거", admCd2, lng: props.centroidLng, lat: props.centroidLat });
   }
 
   const n = rows.length || 1;
@@ -190,10 +192,10 @@ export function computeWeekly(year: number, week: number): Report {
   const fallersPool = [...rows].filter((r) => r.p.momentum < 0).sort((a, b) => a.p.momentum - b.p.momentum).slice(0, 36);
 
   const risers: WeeklyRiser[] = pickWindow(risersPool, seed, 6).map((r) => ({
-    admCd2: r.admCd2, name: r.name, sigungu: r.sigungu, klai: r.p.klai, grade: r.p.grade, momentum: r.p.momentum, reason: riserReason(r.p),
+    admCd2: r.admCd2, name: r.name, sigungu: r.sigungu, klai: r.p.klai, grade: r.p.grade, momentum: r.p.momentum, reason: riserReason(r.p), lng: r.lng, lat: r.lat,
   }));
   const fallers: WeeklyRiser[] = pickWindow(fallersPool, seed * 7 + 3, 6).map((r) => ({
-    admCd2: r.admCd2, name: r.name, sigungu: r.sigungu, klai: r.p.klai, grade: r.p.grade, momentum: r.p.momentum, reason: fallerReason(r.p),
+    admCd2: r.admCd2, name: r.name, sigungu: r.sigungu, klai: r.p.klai, grade: r.p.grade, momentum: r.p.momentum, reason: fallerReason(r.p), lng: r.lng, lat: r.lat,
   }));
 
   const gentriPool = [...rows].filter((r) => r.p.gentriFlag || r.p.gentriStage >= 3).sort((a, b) => b.p.gentriG - a.p.gentriG);
@@ -208,7 +210,7 @@ export function computeWeekly(year: number, week: number): Report {
   }));
 
   // 스포트라이트 — 이번 주 risers 1위(서술형)
-  const sp = risers[0] ?? { admCd2: rows[0].admCd2, name: rows[0].name, sigungu: rows[0].sigungu, klai: rows[0].p.klai, grade: rows[0].p.grade, momentum: rows[0].p.momentum, reason: "" };
+  const sp = risers[0] ?? { admCd2: rows[0].admCd2, name: rows[0].name, sigungu: rows[0].sigungu, klai: rows[0].p.klai, grade: rows[0].p.grade, momentum: rows[0].p.momentum, reason: "", lng: rows[0].lng, lat: rows[0].lat };
   const writeup =
     `${sp.sigungu} ${sp.name}은 이번 주 전국 상위 모멘텀(+${sp.momentum})을 기록했다. ${sp.reason} ` +
     `검색·기사 등 서사 지표가 인구·상권에 선행하는 건강한 티핑 양상으로, 임대료가 이야기를 추월하지 않는 한 상승이 지속될 구조다. ` +
@@ -246,7 +248,7 @@ export function computeWeekly(year: number, week: number): Report {
       cliffs,
       narrativesHot,
       narrativesCold,
-      spotlight: { admCd2: sp.admCd2, name: sp.name, sigungu: sp.sigungu, klai: sp.klai, grade: sp.grade, momentum: sp.momentum, writeup },
+      spotlight: { admCd2: sp.admCd2, name: sp.name, sigungu: sp.sigungu, klai: sp.klai, grade: sp.grade, momentum: sp.momentum, writeup, lng: sp.lng, lat: sp.lat },
       methodologyNote: "KLAI 4축(인구·상권·공간·인식) 합성 + 모멘텀(축별 변화율 z-합). 검색·기사=네이버/BIG KINDS, 인구=KOSIS, 상권=소진공. 표본·잠정(Provisional) — 실데이터 확대 시 정밀화.",
     } as unknown as Record<string, unknown>,
   };

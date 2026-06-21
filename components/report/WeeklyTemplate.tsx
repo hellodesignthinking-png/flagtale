@@ -3,12 +3,32 @@ import type { Report } from "@/lib/types";
 import type { WeeklyBlocks } from "@/lib/weekly";
 import { GradeBadge, MomentumChip, Pill, ProvisionalBadge } from "@/components/ui";
 import { GRADE_HEX } from "@/lib/constants";
+import { DonutChart } from "@/components/charts/DonutChart";
+import { WeeklyMap, type WeeklyMapPoint } from "@/components/report/WeeklyMap";
 
 // Flagtale Weekly — 주간 웹진 (스펙 §10.1). 연구자 관점: 전국 변화·검색·인구 + 성장/쇠퇴 사유.
 // 클라이언트 인쇄/PDF 버튼 없음(§15).
 export function WeeklyTemplate({ report }: { report: Report }) {
   const b = report.blocks as unknown as WeeklyBlocks;
   const n = b.national;
+
+  // 전국 지도 핀(성장/쇠퇴/스포트라이트, admCd2 중복 제거 — 스포트라이트 우선)
+  const points: WeeklyMapPoint[] = [];
+  const seen = new Set<string>();
+  const pushPt = (p: { admCd2: string; name: string; sigungu: string; klai: number; momentum: number; lng: number; lat: number; reason?: string }, kind: WeeklyMapPoint["kind"]) => {
+    if (!p.admCd2 || seen.has(p.admCd2)) return;
+    seen.add(p.admCd2);
+    points.push({ admCd2: p.admCd2, name: p.name, sigungu: p.sigungu, klai: p.klai, momentum: p.momentum, lng: p.lng, lat: p.lat, reason: p.reason, kind });
+  };
+  pushPt(b.spotlight, "spotlight");
+  b.risers.forEach((r) => pushPt(r, "riser"));
+  b.fallers.forEach((r) => pushPt(r, "faller"));
+
+  // 상승/하락/보합 구성(도넛)
+  const rising = n.risingCount;
+  const declining = n.decliningCount;
+  const neutral = Math.max(0, n.totalDongs - rising - declining);
+  const risePct = Math.round((rising / (n.totalDongs || 1)) * 100);
 
   return (
     <article className="space-y-8">
@@ -23,6 +43,43 @@ export function WeeklyTemplate({ report }: { report: Report }) {
         {/* 전국 요약 — 연구자 서술 */}
         <p className="mt-4 max-w-3xl text-[14px] leading-relaxed text-ink/90">{b.overview}</p>
       </header>
+
+      {/* 전국 변화 지도 + 상승/하락 구성 */}
+      <section className="klai-panel p-5">
+        <div className="mb-3 flex items-center gap-2">
+          <span className="h-4 w-1 rounded bg-blue" />
+          <h2 className="text-[15px] font-extrabold">전국 변화 지도 — 이주의 핵심 동네</h2>
+        </div>
+        <div className="grid gap-4 lg:grid-cols-[1.7fr_1fr]">
+          <div>
+            <WeeklyMap points={points} />
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11.5px]">
+              <Legend color="#1f9d57" label="▲ 성장 동네" />
+              <Legend color="#d2691e" label="▼ 쇠퇴 동네" />
+              <Legend color="#D4861E" label="★ 스포트라이트" />
+              <span className="text-muted2">핀을 누르면 사유·진단 링크가 열립니다</span>
+            </div>
+          </div>
+          <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-line bg-card2/40 p-4">
+            <div className="text-[12px] font-bold text-muted2">전국 상승 / 하락 구성</div>
+            <DonutChart
+              segments={[
+                { label: "상승", value: rising, color: "#3E9AA8" },
+                { label: "하락", value: declining, color: "#D2691E" },
+                { label: "보합", value: neutral, color: "#2a3550" },
+              ]}
+              size={150}
+              centerLabel={`${risePct}%`}
+              centerSub="상승 비중"
+            />
+            <div className="grid w-full grid-cols-3 gap-2 text-center">
+              <MiniStat label="상승" value={rising.toLocaleString()} color="#3E9AA8" />
+              <MiniStat label="하락" value={declining.toLocaleString()} color="#D2691E" />
+              <MiniStat label="보합" value={neutral.toLocaleString()} color="var(--muted2)" />
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* 전국 지표 인포그래픽 스트립 */}
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
@@ -44,6 +101,16 @@ export function WeeklyTemplate({ report }: { report: Report }) {
           <ReasonList rows={b.fallers} dir="down" />
         </Block>
       </section>
+
+      {/* 1-b. 모멘텀 스펙트럼 (다이버징 바) */}
+      <Block title="① 이주의 모멘텀 스펙트럼 — 상위 변동 동네">
+        <MomentumSpectrum risers={b.risers} fallers={b.fallers} />
+        <div className="mt-2 flex items-center justify-center gap-4 text-[11px] text-muted2">
+          <Legend color="#3E9AA8" label="상승(+)" />
+          <Legend color="#D2691E" label="하락(−)" />
+          <span>막대 길이 = 모멘텀 크기</span>
+        </div>
+      </Block>
 
       {/* 2. 경보 */}
       <section className="grid gap-4 md:grid-cols-2">
@@ -200,6 +267,58 @@ function Kpi({ label, value, unit, accent, icon }: { label: string; value: numbe
         </span>
         <span className="text-[11px] text-muted2">{unit}</span>
       </div>
+    </div>
+  );
+}
+
+function Legend({ color, label }: { color: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 font-semibold" style={{ color }}>
+      <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: color, boxShadow: `0 0 6px ${color}` }} />
+      {label}
+    </span>
+  );
+}
+
+function MiniStat({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <div className="rounded-lg border border-line bg-navy/40 py-2">
+      <div className="text-lg font-black tabular-nums" style={{ color }}>
+        {value}
+      </div>
+      <div className="text-[10.5px] text-muted2">{label}</div>
+    </div>
+  );
+}
+
+// 다이버징 바 — 상승(우/청록)·하락(좌/주황) 모멘텀을 한눈에
+function MomentumSpectrum({ risers, fallers }: { risers: WeeklyBlocks["risers"]; fallers: WeeklyBlocks["fallers"] }) {
+  const all = [...risers.map((r) => ({ ...r, up: true })), ...fallers.map((r) => ({ ...r, up: false }))].sort((a, b) => b.momentum - a.momentum);
+  const maxAbs = Math.max(1, ...all.map((r) => Math.abs(r.momentum)));
+  return (
+    <div className="space-y-1">
+      {all.map((r) => {
+        const pct = (Math.abs(r.momentum) / maxAbs) * 48; // 좌/우 각 48%
+        const color = r.up ? "#3E9AA8" : "#D2691E";
+        return (
+          <div key={r.admCd2} className="flex items-center gap-2 text-[11.5px]">
+            <Link href={`/place/${r.admCd2}`} className="w-24 shrink-0 truncate text-right text-muted hover:text-ink">
+              {r.name}
+            </Link>
+            <div className="relative h-3.5 flex-1">
+              <div className="absolute left-1/2 top-0 h-full w-px bg-line" />
+              <div
+                className="absolute top-0 h-full rounded"
+                style={r.up ? { left: "50%", width: `${pct}%`, background: color, boxShadow: `0 0 5px ${color}66` } : { right: "50%", width: `${pct}%`, background: color, boxShadow: `0 0 5px ${color}66` }}
+              />
+            </div>
+            <span className="w-10 shrink-0 text-right font-bold tabular-nums" style={{ color }}>
+              {r.up ? "+" : ""}
+              {r.momentum}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }

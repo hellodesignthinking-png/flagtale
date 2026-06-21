@@ -27,7 +27,7 @@ export default function ReportViewer({ params }: { params: { slug: string } }) {
   if (!report) notFound();
 
   return (
-    <PageShell width="narrow">
+    <PageShell width={report.kind === "weekly" ? "default" : "narrow"}>
       <div className="mb-5 text-[13px] text-muted2">
         <Link href="/reports" className="hover:text-ink">
           ← 리포트 아카이브
