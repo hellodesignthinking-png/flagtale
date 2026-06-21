@@ -34,10 +34,12 @@ export default function LandingPage() {
     poolMap.set(it.cd, it);
   }
   const pool = [...poolMap.values()].sort((a, b) => Math.abs(b.momentum) - Math.abs(a.momentum));
-  const hero3DPoints: Hero3DPoint[] = [
-    ...risers.map((r) => ({ name: r.name, sigungu: r.sigungu, klai: r.klai, momentum: r.momentum, lng: r.lng, lat: r.lat, kind: "riser" as const, reason: reasonInfo(r).label })),
-    ...fallers.map((r) => ({ name: r.name, sigungu: r.sigungu, klai: r.klai, momentum: r.momentum, lng: r.lng, lat: r.lat, kind: "faller" as const, reason: reasonInfo(r).label })),
-  ];
+  const toHero = (r: ReturnType<typeof toCardItem>, kind: "riser" | "faller"): Hero3DPoint => ({
+    cd: r.cd, name: r.name, sigungu: r.sigungu, lng: r.lng, lat: r.lat,
+    klai: r.klai, grade: r.grade, momentum: r.momentum, reason: reasonInfo(r).label,
+    d1: r.d1, d2: r.d2, d3: r.d3, d4: r.d4, gentriStage: r.gentriStage, marketVitality: r.marketVitality, kind,
+  });
+  const hero3DPoints: Hero3DPoint[] = [...risers.map((r) => toHero(r, "riser")), ...fallers.map((r) => toHero(r, "faller"))];
   const barItems: BarItem[] = [
     ...risers.slice(0, 5).map((r) => ({ name: r.name, sigungu: r.sigungu, momentum: r.momentum, kind: "rise" as const })),
     ...fallers.slice(0, 3).map((r) => ({ name: r.name, sigungu: r.sigungu, momentum: r.momentum, kind: "fall" as const })),
@@ -46,8 +48,27 @@ export default function LandingPage() {
   return (
     <div className="theme-light relative min-h-screen overflow-hidden bg-navy pt-14 text-ink">
       <div className="deco-bg" aria-hidden />
+
+      {/* 풀폭 3D 라이브 맵 히어로 (상단·넓이 제한 없음) */}
+      <section className="relative z-10 h-[74vh] min-h-[560px] w-full border-b border-line">
+        <LandingHero3DMapMount points={hero3DPoints} />
+      </section>
+
       <main className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="flex flex-wrap items-end justify-between gap-3 pt-10 pb-5">
+        {/* 이번 주 요약 — 카운트업 스탯 + 모멘텀 그래프 */}
+        <Reveal as="section" className="py-8">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="grid grid-cols-2 content-center gap-3">
+              <Stat to={total} label="분석 행정동" />
+              <Stat to={13} label="실데이터 소스" />
+              <Stat to={rising} label="상승 동네" />
+              <Stat to={declining} label="위기 동네" warn />
+            </div>
+            <MomentumBars items={barItems} />
+          </div>
+        </Reveal>
+
+        <div className="flex flex-wrap items-end justify-between gap-3 pt-2 pb-5">
           <div>
             <span className="klai-eyebrow">Local Trend Intelligence</span>
             <h1 className="mt-1.5 text-[1.7rem] font-extrabold tracking-tight sm:text-[2rem]">
@@ -87,41 +108,6 @@ export default function LandingPage() {
             <span className="text-[12px] font-bold text-muted2">카테고리로 골라보기</span>
           </div>
           <FeedTabs items={pool} />
-        </Reveal>
-
-        {/* 지금 움직이는 동네 — 실제 맵 위 3D 컬럼(활성·위기만) + 스탯·그래프 */}
-        <Reveal as="section" className="py-10">
-          <div className="mb-4 flex items-end justify-between">
-            <div>
-              <span className="klai-eyebrow">3D Live Map · 활성 · 위기</span>
-              <h2 className="mt-1 text-[1.5rem] font-extrabold tracking-tight sm:text-[1.9rem]">지금 <span className="hl-mark">움직이는</span> 동네만, 지도 위 3D로</h2>
-            </div>
-            <Link href="/map" className="hidden shrink-0 rounded-full border border-line bg-card2 px-4 py-2 text-[13px] font-bold text-ink transition-colors hover:border-blue/50 sm:inline-block">인터랙티브 지도 →</Link>
-          </div>
-          <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
-            <div className="lift overflow-hidden rounded-2xl border border-line bg-navy">
-              <div className="relative h-[320px] w-full sm:h-[470px]">
-                <LandingHero3DMapMount points={hero3DPoints} />
-                <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-full bg-[#0D2B5E]/85 px-2.5 py-1 text-[11px] font-bold text-white/90">기둥 높이 = KLAI · 🟢 상승 / 🔴 하락 · 드래그·휠</div>
-              </div>
-              <Link href="/map" className="group flex items-center justify-between border-t border-line bg-card2/40 px-4 py-3">
-                <div className="truncate text-[14px] font-extrabold text-ink group-hover:text-blue-l">활성·위기 {hero3DPoints.length}개 동네를 지도 위에 · 인터랙티브 →</div>
-                <div className="flex shrink-0 gap-1.5">
-                  <span className="status-pill" style={{ background: "color-mix(in srgb, var(--gB) 16%, transparent)", color: "var(--gB)" }}>▲ {rising.toLocaleString()}</span>
-                  <span className="status-pill border border-warn/40 text-warn">▼ {declining.toLocaleString()}</span>
-                </div>
-              </Link>
-            </div>
-            <div className="flex flex-col gap-3">
-              <div className="grid grid-cols-2 gap-3">
-                <Stat to={total} label="분석 행정동" />
-                <Stat to={13} label="실데이터 소스" />
-                <Stat to={rising} label="상승 동네" />
-                <Stat to={declining} label="위기 동네" warn />
-              </div>
-              <MomentumBars items={barItems} />
-            </div>
-          </div>
         </Reveal>
 
         {/* 데이터 소스 마퀴 */}
