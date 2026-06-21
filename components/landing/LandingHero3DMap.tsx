@@ -45,6 +45,49 @@ const GRADE_C: Record<string, string> = { S: "#0F6E5C", A: "#1E7A8C", B: "#3E9AA
 
 type Filter = "all" | "rise" | "fall";
 
+// 4축 레이더(인구·상권·공간·인식) — 다크 패널용
+function Radar4({ d1, d2, d3, d4 }: { d1: number; d2: number; d3: number; d4: number }) {
+  const S = 172;
+  const c = S / 2;
+  const R = 50;
+  const axes = [
+    { k: "인구", v: d1, a: -90 },
+    { k: "상권", v: d2, a: 0 },
+    { k: "공간", v: d3, a: 90 },
+    { k: "인식", v: d4, a: 180 },
+  ];
+  const pt = (v: number, a: number): [number, number] => {
+    const r = (Math.max(0, Math.min(100, v)) / 100) * R;
+    const rad = (a * Math.PI) / 180;
+    return [c + r * Math.cos(rad), c + r * Math.sin(rad)];
+  };
+  const poly = axes.map((x) => pt(x.v, x.a).join(",")).join(" ");
+  return (
+    <svg viewBox={`0 0 ${S} ${S}`} className="mx-auto h-[150px] w-[150px]" role="img" aria-label="4대 축 레이더">
+      {[0.25, 0.5, 0.75, 1].map((t) => (
+        <circle key={t} cx={c} cy={c} r={R * t} fill="none" stroke="rgba(255,255,255,.14)" strokeWidth={1} />
+      ))}
+      {axes.map((x) => {
+        const [ex, ey] = pt(100, x.a);
+        return <line key={x.k} x1={c} y1={c} x2={ex} y2={ey} stroke="rgba(255,255,255,.14)" strokeWidth={1} />;
+      })}
+      <polygon points={poly} fill="rgba(155,225,93,.28)" stroke="#9be15d" strokeWidth={2} />
+      {axes.map((x) => {
+        const [px, py] = pt(x.v, x.a);
+        return <circle key={x.k} cx={px} cy={py} r={2.6} fill="#bef264" />;
+      })}
+      {axes.map((x) => {
+        const [lx, ly] = pt(128, x.a);
+        return (
+          <text key={x.k} x={lx} y={ly} fontSize={10.5} fontWeight={800} fill="#cdd8ec" textAnchor="middle" dominantBaseline="middle">
+            {x.k} {Math.round(x.v)}
+          </text>
+        );
+      })}
+    </svg>
+  );
+}
+
 export default function LandingHero3DMap({ points, onPick }: { points: Hero3DPoint[]; onPick?: (p: Hero3DPoint) => void }) {
   const mapEl = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -258,17 +301,9 @@ export default function LandingHero3DMap({ points, onPick }: { points: Hero3DPoi
               {selected.kind === "riser" ? "▲" : "▼"} 모멘텀 {selected.momentum >= 0 ? "+" : ""}{selected.momentum}
             </span>
           </div>
-          {/* 4축 막대 그래프 */}
-          <div className="mt-3 space-y-1.5">
-            {([["인구·지속", selected.d1], ["경제·상권", selected.d2], ["공간·물리", selected.d3], ["인식·감성", selected.d4]] as [string, number][]).map(([k, v]) => (
-              <div key={k} className="flex items-center gap-2">
-                <span className="w-12 shrink-0 text-[10.5px] text-white/60">{k}</span>
-                <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-white/12">
-                  <div className="absolute inset-y-0 left-0 rounded-full bg-[#9be15d]" style={{ width: `${Math.max(0, Math.min(100, v))}%` }} />
-                </div>
-                <span className="w-6 shrink-0 text-right text-[10.5px] font-bold tabular-nums text-white/85">{Math.round(v)}</span>
-              </div>
-            ))}
+          {/* 4축 레이더 그래프 — 점수를 형태로 */}
+          <div className="mt-2">
+            <Radar4 d1={selected.d1} d2={selected.d2} d3={selected.d3} d4={selected.d4} />
           </div>
           <div className="mt-3 flex flex-wrap gap-1">
             <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10.5px] font-bold text-white/85">젠트리 {selected.gentriStage}단계</span>

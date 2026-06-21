@@ -42,7 +42,9 @@ export default function LandingPage() {
       popChangeRate: r.popChangeRate, budgetInflow: r.budgetInflow, kind,
     };
   };
-  const livePoints: Hero3DPoint[] = [...risers.map((r) => toHero(r, "riser")), ...fallers.map((r) => toHero(r, "faller"))];
+  // 3D 지도는 더 많은 동네로 밀도 있게 (도시당 하나가 아니라 상승 30 + 하락 14)
+  const mapMovers = [...byMom.slice(0, 30), ...byMom.slice(-14)];
+  const livePoints: Hero3DPoint[] = mapMovers.map((it) => toHero(it, it.momentum >= 0 ? "riser" : "faller"));
 
   return (
     <div className="theme-light relative min-h-screen overflow-hidden bg-navy pt-14 text-ink">

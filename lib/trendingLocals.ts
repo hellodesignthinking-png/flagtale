@@ -30,6 +30,13 @@ export const TRENDING_LOCALS: TrendingLocal[] = [
   { name: "강릉 명주동", region: "강원 강릉", cat: "creator", blurb: "근대 골목 명주동에 로컬 카페·문화공간이 자리. 관광 강릉의 ‘로컬’ 축.", tags: ["근대골목", "로컬카페", "문화공간"], query: "강릉 명주동", apiQuery: "강릉 명주동", igTag: "강릉명주동" },
   { name: "양양", region: "강원 양양", cat: "tour", blurb: "서피비치를 중심으로 서핑·로컬 펍·세컨하우스. 동해안 라이프스타일 성지.", tags: ["서핑", "서피비치", "동해안"], query: "양양 서피비치 서핑", apiQuery: "양양 서핑", igTag: "양양서피비치" },
   { name: "제주 구좌·한림", region: "제주", cat: "tour", blurb: "이주 창업과 로컬 상점이 몰린 동부·서부 마을. 카페·공방·로컬푸드.", tags: ["이주창업", "로컬상점", "카페"], query: "제주 구좌 한림 로컬", apiQuery: "제주 구좌", igTag: "제주구좌" },
+  { name: "부산 영도", region: "부산 영도구", cat: "gentri", blurb: "흰여울문화마을·봉래동 창고 카페로 ‘바다뷰 핫플’. 조선소 도시가 로컬·관광 거점으로.", tags: ["흰여울마을", "창고카페", "바다뷰"], query: "부산 영도 흰여울 카페", apiQuery: "부산 영도 카페", igTag: "영도카페" },
+  { name: "인천 개항로", region: "인천 중구", cat: "creator", blurb: "개항기 건물을 고친 ‘개항로 프로젝트’—로컬 브랜딩의 대표 사례. 카페·바·인쇄골목.", tags: ["개항로프로젝트", "근대건축", "로컬브랜딩"], query: "인천 개항로 프로젝트", apiQuery: "인천 개항로", igTag: "개항로" },
+  { name: "충주 관아골", region: "충북 충주", cat: "creator", blurb: "원도심 관아골을 청년 가게·공방이 되살린 로컬 재생. 골목 상권 부활의 모델.", tags: ["원도심재생", "청년가게", "골목"], query: "충주 관아골 원도심", apiQuery: "충주 관아골", igTag: "충주관아골" },
+  { name: "부산 전포동", region: "부산 부산진구", cat: "gentri", blurb: "공구상가 골목이 ‘전포카페거리’로. 부산 청년 카페·편집숍의 중심.", tags: ["전포카페거리", "공구골목", "편집숍"], query: "부산 전포 카페거리", apiQuery: "전포 카페거리", igTag: "전포카페거리" },
+  { name: "전주 객리단길", region: "전북 전주", cat: "gentri", blurb: "객사 옆 골목 ‘객리단길’. 한옥마을 옆 로컬 카페·다이닝 거리.", tags: ["객리단길", "한옥마을옆", "다이닝"], query: "전주 객리단길", apiQuery: "전주 객리단길", igTag: "객리단길" },
+  { name: "군산 말랭이마을", region: "전북 군산", cat: "creator", blurb: "근대문화도시 군산, 달동네 말랭이마을이 예술·로컬 재생으로 화제.", tags: ["말랭이마을", "근대문화", "원도심"], query: "군산 말랭이마을 영화동", apiQuery: "군산 말랭이마을", igTag: "군산말랭이마을" },
+  { name: "청주 수암골", region: "충북 청주", cat: "tour", blurb: "달동네 벽화마을 수암골이 드라마 촬영지·전망 카페거리로. 청주 대표 로컬 명소.", tags: ["수암골", "벽화마을", "전망카페"], query: "청주 수암골", apiQuery: "청주 수암골", igTag: "수암골" },
 ];
 
 export function naverSearchUrl(where: "news" | "blog", query: string) {
