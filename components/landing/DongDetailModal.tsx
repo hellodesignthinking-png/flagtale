@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { GRADE_HEX } from "@/lib/constants";
 import type { Grade } from "@/lib/types";
 import type { Hero3DPoint } from "./LandingHero3DMap";
+import { MiniRadar } from "./MiniRadar";
 
 const VIT: Record<string, string> = { active: "활발", stable: "안정", shrinking: "위축" };
 
@@ -22,7 +23,6 @@ export function DongDetailModal({ p, onClose }: { p: Hero3DPoint; onClose: () =>
 
   const up = p.kind === "riser";
   const accent = up ? "#16a34a" : "#e11d48";
-  const axes: [string, number][] = [["인구·지속", p.d1], ["경제·상권", p.d2], ["공간·물리", p.d3], ["인식·감성", p.d4]];
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/55 p-4 backdrop-blur-sm" onClick={onClose} role="dialog" aria-modal="true">
@@ -45,20 +45,13 @@ export function DongDetailModal({ p, onClose }: { p: Hero3DPoint; onClose: () =>
           </span>
         </div>
 
-        {/* 4축 그래프 */}
-        <div className="mt-4 rounded-2xl border border-line bg-navy/30 p-4">
-          <div className="mb-2 text-[12px] font-extrabold text-muted">4대 축 점수</div>
-          <div className="space-y-2">
-            {axes.map(([k, v]) => (
-              <div key={k} className="flex items-center gap-2.5">
-                <span className="w-16 shrink-0 text-[12px] text-muted">{k}</span>
-                <div className="relative h-2.5 flex-1 overflow-hidden rounded-full bg-navy/50">
-                  <div className="absolute inset-y-0 left-0 rounded-full bg-blue-l" style={{ width: `${Math.max(0, Math.min(100, v))}%` }} />
-                </div>
-                <span className="w-7 shrink-0 text-right text-[12px] font-bold tabular-nums">{Math.round(v)}</span>
-              </div>
-            ))}
+        {/* 4축 레이더 + 또래(업종) 평균 */}
+        <div className="mt-4 rounded-2xl border border-line bg-navy/20 p-4">
+          <div className="mb-1 flex items-center justify-between text-[12px] font-extrabold text-muted">
+            <span>4대 축 점수</span>
+            {p.peer && <span className="text-[10.5px] font-bold text-muted2">━ 이 동네 · ┄ 같은 지역 평균</span>}
           </div>
+          <MiniRadar self={{ d1: p.d1, d2: p.d2, d3: p.d3, d4: p.d4 }} peer={p.peer} className="mx-auto h-[160px] w-[160px]" />
         </div>
 
         {/* 뜨는/쇠퇴 이유 */}

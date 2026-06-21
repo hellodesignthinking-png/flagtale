@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TRENDING_LOCALS, CATS, type TrendingLocal } from "@/lib/trendingLocals";
 import { LocalDetailModal } from "./LocalDetailModal";
 
@@ -30,6 +30,19 @@ export function TrendingLocals() {
   }, []);
 
   const anyLive = Object.keys(live).length > 0;
+  // ⓡ 검색 급등順(1년 검색 변화 trendDelta 큰 순) — 라이브 로드 후 정렬, 미연동은 뒤로
+  const sorted = useMemo(
+    () =>
+      [...TRENDING_LOCALS].sort((a, b) => {
+        const da = live[a.name]?.trendDelta;
+        const db = live[b.name]?.trendDelta;
+        if (da == null && db == null) return 0;
+        if (da == null) return 1;
+        if (db == null) return -1;
+        return db - da;
+      }),
+    [live]
+  );
 
   return (
     <div>
@@ -38,10 +51,10 @@ export function TrendingLocals() {
           <span className="klai-eyebrow">News · Blog · Social Buzz</span>
           <h2 className="mt-1 text-[1.4rem] font-extrabold tracking-tight sm:text-[1.7rem]">📰 지금 뜨는 <span className="hl-mark">로컬 동네</span></h2>
         </div>
-        <span className="klai-tag">{anyLive ? "🟢 네이버 실시간 · 클릭 = 멀티플랫폼 상세" : "에디토리얼 큐레이션 · 클릭 = 상세"}</span>
+        <span className="klai-tag">{anyLive ? "🟢 네이버 실시간 · 검색 급등順 · 클릭=상세" : "에디토리얼 큐레이션 · 클릭=상세"}</span>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {TRENDING_LOCALS.map((l) => {
+        {sorted.map((l) => {
           const cat = CATS[l.cat];
           const lv = live[l.name];
           return (

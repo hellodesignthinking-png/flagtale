@@ -33,13 +33,27 @@ export default function LandingPage() {
     poolMap.set(it.cd, it);
   }
   const pool = [...poolMap.values()].sort((a, b) => Math.abs(b.momentum) - Math.abs(a.momentum));
+  // 또래 평균 = 같은 시도(행안부 코드 앞 2자리) 4축 평균 (업종이 비어있어 지역으로 그룹). 폴백: 전국 평균.
+  const sidoAcc = new Map<string, { d1: number; d2: number; d3: number; d4: number; n: number }>();
+  const nat = { d1: 0, d2: 0, d3: 0, d4: 0, n: 0 };
+  for (const r of rows) {
+    const k = r.cd.slice(0, 2);
+    const a = sidoAcc.get(k) ?? { d1: 0, d2: 0, d3: 0, d4: 0, n: 0 };
+    a.d1 += r.s.d1; a.d2 += r.s.d2; a.d3 += r.s.d3; a.d4 += r.s.d4; a.n++;
+    sidoAcc.set(k, a);
+    nat.d1 += r.s.d1; nat.d2 += r.s.d2; nat.d3 += r.s.d3; nat.d4 += r.s.d4; nat.n++;
+  }
+  const peerOf = (cd: string) => {
+    const a = sidoAcc.get(cd.slice(0, 2)) ?? (nat.n ? nat : null);
+    return a && a.n ? { d1: a.d1 / a.n, d2: a.d2 / a.n, d3: a.d3 / a.n, d4: a.d4 / a.n } : undefined;
+  };
   const toHero = (r: ReturnType<typeof toCardItem>, kind: "riser" | "faller"): Hero3DPoint => {
     const ri = reasonInfo(r);
     return {
       cd: r.cd, name: r.name, sigungu: r.sigungu, typology: r.typology, lng: r.lng, lat: r.lat,
       klai: r.klai, grade: r.grade, momentum: r.momentum, reason: ri.label, reasonDetail: ri.detail,
       d1: r.d1, d2: r.d2, d3: r.d3, d4: r.d4, gentriStage: r.gentriStage, marketVitality: r.marketVitality,
-      popChangeRate: r.popChangeRate, budgetInflow: r.budgetInflow, kind,
+      popChangeRate: r.popChangeRate, budgetInflow: r.budgetInflow, peer: peerOf(r.cd), kind,
     };
   };
   // 3D 지도는 더 많은 동네로 밀도 있게 (도시당 하나가 아니라 상승 30 + 하락 14)
