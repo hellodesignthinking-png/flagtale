@@ -4,6 +4,7 @@ import { getTrendingLive } from "@/lib/trendingLive";
 // 네이버 호출 → 서울 리전(해외 리전선 한국 API 간헐 차단)
 export const preferredRegion = "icn1";
 export const revalidate = 21600;
+export const maxDuration = 30;
 
 export async function GET() {
   try {

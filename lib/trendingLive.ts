@@ -14,25 +14,18 @@ export interface LocalLive {
 
 async function fetchAll(): Promise<Record<string, LocalLive>> {
   const out: Record<string, LocalLive> = {};
-  // 동시 4개씩 배치 — 네이버 레이트리밋 회피
-  for (let i = 0; i < TRENDING_LOCALS.length; i += 4) {
-    const batch = TRENDING_LOCALS.slice(i, i + 4);
-    const res = await Promise.all(batch.map((l) => naverInterest(l.apiQuery).catch(() => null)));
-    res.forEach((r, j) => {
-      if (!r) return;
-      const t = r.searchTrend;
-      const now = t.length ? t[t.length - 1].ratio : 0;
-      const prev = t.length >= 13 ? t[t.length - 13].ratio : t.length ? t[0].ratio : now;
-      out[batch[j].name] = {
-        newsTotal: r.newsTotal,
-        trendNow: now,
-        trendDelta: Math.round(now - prev),
-        sentiment: r.sentiment,
-        headlines: r.headlines.slice(0, 2),
-      };
-    });
+  // 12개 동시 호출(서버리스 타임아웃 내 완료). 개별 실패는 graceful null.
+  const res = await Promise.all(TRENDING_LOCALS.map((l) => naverInterest(l.apiQuery).then((r) => [l.name, r] as const).catch(() => [l.name, null] as const)));
+  for (const [name, r] of res) {
+    if (!r) continue;
+    const t = r.searchTrend;
+    const now = t.length ? t[t.length - 1].ratio : 0;
+    const prev = t.length >= 13 ? t[t.length - 13].ratio : t.length ? t[0].ratio : now;
+    out[name] = { newsTotal: r.newsTotal, trendNow: now, trendDelta: Math.round(now - prev), sentiment: r.sentiment, headlines: r.headlines.slice(0, 2) };
   }
+  // 전부 실패면 throw → unstable_cache가 빈 결과를 캐시하지 않게(6h 오염 방지)
+  if (Object.keys(out).length === 0) throw new Error("trending-live: empty");
   return out;
 }
 
-export const getTrendingLive = unstable_cache(fetchAll, ["trending-locals-live-v2"], { revalidate: 21600 });
+export const getTrendingLive = unstable_cache(fetchAll, ["trending-locals-live-v3"], { revalidate: 21600 });
