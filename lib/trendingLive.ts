@@ -1,6 +1,5 @@
 // 뜨는 로컬 동네의 네이버 실시간 지표(검색 트렌드·기사량·헤드라인). 서버 전용·6h 캐시.
 import "server-only";
-import { unstable_cache } from "next/cache";
 import { naverNews, naverTrendBatch } from "./connectors/naver";
 import { TRENDING_LOCALS } from "./trendingLocals";
 
@@ -30,9 +29,8 @@ export async function fetchTrendingLive(): Promise<Record<string, LocalLive>> {
       trendDelta: tr?.delta ?? 0,
     };
   }
-  // 전부 실패면 throw → unstable_cache가 빈 결과를 캐시하지 않게(6h 오염 방지)
+  // 전부 실패면 throw → 라우트가 빈 결과를 CDN 캐시하지 않게(다음 요청 재시도)
   if (Object.keys(out).length === 0) throw new Error("trending-live: empty");
   return out;
 }
-
-export const getTrendingLive = unstable_cache(fetchTrendingLive, ["trending-locals-live-v4"], { revalidate: 21600 });
+// 캐시는 커넥터 인메모리(6h) + 라우트 CDN(s-maxage). unstable_cache는 no-store fetch와 충돌해 미사용.
