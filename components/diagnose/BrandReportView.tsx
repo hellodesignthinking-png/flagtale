@@ -22,9 +22,17 @@ export function BrandReportView({ brand, dongName }: { brand: BrandReport; dongN
     <div className="space-y-4">
       {/* 매장 신호 */}
       <Sec title="매장 신호 — 사람들이 이 매장을 어떻게 말하나" accent="#1E5FA8">
+        {s.relevanceRatio != null && (
+          <div className="mb-2.5 flex flex-wrap items-center gap-2 text-[11.5px]">
+            <span className={`rounded-full border px-2 py-0.5 font-semibold ${s.reliable ? "border-grade-b/40 bg-grade-b/10 text-grade-b" : "border-amber/40 bg-amber/10 text-amber"}`}>
+              매장 관련도 {s.relevanceRatio}%{s.reliable ? "" : " · 참고용"}
+            </span>
+            <span className="truncate text-muted2">검색어: “{s.query}”</span>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <Mini label="블로그 언급" value={s.blogPosts.toLocaleString()} unit="건" />
-          <Mini label="카페 언급" value={s.cafePosts.toLocaleString()} unit="건" />
+          <Mini label="블로그 언급(추정)" value={s.blogPosts.toLocaleString()} unit="건" />
+          <Mini label="카페 언급(추정)" value={s.cafePosts.toLocaleString()} unit="건" />
           <Mini label="검색 관심도" value={s.searchNow ?? "—"} unit={s.searchDelta != null ? `추세 ${s.searchDelta >= 0 ? "+" : ""}${s.searchDelta}%` : ""} />
           <Mini label="긍정 비율" value={s.positiveRatio != null ? `${s.positiveRatio}%` : "—"} unit={`긍 ${s.pos}·부 ${s.neg}`} accent={(s.positiveRatio ?? 50) >= 55 ? "var(--green)" : (s.positiveRatio ?? 50) < 45 ? "var(--warn)" : undefined} />
         </div>
@@ -35,7 +43,7 @@ export function BrandReportView({ brand, dongName }: { brand: BrandReport; dongN
         )}
         {s.recent.length > 0 && (
           <div className="mt-3">
-            <div className="mb-1.5 text-[11px] font-bold text-muted2">최근 언급 (긍·부 우선)</div>
+            <div className="mb-1.5 text-[11px] font-bold text-muted2">최근 언급 (이 매장 관련만 · 긍·부 우선)</div>
             <div className="space-y-1">
               {s.recent.slice(0, 6).map((r, i) => (
                 <a key={i} href={r.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-md border border-line bg-card2 px-2.5 py-1.5 text-[11.5px] hover:border-blue">

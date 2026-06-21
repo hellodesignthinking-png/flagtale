@@ -1,7 +1,7 @@
 // 브랜드(매장) 진단 — 그 매장 자체의 경쟁력·성장·위기를 분석.
 // 매장 신호(블로그·카페·검색·감성) + 동네 대비 경쟁력 + 임대료 + 성장전략 + 위기(재개발 포함).
 import "server-only";
-import type { SocialBuzz } from "@/lib/connectors/social";
+import type { StoreBuzz } from "@/lib/connectors/storebuzz";
 import type { AnchorStore } from "@/lib/connectors/anchor";
 import type { SanggaStats } from "@/lib/connectors/sangga";
 import type { RebForPlace } from "@/lib/connectors/reb";
@@ -24,6 +24,9 @@ export interface BrandReport {
     positiveRatio: number | null;
     pos: number;
     neg: number;
+    relevanceRatio: number | null; // 표본 중 '실제 이 매장' 관련 비율
+    reliable: boolean; // 관련 표본이 충분한가
+    query: string; // 실제 검색 질의(매장명+지역)
     recent: { title: string; channel: string; tone: number; link: string }[];
     note: string;
   };
@@ -46,7 +49,7 @@ export interface BrandReport {
 export interface BrandReportInput {
   name: string;
   category: string;
-  storeSocial: SocialBuzz | null;
+  storeBuzz: StoreBuzz | null;
   storeSearchTrend: { period: string; ratio: number }[] | null;
   anchor: AnchorStore[] | null;
   sangga: SanggaStats | null;
@@ -56,16 +59,18 @@ export interface BrandReportInput {
 }
 
 export function buildBrandReport(inp: BrandReportInput): BrandReport {
-  const { name, category, storeSocial, storeSearchTrend, anchor, sangga, reb, latest, gentriStage } = inp;
+  const { name, category, storeBuzz: sb, storeSearchTrend, anchor, sangga, reb, latest, gentriStage } = inp;
 
-  // ── 매장 신호 ──
-  const blogPosts = storeSocial?.blog.total ?? 0;
-  const cafePosts = storeSocial?.cafe.total ?? 0;
-  const totalPosts = storeSocial?.totalPosts ?? 0;
-  const positiveRatio = storeSocial ? storeSocial.combined.positiveRatio : null;
-  const pos = storeSocial?.combined.pos ?? 0;
-  const neg = storeSocial?.combined.neg ?? 0;
-  const recent = (storeSocial?.recent ?? []).map((r) => ({ title: r.title, channel: r.channel, tone: r.tone, link: r.link }));
+  // ── 매장 신호 (스코프 검색 + 관련도 필터된 값) ──
+  const blogPosts = sb?.blogTotal ?? 0;
+  const cafePosts = sb?.cafeTotal ?? 0;
+  const totalPosts = blogPosts + cafePosts;
+  const positiveRatio = sb?.positiveRatio ?? null;
+  const pos = sb?.pos ?? 0;
+  const neg = sb?.neg ?? 0;
+  const relevanceRatio = sb?.relevanceRatio ?? null;
+  const reliable = sb?.reliable ?? false;
+  const recent = (sb?.recent ?? []).map((r) => ({ title: r.title, channel: r.channel, tone: r.tone, link: r.link }));
   const tr = storeSearchTrend ?? [];
   const searchNow = tr.length ? tr[tr.length - 1].ratio : null;
   const searchDelta = tr.length >= 2 && tr[0].ratio > 0 ? Math.round(((tr[tr.length - 1].ratio - tr[0].ratio) / tr[0].ratio) * 1000) / 10 : null;
@@ -144,8 +149,13 @@ export function buildBrandReport(inp: BrandReportInput): BrandReport {
       positiveRatio,
       pos,
       neg,
+      relevanceRatio,
+      reliable,
+      query: sb?.query ?? name,
       recent,
-      note: "네이버 공식 ‘방문자 별점·리뷰 수’는 공개 API 미제공 — 블로그·카페 언급량, 검색 추세, 표본 감성으로 평판을 추정합니다.",
+      note: reliable
+        ? "‘매장명+지역’으로 스코프 검색해 그 매장 관련 글만 집계. 네이버 공식 별점·방문자 리뷰 수는 API 미제공 → 블로그·카페 언급·감성으로 평판 추정."
+        : "이 매장명은 일반어와 겹쳐 관련 글이 적게 잡혔습니다(언급량은 참고용). 정확한 평판은 ‘네이버에서 보기’로 확인하세요. 공식 별점·리뷰 수는 API 미제공.",
     },
     competitiveness: {
       storeBuzz,
