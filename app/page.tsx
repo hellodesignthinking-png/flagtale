@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { loadDistricts, loadScores } from "@/lib/data";
 import { SiteFooter } from "@/components/page-shell";
-import { ArticleCard, toCardItem } from "@/components/landing/ArticleCard";
+import { ArticleCard, toCardItem, reasonInfo } from "@/components/landing/ArticleCard";
 import { Carousel } from "@/components/landing/Carousel";
 import { FeedTabs } from "@/components/landing/FeedTabs";
 import { NationalScatter, type ScatterPoint } from "@/components/landing/NationalScatter";
@@ -33,8 +33,8 @@ export default function LandingPage() {
   }
   const pool = [...poolMap.values()].sort((a, b) => Math.abs(b.momentum) - Math.abs(a.momentum));
   const scatterPoints: ScatterPoint[] = [
-    ...risers.map((r) => ({ name: r.name, momentum: r.momentum, lng: r.lng, lat: r.lat, kind: "riser" as const })),
-    ...fallers.map((r) => ({ name: r.name, momentum: r.momentum, lng: r.lng, lat: r.lat, kind: "faller" as const })),
+    ...risers.map((r) => ({ name: r.name, momentum: r.momentum, lng: r.lng, lat: r.lat, kind: "riser" as const, reason: reasonInfo(r).label })),
+    ...fallers.map((r) => ({ name: r.name, momentum: r.momentum, lng: r.lng, lat: r.lat, kind: "faller" as const, reason: reasonInfo(r).label })),
   ];
 
   return (

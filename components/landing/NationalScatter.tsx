@@ -1,11 +1,12 @@
 // 전국 동네 변화 분포 — 경량 SVG 지리 스캐터(서버 렌더, maplibre 불필요·항상 렌더).
-// 행정동 중심 좌표를 한반도 경계에 투영해 상승(라임)·하락(로즈) 점으로 표시.
+// 잘되는 곳(상승)=초록 핀, 식는 곳(하락)=로즈 점, 상위 변동 동엔 '뜨는 이유' 라벨.
 export interface ScatterPoint {
   lng: number;
   lat: number;
   kind: "riser" | "faller";
   momentum: number;
   name: string;
+  reason?: string;
 }
 
 export function NationalScatter({ points, className }: { points: ScatterPoint[]; className?: string }) {
@@ -18,12 +19,12 @@ export function NationalScatter({ points, className }: { points: ScatterPoint[];
   const LAT1 = 38.65;
   const px = (lng: number) => PAD + ((Math.min(LNG1, Math.max(LNG0, lng)) - LNG0) / (LNG1 - LNG0)) * (W - 2 * PAD);
   const py = (lat: number) => PAD + (1 - (Math.min(LAT1, Math.max(LAT0, lat)) - LAT0) / (LAT1 - LAT0)) * (H - 2 * PAD);
-  const maxM = Math.max(1, ...points.map((p) => Math.abs(p.momentum)));
-  const top = points.filter((p) => p.kind === "riser").sort((a, b) => b.momentum - a.momentum)[0];
+  const risers = points.filter((p) => p.kind === "riser");
+  const fallers = points.filter((p) => p.kind === "faller");
+  const labeled = [...risers].sort((a, b) => b.momentum - a.momentum).slice(0, 4);
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className={className} role="img" aria-label="전국 동네 변화 분포 지도" preserveAspectRatio="xMidYMid meet">
-      {/* graticule(위경도 격자) — 지리 맵 느낌 */}
+    <svg viewBox={`0 0 ${W} ${H}`} className={className} role="img" aria-label="전국 동네 변화 분포 지도(상승 핀·하락 점·이유 라벨)" preserveAspectRatio="xMidYMid meet">
       {Array.from({ length: 5 }).map((_, i) => {
         const yy = PAD + (i * (H - 2 * PAD)) / 4;
         return <line key={`h${i}`} x1={PAD} x2={W - PAD} y1={yy} y2={yy} stroke="var(--line)" strokeWidth={1} opacity={0.55} />;
@@ -36,29 +37,52 @@ export function NationalScatter({ points, className }: { points: ScatterPoint[];
         KOREA · 전국
       </text>
 
-      {/* 점 — 상승(라임/에메랄드)·하락(로즈), 크기=|모멘텀| */}
-      {points.map((p, i) => {
-        const r = 4 + (Math.abs(p.momentum) / maxM) * 6.5;
-        const c = p.kind === "riser" ? "#16a34a" : "var(--warn)";
-        return <circle key={i} cx={px(p.lng)} cy={py(p.lat)} r={r} fill={c} opacity={0.82} stroke="#fff" strokeWidth={1.2} />;
+      {/* 하락 = 로즈 점 */}
+      {fallers.map((p, i) => (
+        <circle key={`f${i}`} cx={px(p.lng)} cy={py(p.lat)} r={4.5} fill="var(--warn)" opacity={0.8} stroke="#fff" strokeWidth={1.2} />
+      ))}
+
+      {/* 상승(잘되는 곳) = 초록 핀 */}
+      {risers.map((p, i) => {
+        const x = px(p.lng);
+        const y = py(p.lat);
+        return (
+          <g key={`r${i}`}>
+            <path d={`M ${x} ${y} L ${x - 6} ${y - 13} A 6 6 0 1 1 ${x + 6} ${y - 13} Z`} fill="#16a34a" stroke="#fff" strokeWidth={1.5} />
+            <circle cx={x} cy={y - 13} r={2.6} fill="#fff" />
+          </g>
+        );
       })}
 
-      {/* 1위 펄스 + 라벨 */}
-      {top && (
-        <g>
-          <circle cx={px(top.lng)} cy={py(top.lat)} r={9} fill="none" stroke="#16a34a" strokeWidth={2} className="klai-pulse-ring" />
-          <text x={px(top.lng) + 12} y={py(top.lat) + 4} fontSize={12} fontWeight={800} fill="var(--ink)">
-            {top.name} +{top.momentum}
+      {/* 상위 변동 동 '뜨는 이유' 라벨(흰 후광) */}
+      {labeled.map((p, i) => {
+        const x = px(p.lng);
+        const y = py(p.lat);
+        const right = x < W * 0.58;
+        return (
+          <text
+            key={`l${i}`}
+            x={right ? x + 10 : x - 10}
+            y={y - 18}
+            fontSize={11}
+            fontWeight={800}
+            fill="var(--ink)"
+            stroke="#fff"
+            strokeWidth={3}
+            paintOrder="stroke"
+            textAnchor={right ? "start" : "end"}
+          >
+            {p.name} · {p.reason}
           </text>
-        </g>
-      )}
+        );
+      })}
 
       {/* 범례 */}
-      <g transform={`translate(${PAD + 2}, ${H - 14})`}>
-        <circle cx={6} cy={-4} r={5} fill="#16a34a" />
-        <text x={16} y={0} fontSize={11.5} fontWeight={700} fill="var(--muted)">상승</text>
-        <circle cx={66} cy={-4} r={5} fill="var(--warn)" />
-        <text x={76} y={0} fontSize={11.5} fontWeight={700} fill="var(--muted)">하락</text>
+      <g transform={`translate(${PAD + 2}, ${H - 12})`}>
+        <path d="M 6 -2 L 2 -10 A 4 4 0 1 1 10 -10 Z" fill="#16a34a" stroke="#fff" strokeWidth={1} />
+        <text x={18} y={0} fontSize={11.5} fontWeight={700} fill="var(--muted)">상승(핀)</text>
+        <circle cx={84} cy={-5} r={4.5} fill="var(--warn)" />
+        <text x={94} y={0} fontSize={11.5} fontWeight={700} fill="var(--muted)">하락(점)</text>
       </g>
     </svg>
   );
