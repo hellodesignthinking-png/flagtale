@@ -1,7 +1,11 @@
 import Link from "next/link";
-import { loadDistricts, loadScores } from "@/lib/data";
+import { loadDistricts, loadScores, getPeerAvg } from "@/lib/data";
 import { GRADE_HEX } from "@/lib/constants";
 import { SiteFooter } from "@/components/page-shell";
+import { KlaiGauge } from "@/components/charts/KlaiGauge";
+import { ScoreRadar } from "@/components/charts/ScoreRadar";
+import { CompositionDiagram } from "@/components/charts/CompositionDiagram";
+import { NarrativeCurve } from "@/components/charts/NarrativeCurve";
 
 const FEATURES = [
   { icon: "🗺️", cat: "EXPLORE", title: "매력도 지도", desc: "전국 행정동을 색으로 — 9개 레이어·시간 슬라이더로 뜨고 지는 동네를 한눈에.", href: "/map" },
@@ -11,21 +15,19 @@ const FEATURES = [
   { icon: "📡", cat: "FIELD", title: "현장 리포트", desc: "데이터로 못 잡는 분위기·객층을 현장 사람들이 보강하는 휴먼 센서망.", href: "/contribute" },
   { icon: "🏛️", cat: "B2G·B2B", title: "기관 대시보드", desc: "관할 모니터링·경보·정책 What-if·API. 지자체·AMC·VC용.", href: "/dashboard" },
 ];
-const STEPS = [
-  { n: "01", t: "실데이터 수집", d: "KOSIS·네이버·소진공·부동산원·문화정보원 등 13개 소스를 행정동 단위로 집계." },
-  { n: "02", t: "KLAI 4축 합성", d: "인구·상권·공간·인식을 가중 합성 → 0~100 매력도 + 모멘텀·위기 산출." },
-  { n: "03", t: "진단·리포트 발행", d: "지도·동/매장 리포트·주간 웹진·PDF로 ‘왜’를 설명. 현장·결제까지 연결." },
-];
+const SOURCES = ["KOSIS 인구", "네이버 검색·기사", "소진공 상권", "부동산원 임대", "문화정보원", "나라장터 예산", "VWorld 지오코딩", "생활인구"];
 
 export default function LandingPage() {
   const scores = loadScores();
   const districts = loadDistricts();
   const propBy = new Map(districts.features.map((f) => [f.properties.admCd2, f.properties]));
   const rows = Object.entries(scores.byPlace)
-    .map(([cd, ser]) => ({ cd, p: propBy.get(cd), s: ser[ser.length - 1] }))
-    .filter((r) => r.p && r.s) as { cd: string; p: NonNullable<ReturnType<typeof propBy.get>>; s: (typeof scores.byPlace)[string][number] }[];
+    .map(([cd, ser]) => ({ cd, p: propBy.get(cd)!, s: ser[ser.length - 1] }))
+    .filter((r) => r.p && r.s);
   const risers = [...rows].sort((a, b) => b.s.momentum - a.s.momentum).slice(0, 6);
   const fallers = [...rows].sort((a, b) => a.s.momentum - b.s.momentum).slice(0, 3);
+  const feat = risers[0];
+  const peer = getPeerAvg(feat.p.typology);
   const total = districts.features.length;
 
   return (
@@ -33,7 +35,7 @@ export default function LandingPage() {
       <div className="deco-bg" aria-hidden />
       <main className="relative z-10">
         {/* HERO */}
-        <section className="mx-auto max-w-5xl px-6 pb-14 pt-20 text-center sm:pt-28">
+        <section className="mx-auto max-w-5xl px-6 pb-8 pt-20 text-center sm:pt-24">
           <span className="klai-eyebrow fade-up inline-block">Local Intelligence · 동네 트렌드 인텔리전스</span>
           <h1 className="display-hero fade-up mt-4 text-[2.6rem] sm:text-[4.2rem]">
             지금 뜨는 동네,<br className="hidden sm:block" /> <span className="hl-mark">데이터로 먼저</span> 안다
@@ -47,7 +49,29 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* 이주의 뜨는 동네 — careet식 콘텐츠 카드 그리드 */}
+        {/* HERO 프리뷰 — 실데이터 진단 미리보기(게이지 + 4축 레이더) */}
+        <section className="mx-auto max-w-5xl px-6 pb-6">
+          <Link href={`/diagnose?admCd=${feat.cd}`} className="lift gradient-border group block rounded-[28px] bg-card2/60 p-6 sm:p-8">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+              <span className="cat-tag">LIVE PREVIEW · 이주의 1위</span>
+              <span className="status-pill" style={{ background: "var(--amber)", color: "var(--on-accent)" }}>📈 뜨는 중 +{feat.s.momentum}</span>
+            </div>
+            <div className="grid items-center gap-6 md:grid-cols-[auto_1fr]">
+              <div className="flex flex-col items-center">
+                <KlaiGauge klai={feat.s.klai} grade={feat.s.grade} momentum={feat.s.momentum} size={150} />
+                <div className="mt-2 text-[18px] font-black text-ink group-hover:text-blue-l">{feat.p.name}</div>
+                <div className="text-[12px] text-muted2">{feat.p.sido} {feat.p.sigungu} · {feat.p.typology}</div>
+              </div>
+              <div className="min-w-0">
+                <div className="mb-2 text-[12px] font-bold text-muted2">4축 매력도 (vs 유형 평균)</div>
+                <ScoreRadar score={feat.s} peerAvg={peer} />
+              </div>
+            </div>
+            <div className="mt-4 text-center text-[12.5px] font-bold text-blue-l">이 동네 전체 진단 보기 →</div>
+          </Link>
+        </section>
+
+        {/* 이주의 뜨는 동네 */}
         <section className="mx-auto max-w-6xl px-6 py-10">
           <div className="mb-5 flex items-end justify-between">
             <h2 className="text-2xl font-black tracking-tight sm:text-3xl">📈 이주의 뜨는 동네</h2>
@@ -71,7 +95,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* 식는 동네(위기) — 컴팩트 행 */}
+        {/* 식는 동네 */}
         <section className="mx-auto max-w-6xl px-6 py-6">
           <h2 className="mb-4 text-2xl font-black tracking-tight sm:text-3xl">📉 식는 동네 · 위기 신호</h2>
           <div className="grid gap-3 sm:grid-cols-3">
@@ -88,7 +112,45 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* 기능 — 에디토리얼 카드 */}
+        {/* KLAI 작동 원리 — 다이어그램(4축 → 점수) */}
+        <section className="mx-auto max-w-6xl px-6 py-14">
+          <div className="rounded-[28px] border border-line bg-card2/40 p-7 sm:p-10">
+            <div className="grid gap-8 lg:grid-cols-[1fr_1.1fr] lg:items-center">
+              <div>
+                <span className="klai-eyebrow">How KLAI works</span>
+                <h2 className="display-hero mt-2 text-3xl sm:text-[2.4rem]">
+                  4개 축을 합쳐<br /> <span className="hl-mark">하나의 점수</span>로
+                </h2>
+                <p className="mt-3 text-[14px] leading-relaxed text-muted">
+                  인구·상권·공간·인식 4축을 가중 합성하고(상권·서사를 30%로 크게), 변화 속도(모멘텀)와 위기를 함께 진단합니다.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {SOURCES.map((s) => (
+                    <span key={s} className="status-pill border border-line bg-navy text-muted">{s}</span>
+                  ))}
+                </div>
+                <Link href="/methodology" className="mt-5 inline-block text-[13.5px] font-bold text-blue-l hover:underline">산식·방법론 자세히 →</Link>
+              </div>
+              <div className="rounded-2xl border border-line bg-navy/40 p-5">
+                <CompositionDiagram score={feat.s} />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 라이프사이클 곡선 — 시그니처 다이어그램 */}
+        <section className="mx-auto max-w-6xl px-6 py-8">
+          <div className="mb-5 text-center">
+            <span className="klai-eyebrow">Lifecycle</span>
+            <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">동네는 <span className="hl-mark">이렇게</span> 뜨고 진다</h2>
+            <p className="mt-2 text-[14px] text-muted">형성 → 확산 → 절정 → 젠트리 → 쇠퇴. 검색·기사(이야기)가 인구·상권에 선행하는 티핑포인트 구조.</p>
+          </div>
+          <div className="rounded-[28px] border border-line bg-card2/40 p-6 sm:p-8">
+            <NarrativeCurve />
+          </div>
+        </section>
+
+        {/* 기능 */}
         <section className="mx-auto max-w-6xl px-6 py-14">
           <div className="mb-6">
             <span className="klai-eyebrow">What you get</span>
@@ -107,21 +169,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* 작동 방식 */}
-        <section className="mx-auto max-w-5xl px-6 py-10">
-          <h2 className="mb-6 text-center text-2xl font-black tracking-tight sm:text-3xl">데이터가 진단이 되기까지</h2>
-          <div className="grid gap-4 md:grid-cols-3">
-            {STEPS.map((s) => (
-              <div key={s.n} className="rounded-2xl border border-line bg-card2/50 p-6">
-                <div className="text-[13px] font-black text-blue-l">{s.n}</div>
-                <h3 className="mt-1.5 text-[16px] font-extrabold text-ink">{s.t}</h3>
-                <p className="mt-2 text-[13px] leading-relaxed text-muted">{s.d}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* 뉴스레터 스타일 CTA (careet식) */}
+        {/* 뉴스레터 CTA */}
         <section className="mx-auto max-w-5xl px-6 py-16">
           <div className="relative overflow-hidden rounded-[28px] border border-line bg-card2/60 px-8 py-14 text-center">
             <div className="pointer-events-none absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full opacity-50 blur-3xl" style={{ background: "radial-gradient(circle, var(--blue-l), transparent 70%)" }} />
