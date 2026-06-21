@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { geocodeToPlace, getPlace, getPeerAvg, getRegionComparison, populationMeta } from "@/lib/data";
-import { geocodeToDistrict } from "@/lib/geocode";
+import { geocodeToDistrict, pointToDistrict } from "@/lib/geocode";
 import { naverInterest } from "@/lib/connectors/naver";
 import { anchorStores } from "@/lib/connectors/anchor";
 import { sanggaStats } from "@/lib/connectors/sangga";
@@ -26,16 +26,24 @@ export const dynamic = "force-dynamic";
 // 스펙 §13: POST /api/diagnose {address|pnu} → (auth+credit) {trajectory, risks, strategy, reportId}
 // VWorld 실지오코딩(주소→좌표→행정동) → 동 매핑 → 진단. demoPaid 플래그로 권한(페이월) 시뮬레이션.
 export async function POST(req: NextRequest) {
-  let body: { admCd?: string; address?: string; pnu?: string; demoPaid?: boolean } = {};
+  let body: { admCd?: string; address?: string; pnu?: string; demoPaid?: boolean; lng?: number; lat?: number; label?: string } = {};
   try {
     body = await req.json();
   } catch {
     /* empty */
   }
   // admCd가 오면 그 행정동을 직접 사용 (동명 지오코딩의 모호성 방지: 당산1동→사천 오매핑 등)
-  const query = body.admCd || body.address || body.pnu || "";
+  const query = body.label || body.admCd || body.address || body.pnu || "";
   let geo: Awaited<ReturnType<typeof geocodeToDistrict>> = null;
   let place = body.admCd ? getPlace(body.admCd)?.props ?? null : null;
+  // 브랜드 진단: 매장 좌표(lng,lat)가 오면 그 지점 중심으로 진단(좌표→행정동, 반경 데이터가 매장 중심으로).
+  if (!place && Number.isFinite(body.lng) && Number.isFinite(body.lat)) {
+    const props = pointToDistrict(body.lng as number, body.lat as number);
+    if (props) {
+      place = props;
+      geo = { props, point: { lng: body.lng as number, lat: body.lat as number, matched: body.label ?? "", kind: "place" } };
+    }
+  }
   if (!place) {
     // 1) VWorld 실지오코딩(좌표→행정동), 2) 실패 시 동명 매칭 폴백
     geo = await geocodeToDistrict(body.address || body.pnu || "");

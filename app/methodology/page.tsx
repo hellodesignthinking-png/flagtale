@@ -31,6 +31,21 @@ const SOURCES = [
   { metric: "KLAI 4축 점수", src: "(산식 미연동)", unit: "동·분기", how: "*현재 난수 샘플. 보정점수가 현실 반영.", real: false },
 ];
 
+const AXES = [
+  { k: "D1", label: "인구·지속성", w: 20, color: "#1E5FA8", desc: "인구 재생산·순유입·연령 균형 (지방소멸위험의 반대 개념)", src: "KOSIS 인구·세대" },
+  { k: "D2", label: "경제·상권", w: 30, color: "#0F6E5C", desc: "창업·생존·업종 다양성·매출·임대 경제성·시장 활성도", src: "소진공·부동산원·카드매출" },
+  { k: "D3", label: "공간·물리", w: 20, color: "#8b6ef6", desc: "용도 혼합·보행·건물 다양성·접근성·자산가치", src: "공시지가·건축HUB" },
+  { k: "D4", label: "인식·감성", w: 30, color: "#D4861E", desc: "검색·미디어 언급·확산·긍정비율 (장소의 ‘이야기’)", src: "네이버 DataLab·뉴스" },
+];
+
+const SCORE_STEPS = [
+  { t: "정규화", d: "같은 시도 비교군 안에서 Min-Max(0~100)로 환산. 역방향 지표는 반전, 쏠림 지표는 로그 보정." },
+  { t: "합성", d: "4축 가중 합성. 상권(D2)·서사(D4)를 30%로 더 크게 — 동네 매력을 더 좌우하는 축." },
+  { t: "모멘텀", d: "축별 변화율의 z-점수 합(±). 점수의 ‘방향·속도’ = 뜨는 중인지 식는 중인지." },
+  { t: "등급화", d: "S(강한 매력·안정)부터 E(위기)까지 발산 색 스케일로 표기." },
+  { t: "실측 보정", d: "샘플(난수) 점수를 네이버 기사·검색·KOSIS 인구 등 실데이터로 보정 → ‘실측 보정 점수’가 현실을 반영." },
+];
+
 export default function MethodologyPage() {
   return (
     <PageShell>
@@ -42,6 +57,63 @@ export default function MethodologyPage() {
           <b className="text-ink"> 왜 살아나고 왜 죽는가</b>를 라이프사이클·동인·산식으로 풀어, 각 데이터의 출처·계산을 투명하게 정리했습니다.
         </p>
       </div>
+
+      {/* KLAI란 무엇인가 */}
+      <Panel className="mb-5">
+        <SectionHead no="정의" title="KLAI란 무엇인가" desc="K-Local Attractiveness Index · 한국 로컬 매력도 지수" />
+        <p className="text-[13px] leading-relaxed text-muted">
+          <b className="text-ink">KLAI</b>는 전국 행정동(洞)의 <b className="text-ink">‘동네 매력도·활력’을 0~100 점수와 S~E 등급</b>으로 나타내는 합성 지표입니다.
+          인구·상권·공간·인식 <b className="text-ink">4개 축</b>을 가중 합성하고, 변화 속도(<b className="text-ink">모멘텀</b>)와 위기(젠트리·소멸·거래절벽)를 함께 진단합니다.
+        </p>
+
+        {/* 4축 */}
+        <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          {AXES.map((a) => (
+            <div key={a.k} className="rounded-xl border p-3" style={{ borderColor: `${a.color}55`, background: `${a.color}12` }}>
+              <div className="flex items-center justify-between">
+                <span className="text-[13px] font-extrabold" style={{ color: a.color }}>
+                  {a.k} {a.label}
+                </span>
+                <span className="text-[12px] font-black" style={{ color: a.color }}>{a.w}%</span>
+              </div>
+              <div className="mt-1 text-[11px] leading-snug text-muted">{a.desc}</div>
+              <div className="mt-1 text-[10px] text-muted2">{a.src}</div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-2 rounded-lg border border-line bg-navy/40 px-3 py-2 text-center text-[12.5px] font-semibold text-ink">
+          KLAI = 0.20·D1 + 0.30·D2 + 0.20·D3 + 0.30·D4 &nbsp;±&nbsp; 모멘텀(축별 변화율 z-합)
+        </div>
+
+        {/* 점수화 단계 */}
+        <div className="mt-4">
+          <div className="mb-2 text-[12px] font-bold text-ink">어떻게 점수화하나 (5단계)</div>
+          <ol className="space-y-1.5">
+            {SCORE_STEPS.map((s, i) => (
+              <li key={i} className="flex gap-2.5 rounded-lg border border-line bg-card2 px-3 py-2 text-[11.5px]">
+                <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-blue/15 text-[11px] font-black text-blue-l">{i + 1}</span>
+                <span>
+                  <b className="text-ink">{s.t}</b> — <span className="text-muted">{s.d}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        {/* 누가 만들었나 · 근거 */}
+        <div className="mt-4 rounded-xl border border-amber/30 bg-amber/5 p-3.5">
+          <div className="mb-1 text-[12px] font-bold text-amber">누가 만들었나 · 근거</div>
+          <p className="text-[12px] leading-relaxed text-muted">
+            KLAI는 <b className="text-ink">학계의 공인 표준 지수가 아니라, 이 플랫폼이 정의한 합성 지표</b>입니다(개념검증 MVP · 잠정).
+            여러 기존 연구·개념을 동(洞) 단위 한 점수로 결합한 시도로, 근거가 된 것은 ▸ <b className="text-ink">한국고용정보원 지방소멸위험지수</b>(이상호) ▸ <b className="text-ink">젠트리피케이션 단계 모델</b> ▸ 말콤 글래드웰 <b className="text-ink">티핑포인트</b>(소수의 법칙·고착성·맥락의 힘) ▸ 도시·상권 활력 연구 ▸ 야놀자 축제지수·belocal 로컬 데이터 등입니다.
+            산식·가중치는 본 프로젝트 <b className="text-ink">기획서</b>에 정의됐고, 실데이터가 확대되면 <b className="text-ink">SHAP 기여도·Granger 선행성·토픽모델</b>로 정밀화됩니다.
+          </p>
+        </div>
+
+        <p className="mt-3 text-[11.5px] leading-relaxed text-muted2">
+          ⚠ 현재 지도의 4축 점수는 <b className="text-muted">난수 샘플(잠정)</b>이고, 동·매장 진단의 <b className="text-muted">‘실측 보정 점수’</b>가 네이버(검색·기사)·KOSIS(인구)·소진공(상권) 실데이터를 반영한 값입니다. 모든 산출물에 <Pill tone="amber">잠정</Pill> 배지와 데이터 커버리지를 노출합니다.
+        </p>
+      </Panel>
 
       {/* 라이프사이클 곡선 */}
       <Panel className="mb-5">

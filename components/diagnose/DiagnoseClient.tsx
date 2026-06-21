@@ -73,12 +73,28 @@ interface DiagnoseResult {
   reportId: string;
 }
 
-export function DiagnoseClient({ initialQuery = "", initialAdmCd }: { initialQuery?: string; initialAdmCd?: string }) {
+type BrandCand = {
+  name: string;
+  category: string;
+  address: string;
+  roadAddress: string;
+  lng: number;
+  lat: number;
+  isFranchise: boolean;
+  admCd2: string | null;
+  dongName: string | null;
+  sigungu: string | null;
+};
+
+export function DiagnoseClient({ initialQuery = "", initialAdmCd, mode = "parcel" }: { initialQuery?: string; initialAdmCd?: string; mode?: "parcel" | "brand" }) {
   const [query, setQuery] = useState(initialQuery);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<DiagnoseResult | null>(null);
   const [selAnchor, setSelAnchor] = useState<number | null>(null); // 앵커 점포 선택(리스트↔지도 핀 연동)
+  const [candidates, setCandidates] = useState<BrandCand[] | null>(null); // 브랜드 검색 후보
+  const [searching, setSearching] = useState(false);
+  const [store, setStore] = useState<BrandCand | null>(null); // 선택된 중심 매장
 
   // admCd가 있으면 동명 지오코딩(모호) 대신 그 행정동을 직접 진단
   async function runDiagnose(q: string, admCd?: string) {
@@ -92,6 +108,61 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd }: { initialQue
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(admCd ? { admCd } : { address: q }),
+      });
+      if (!res.ok) {
+        const e = await res.json();
+        setError(e.message || "진단에 실패했습니다.");
+        setLoading(false);
+        return;
+      }
+      setResult(await res.json());
+    } catch {
+      setError("네트워크 오류");
+    }
+    setLoading(false);
+  }
+
+  // 브랜드 진단: 매장명 검색 → 후보 표시
+  async function searchBrand(q: string) {
+    if (!q.trim() || searching || loading) return;
+    setSearching(true);
+    setError(null);
+    setResult(null);
+    setCandidates(null);
+    setStore(null);
+    try {
+      const r = await fetch(`/api/brand/search?q=${encodeURIComponent(q.trim())}`);
+      if (!r.ok) {
+        const e = await r.json();
+        setError(e.message || "매장을 찾지 못했습니다.");
+        setSearching(false);
+        return;
+      }
+      const j = await r.json();
+      setCandidates(j.candidates as BrandCand[]);
+    } catch {
+      setError("네트워크 오류");
+    }
+    setSearching(false);
+  }
+
+  // 후보 매장 선택 → 그 매장 좌표 중심으로 진단
+  async function pickStore(c: BrandCand) {
+    if (!c.admCd2) {
+      setError("이 매장의 행정동을 찾지 못했습니다. 다른 매장을 선택해 주세요.");
+      return;
+    }
+    setStore(c);
+    setCandidates(null);
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    setSelAnchor(null);
+    try {
+      const res = await fetch("/api/diagnose", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lng: c.lng, lat: c.lat, label: c.name }),
       });
       if (!res.ok) {
         const e = await res.json();
@@ -122,33 +193,115 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd }: { initialQue
     <div className="space-y-6">
       {/* 입력 */}
       <div className="klai-panel p-5">
-        <label className="text-[13px] font-semibold text-muted">주소 · 지번 · 동명 입력</label>
-        <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && runDiagnose(query)}
-            placeholder="주소·지번·동명 또는 역·장소 (예: 강남역 / 홍대입구 / 성수동 / 성수이로 66)"
-            className="h-11 flex-1 rounded-lg border border-line bg-navy px-3.5 text-[14px] text-ink placeholder:text-muted2 focus:border-blue focus:outline-none"
-          />
-          <button
-            onClick={() => runDiagnose(query)}
-            disabled={loading}
-            className="h-11 rounded-lg bg-amber px-5 text-[14px] font-bold text-[#1a1206] hover:bg-[#e0951f] disabled:opacity-50"
-          >
-            {loading ? "분석 중…" : "진단 실행"}
-          </button>
-        </div>
-        {error && <p className="mt-2 text-[13px] text-warn">⚠ {error}</p>}
-        <p className="mt-2 text-[11.5px] text-muted2">
-          입력 → VWorld(주소·지번)·네이버(역·장소) 지오코딩 → 행정동 매핑 → 그 지점 중심 진단. 방향·위기·전략 + 2016~2026 변화. (점수/신호는 샘플 · 인구는 KOSIS 실데이터)
-        </p>
+        {mode === "brand" ? (
+          <>
+            <label className="text-[13px] font-semibold text-muted">매장 · 브랜드명 (네이버 등록 매장)</label>
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && searchBrand(query)}
+                placeholder="예: 성수동 어니언 / 망원 카페 / 로컬 브랜드명"
+                className="h-11 flex-1 rounded-lg border border-line bg-navy px-3.5 text-[14px] text-ink placeholder:text-muted2 focus:border-blue focus:outline-none"
+              />
+              <button
+                onClick={() => searchBrand(query)}
+                disabled={searching || loading}
+                className="h-11 rounded-lg bg-amber px-5 text-[14px] font-bold text-[#1a1206] hover:bg-[#e0951f] disabled:opacity-50"
+              >
+                {searching ? "검색 중…" : "매장 검색"}
+              </button>
+            </div>
+            {error && <p className="mt-2 text-[13px] text-warn">⚠ {error}</p>}
+            <p className="mt-2 text-[11.5px] text-muted2">
+              네이버 등록 매장 검색 → 매장 선택 → <b className="text-muted">그 매장을 중심으로</b> 지역(상권·문화 인프라·활성화 동인) 평가. 프랜차이즈가 아니라 <b className="text-muted">로컬 브랜드·매장 우선</b>으로 보여줍니다.
+            </p>
+          </>
+        ) : (
+          <>
+            <label className="text-[13px] font-semibold text-muted">주소 · 지번 · 동명 입력</label>
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && runDiagnose(query)}
+                placeholder="주소·지번·동명 또는 역·장소 (예: 강남역 / 홍대입구 / 성수동 / 성수이로 66)"
+                className="h-11 flex-1 rounded-lg border border-line bg-navy px-3.5 text-[14px] text-ink placeholder:text-muted2 focus:border-blue focus:outline-none"
+              />
+              <button
+                onClick={() => runDiagnose(query)}
+                disabled={loading}
+                className="h-11 rounded-lg bg-amber px-5 text-[14px] font-bold text-[#1a1206] hover:bg-[#e0951f] disabled:opacity-50"
+              >
+                {loading ? "분석 중…" : "진단 실행"}
+              </button>
+            </div>
+            {error && <p className="mt-2 text-[13px] text-warn">⚠ {error}</p>}
+            <p className="mt-2 text-[11.5px] text-muted2">
+              입력 → VWorld(주소·지번)·네이버(역·장소) 지오코딩 → 행정동 매핑 → 그 지점 중심 진단. 방향·위기·전략 + 2016~2026 변화. (점수/신호는 샘플 · 인구는 KOSIS 실데이터)
+            </p>
+          </>
+        )}
       </div>
+
+      {/* 브랜드 후보 선택 */}
+      {mode === "brand" && candidates && !result && (
+        <div className="klai-panel p-4">
+          <div className="mb-2 text-[13px] font-extrabold text-ink">
+            매장 선택 <span className="text-muted2">({candidates.length})</span>
+          </div>
+          <div className="space-y-1.5">
+            {candidates.map((c, i) => (
+              <button
+                key={i}
+                onClick={() => pickStore(c)}
+                disabled={!c.admCd2}
+                className="flex w-full flex-wrap items-center gap-2 rounded-lg border border-line bg-card2 px-3 py-2 text-left transition-colors hover:border-blue disabled:opacity-50"
+              >
+                <span className="text-[13px] font-bold text-ink">{c.name}</span>
+                <span className={`rounded-full border px-2 py-0.5 text-[10.5px] font-semibold ${c.isFranchise ? "border-line text-muted2" : "border-blue/40 bg-blue/10 text-blue-l"}`}>
+                  {c.isFranchise ? "프랜차이즈" : "로컬 브랜드"}
+                </span>
+                <span className="text-[11.5px] text-muted2">{c.category}</span>
+                <span className="ml-auto text-[11.5px] text-muted">{c.dongName ? `${c.sigungu ?? ""} ${c.dongName}` : "동 매핑 실패"}</span>
+                <span className="w-full truncate text-[11px] text-muted2">{c.roadAddress || c.address}</span>
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-[10.5px] text-muted2">로컬 브랜드 우선 정렬 · 매장을 누르면 그 지점을 중심으로 지역 평가가 실행됩니다.</p>
+        </div>
+      )}
 
       {loading && <div className="klai-panel h-72 animate-pulse" />}
 
       {result && (
         <div className="space-y-6">
+          {/* 브랜드 진단 — 중심 매장 배너 */}
+          {store && (
+            <div className="klai-panel flex flex-wrap items-center justify-between gap-3 p-4" style={{ borderColor: "var(--blue-l)" }}>
+              <div>
+                <span className="klai-eyebrow">브랜드 진단 · 중심 매장</span>
+                <div className="mt-0.5 flex flex-wrap items-center gap-2">
+                  <h2 className="text-xl font-black text-ink">{store.name}</h2>
+                  <span className={`rounded-full border px-2 py-0.5 text-[10.5px] font-semibold ${store.isFranchise ? "border-line text-muted2" : "border-blue/40 bg-blue/10 text-blue-l"}`}>
+                    {store.isFranchise ? "프랜차이즈" : "로컬 브랜드"}
+                  </span>
+                </div>
+                <div className="text-[12px] text-muted2">
+                  {store.category} · {store.roadAddress || store.address}
+                </div>
+              </div>
+              <a
+                href={`https://search.naver.com/search.naver?query=${encodeURIComponent(store.name)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-lg border border-line px-3 py-2 text-[12.5px] font-semibold text-blue-l hover:bg-card2"
+              >
+                네이버에서 보기 →
+              </a>
+            </div>
+          )}
+
           {/* 매핑 헤더 */}
           <div className="klai-panel flex flex-wrap items-center justify-between gap-4 p-5">
             <div>
