@@ -4,7 +4,23 @@
 // 연구자 톤: 전국 변화·검색·인구를 종합해 "어떤 동네가 왜 뜨고/지는지"를 서술.
 import "server-only";
 import { loadScores, loadDistricts, loadSignals, loadDemographics } from "@/lib/data";
-import type { Grade, PlaceScore, Report } from "@/lib/types";
+import type { Grade, MarketVitality, NarrativeStage, PlaceScore, Report } from "@/lib/types";
+
+// 클릭 시 펼쳐지는 상세 — 점수 프로필 + 논리적 설명
+export interface MoverDetail {
+  d1: number;
+  d2: number;
+  d3: number;
+  d4: number;
+  gentriStage: number;
+  marketVitality: MarketVitality;
+  narrativeStage: NarrativeStage;
+  negativeNarrative: boolean;
+  authenticityGap: number;
+  popChangeRate: number;
+  budgetInflow: number;
+  explanation: string; // 왜 뜨/지는지 논리적 다문장 설명
+}
 
 export interface WeeklyRiser {
   admCd2: string;
@@ -16,6 +32,15 @@ export interface WeeklyRiser {
   reason: string; // 연구자 한 줄 — 왜 뜨/지는가
   lng: number; // 행정동 중심 좌표(전국 지도 핀)
   lat: number;
+  detail: MoverDetail;
+}
+
+// 전국 동향 분석 — 무슨 이벤트, 왜 성장/쇠락하는지 논리적 설명
+export interface WeeklyAnalysis {
+  events: { title: string; detail: string }[]; // 이주의 전국 이슈
+  growthDrivers: { title: string; detail: string }[]; // 성장 원인
+  declineDrivers: { title: string; detail: string }[]; // 쇠락 원인
+  outlook: string; // 종합 전망
 }
 export interface WeeklyNational {
   totalDongs: number;
@@ -38,6 +63,7 @@ export interface WeeklyBlocks {
   narrativesHot: string[];
   narrativesCold: string[];
   spotlight: { admCd2: string; name: string; sigungu: string; klai: number; grade: Grade; momentum: number; writeup: string; lng: number; lat: number };
+  analysis: WeeklyAnalysis;
   methodologyNote: string;
 }
 
@@ -170,6 +196,75 @@ function fallerReason(p: PlaceScore): string {
   return `전반적 모멘텀 둔화 — KLAI ${p.klai}, 모멘텀 ${p.momentum}`;
 }
 
+// 상승 논리 설명 — 점수 프로필에서 다문장 도출
+function riserExplanation(p: PlaceScore): string {
+  const axes: [string, number][] = [["인구·지속성(D1)", p.d1], ["경제·상권(D2)", p.d2], ["공간·물리(D3)", p.d3], ["인식·감성(D4)", p.d4]];
+  const top = [...axes].sort((a, b) => b[1] - a[1])[0];
+  const parts: string[] = [];
+  parts.push(`4축 중 ${top[0]}이 ${top[1]}로 가장 높아 이 축이 상승을 견인한다.`);
+  if (p.d4 >= p.d1 && p.d4 >= p.d2 && p.d4 >= p.d3) parts.push("검색·기사 같은 '이야기(서사)' 지표가 인구·상권에 선행하는 건강한 티핑 초입 패턴이다 — 가격이 아니라 콘텐츠가 먼저 움직였다.");
+  if (p.gentriStage <= 1) parts.push(`젠트리 ${p.gentriStage}단계로 자본·프랜차이즈 진입 전이라 임대료 부담이 낮고, 고유 점포가 자랄 여지가 크다.`);
+  else if (p.gentriStage <= 3) parts.push(`젠트리 ${p.gentriStage}단계(점화~과열)로 미디어 버즈와 외부 유입이 빠르게 늘고 있다.`);
+  if (p.budgetInflow >= 20) parts.push(`공공조달 ${Math.round(p.budgetInflow)}억이 유입돼 도시재생·앵커시설이 마중물 역할을 한다.`);
+  if ((p.popChangeRate || 0) > 0) parts.push(`인구도 +${p.popChangeRate}%로 순유입돼 정주 기반이 받쳐준다.`);
+  parts.push(`모멘텀 +${p.momentum}는 ${p.marketVitality === "active" ? "활발한 거래·창업" : "안정적 시장"} 위에서 형성됐다. 다만 임대료가 서사를 추월하면 역티핑(급랭) 위험이 커진다.`);
+  return parts.join(" ");
+}
+// 쇠락 논리 설명
+function fallerExplanation(p: PlaceScore): string {
+  const parts: string[] = [];
+  if (p.negativeNarrative) parts.push(`'예전 같지 않다'는 부정 서사가 확산 중이다. 진정성갭 ${p.authenticityGap}로, 장소를 띄운 이야기가 거꾸로 무너뜨리는 역티핑 국면이다.`);
+  if (p.gentriStage >= 4) parts.push(`젠트리 ${p.gentriStage}단계(내몰림~쇠퇴)로 임대료 급등이 초기 상점·원주민을 밀어내고 상권이 프랜차이즈로 획일화됐다 — 맥락 붕괴.`);
+  if (p.marketVitality === "shrinking") parts.push("거래량 둔화·공실 확대로 시장이 위축(거래절벽)됐는데, 이는 통상 가격 하락에 선행하는 쇠퇴 신호다.");
+  if ((p.popChangeRate || 0) < 0) parts.push(`인구가 ${p.popChangeRate}%로 빠져나가며 D1 지속성(${p.d1})이 약해지고 소멸위험이 가속된다.`);
+  if (p.d4 < 45) parts.push(`검색·미디어 관심(D4 ${p.d4})도 둔화돼 외부 유입 동력이 약하다.`);
+  if (parts.length < 2) parts.push(`전반적으로 4축 모멘텀이 ${p.momentum}로 둔화됐다. 레버리지(임대 안정·고유 서사 강화)로 반전 여지를 살펴야 한다.`);
+  return parts.join(" ");
+}
+function moverDetail(p: PlaceScore, up: boolean): MoverDetail {
+  return {
+    d1: p.d1, d2: p.d2, d3: p.d3, d4: p.d4,
+    gentriStage: p.gentriStage, marketVitality: p.marketVitality, narrativeStage: p.narrativeStage,
+    negativeNarrative: p.negativeNarrative, authenticityGap: p.authenticityGap, popChangeRate: p.popChangeRate, budgetInflow: p.budgetInflow,
+    explanation: up ? riserExplanation(p) : fallerExplanation(p),
+  };
+}
+
+// 전국 동향 분석 — 데이터 패턴에서 이벤트·성장/쇠락 원인·전망을 논리적으로 구성
+function buildAnalysis(national: NatBase["national"], rows: NatBase["rows"]): WeeklyAnalysis {
+  const n = rows.length || 1;
+  const gentriShare = Math.round((national.gentriCount / n) * 1000) / 10;
+  const cliffShare = Math.round((national.cliffCount / n) * 1000) / 10;
+  const negNarr = rows.filter((r) => r.p.negativeNarrative).length;
+  const budgetTop = rows.filter((r) => r.p.budgetInflow >= 20).length;
+  const popOut = rows.filter((r) => (r.p.popChangeRate || 0) < -0.5).length;
+
+  const events = [
+    { title: `${national.topTypology} 유형 상권 재부상`, detail: `이번 주 상위 모멘텀 동의 최빈 유형이 '${national.topTypology}'다. 해당 유형에서 검색·기사 같은 서사 지표가 먼저 오르고 상권·유입이 뒤따르는 패턴이 전국적으로 관측된다.` },
+    { title: `젠트리 경보 ${national.gentriCount.toLocaleString()}곳 (전국 ${gentriShare}%)`, detail: `가격·손바뀜·브랜드 진입이 임계를 넘은 동이 ${national.gentriCount.toLocaleString()}곳. 이 중 후기 단계는 곧 원주민·고유 점포 내몰림으로 이어질 수 있다.` },
+    { title: `거래절벽 ${national.cliffCount.toLocaleString()}곳 (전국 ${cliffShare}%)`, detail: `거래량 둔화·공실 확대로 시장이 위축된 동. 임대료는 하방경직으로 버티지만 거래·공실 지표가 먼저 식는, 가격 하락 선행 신호다.` },
+    { title: `검색 관심도 전주 대비 ${national.searchTrendPct >= 0 ? "+" : ""}${national.searchTrendPct}%`, detail: `전국 검색 수요는 ${national.searchTrendPct >= 0 ? "소폭 확대" : "둔화"}. 인구는 평균 ${national.popChangePct >= 0 ? "+" : ""}${national.popChangePct}%로, 지방을 중심으로 ${popOut.toLocaleString()}곳에서 뚜렷한 유출이 잡힌다.` },
+  ];
+
+  const growthDrivers = [
+    { title: "서사 선행 — 검색·미디어가 먼저", detail: "성장 동네의 공통점은 D4(인식·감성)가 먼저 오른다는 것. 한 줄 정체성(이야기)이 특정 부족(창작자→방문객)을 끌어들여 상권이 형성되는 티핑포인트 구조로, 가격이 아니라 콘텐츠가 동력이다." },
+    { title: `공공투자 앵커 — ${budgetTop.toLocaleString()}곳에 집중`, detail: "도시재생·문화·행사 예산이 유입된 동에서 앵커시설이 마중물 역할. 나라장터 공공조달이 초기 상권의 고정비 위험을 낮춘다." },
+    { title: "로컬 크리에이터·자생 상권", detail: "독립 점포 비중·업종 다양성이 높은 동이 모멘텀을 유지. 프랜차이즈 의존이 낮을수록 고유성이 방문 이유가 되어 지속가능한 상승을 만든다." },
+  ];
+  const declineDrivers = [
+    { title: "젠트리 후기 내몰림 (맥락 붕괴)", detail: "임대료가 상권을 띄운 이야기를 추월하면 초기 점포·원주민이 이탈하고 프랜차이즈로 획일화된다. 매력을 만든 주체가 사라지며 역티핑(급랭)이 시작된다." },
+    { title: `거래절벽·시장 위축 — ${national.cliffCount.toLocaleString()}곳`, detail: "거래량·공실 기간이 먼저 악화되는 쇠퇴 선행 신호. 가격이 버티는 동안에도 유동성은 식어 다음 단계 하락을 예고한다." },
+    { title: `인구 유출·지방 소멸 — ${popOut.toLocaleString()}곳`, detail: "수도권 외 지역에서 청년 유출·고령화로 D1(지속성)이 약화. 생활인구 감소가 상권 기반을 잠식하며 소멸위험을 가속한다." },
+  ];
+
+  const dir = national.avgKlai >= 55 ? "완만한 상향" : "수도권 집중·지방 둔화의 혼조";
+  const outlook =
+    `종합하면 전국은 ${dir} 국면이다. 성장은 '이야기→사람→상권' 순서로 진행되는 동네에 집중되고, 쇠락은 임대료가 서사를 추월(젠트리 후기)했거나 인구가 빠지는 지역에서 두드러진다. ` +
+    `정책 함의는 분명하다 — 뜨는 동네는 임대 안정(상생협약·공공임대상가)으로 맥락을 보전해 티핑을 지속시키고, 식는 동네는 부정 서사가 임계를 넘기 전에 고유 정체성을 재건하거나 거래절벽 단계에서 조기 개입해야 한다. 부정 서사 확산 동은 ${negNarr.toLocaleString()}곳으로, 이 그룹이 다음 분기 쇠락 후보군이다.`;
+
+  return { events, growthDrivers, declineDrivers, outlook };
+}
+
 // 주차별 회전 선택 — 상위 풀에서 시드 오프셋으로 6개(주마다 다른 조명, 모두 실제 상/하위)
 function pickWindow<T>(pool: T[], seed: number, count: number): T[] {
   if (pool.length <= count) return pool.slice(0, count);
@@ -192,10 +287,10 @@ export function computeWeekly(year: number, week: number): Report {
   const fallersPool = [...rows].filter((r) => r.p.momentum < 0).sort((a, b) => a.p.momentum - b.p.momentum).slice(0, 36);
 
   const risers: WeeklyRiser[] = pickWindow(risersPool, seed, 6).map((r) => ({
-    admCd2: r.admCd2, name: r.name, sigungu: r.sigungu, klai: r.p.klai, grade: r.p.grade, momentum: r.p.momentum, reason: riserReason(r.p), lng: r.lng, lat: r.lat,
+    admCd2: r.admCd2, name: r.name, sigungu: r.sigungu, klai: r.p.klai, grade: r.p.grade, momentum: r.p.momentum, reason: riserReason(r.p), lng: r.lng, lat: r.lat, detail: moverDetail(r.p, true),
   }));
   const fallers: WeeklyRiser[] = pickWindow(fallersPool, seed * 7 + 3, 6).map((r) => ({
-    admCd2: r.admCd2, name: r.name, sigungu: r.sigungu, klai: r.p.klai, grade: r.p.grade, momentum: r.p.momentum, reason: fallerReason(r.p), lng: r.lng, lat: r.lat,
+    admCd2: r.admCd2, name: r.name, sigungu: r.sigungu, klai: r.p.klai, grade: r.p.grade, momentum: r.p.momentum, reason: fallerReason(r.p), lng: r.lng, lat: r.lat, detail: moverDetail(r.p, false),
   }));
 
   const gentriPool = [...rows].filter((r) => r.p.gentriFlag || r.p.gentriStage >= 3).sort((a, b) => b.p.gentriG - a.p.gentriG);
@@ -249,6 +344,7 @@ export function computeWeekly(year: number, week: number): Report {
       narrativesHot,
       narrativesCold,
       spotlight: { admCd2: sp.admCd2, name: sp.name, sigungu: sp.sigungu, klai: sp.klai, grade: sp.grade, momentum: sp.momentum, writeup, lng: sp.lng, lat: sp.lat },
+      analysis: buildAnalysis(national, rows),
       methodologyNote: "KLAI 4축(인구·상권·공간·인식) 합성 + 모멘텀(축별 변화율 z-합). 검색·기사=네이버/BIG KINDS, 인구=KOSIS, 상권=소진공. 표본·잠정(Provisional) — 실데이터 확대 시 정밀화.",
     } as unknown as Record<string, unknown>,
   };

@@ -195,6 +195,53 @@ export function WeeklyTemplate({ report }: { report: Report }) {
         <p className="mt-3 text-[13px] leading-relaxed text-muted">{b.spotlight.writeup}</p>
       </Block>
 
+      {/* 5. 전국 동향 심층 분석 — 무엇이, 왜 (논리적 설명) */}
+      <Block title="⑤ 전국 동향 심층 분석 — 무엇이, 왜" accent="amber">
+        <div className="mb-4">
+          <div className="mb-2 text-[12px] font-bold text-ink">📌 이주의 전국 이슈</div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {b.analysis.events.map((e) => (
+              <div key={e.title} className="rounded-lg border border-line bg-card2 p-3">
+                <div className="text-[12.5px] font-bold text-ink">{e.title}</div>
+                <p className="mt-1 text-[11.5px] leading-relaxed text-muted">{e.detail}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <div className="mb-2 flex items-center gap-1.5 text-[12px] font-bold text-grade-b">
+              <span className="h-3 w-1 rounded bg-grade-b" />성장하는 이유
+            </div>
+            <ul className="space-y-2">
+              {b.analysis.growthDrivers.map((d) => (
+                <li key={d.title} className="rounded-lg border border-grade-b/25 bg-grade-b/5 p-3">
+                  <div className="text-[12px] font-bold text-ink">{d.title}</div>
+                  <p className="mt-1 text-[11.5px] leading-relaxed text-muted">{d.detail}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <div className="mb-2 flex items-center gap-1.5 text-[12px] font-bold text-warn">
+              <span className="h-3 w-1 rounded bg-warn" />쇠락하는 이유
+            </div>
+            <ul className="space-y-2">
+              {b.analysis.declineDrivers.map((d) => (
+                <li key={d.title} className="rounded-lg border border-warn/25 bg-warn/5 p-3">
+                  <div className="text-[12px] font-bold text-ink">{d.title}</div>
+                  <p className="mt-1 text-[11.5px] leading-relaxed text-muted">{d.detail}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        <div className="mt-4 rounded-xl border border-amber/30 bg-amber/5 p-3.5">
+          <div className="mb-1 text-[12px] font-bold text-amber">종합 전망 · 정책 함의</div>
+          <p className="text-[12.5px] leading-relaxed text-muted">{b.analysis.outlook}</p>
+        </div>
+      </Block>
+
       {/* 방법론 주석 */}
       <div className="rounded-xl border border-line bg-card2/50 p-4">
         <div className="mb-1 text-[11px] font-bold text-muted2">방법론 · 데이터</div>
@@ -222,34 +269,86 @@ function Block({ title, accent, children }: { title: string; accent?: "up" | "do
   );
 }
 
+const MV: Record<string, string> = { active: "활발", stable: "안정", shrinking: "위축(거래절벽)" };
+const NS: Record<string, string> = { formation: "형성", spread: "확산", peak: "절정", decline: "쇠퇴" };
+
+// 클릭(▶)하면 펼쳐지는 상세 사유 — 네이티브 <details>(JS 없이 동작, 서버 렌더)
 function ReasonList({ rows, dir }: { rows: WeeklyBlocks["risers"]; dir: "up" | "down" }) {
   if (!rows.length) return <Empty />;
+  const tone = dir === "up" ? "text-grade-b" : "text-warn";
+  const barColor = dir === "up" ? "#3E9AA8" : "#D2691E";
   return (
     <ol className="space-y-2">
       {rows.map((r, i) => (
-        <li key={r.admCd2} className="rounded-lg border border-line bg-card2 px-3 py-2">
-          <div className="flex items-center gap-3">
-            <span className="w-4 text-center text-[12px] font-bold text-muted2">{i + 1}</span>
-            <GradeBadge grade={r.grade} size="sm" />
-            <Link href={`/place/${r.admCd2}`} className="min-w-0 flex-1 truncate text-[13px] font-bold text-ink hover:text-amber">
-              {r.name}
-              <span className="ml-1.5 text-[11px] font-normal text-muted2">{r.sigungu}</span>
-            </Link>
-            <div className="hidden h-1.5 w-14 shrink-0 overflow-hidden rounded-full bg-navy2/60 sm:block">
-              <div
-                className="h-full rounded-full"
-                style={{ width: `${r.klai}%`, background: `linear-gradient(90deg, ${GRADE_HEX[r.grade]}99, ${GRADE_HEX[r.grade]})`, boxShadow: `0 0 5px ${GRADE_HEX[r.grade]}66` }}
-              />
+        <li key={r.admCd2}>
+          <details className="group rounded-lg border border-line bg-card2 open:border-blue/40 open:bg-navy/30">
+            <summary className="flex cursor-pointer list-none items-center gap-2.5 px-3 py-2 [&::-webkit-details-marker]:hidden">
+              <span className="w-4 text-center text-[12px] font-bold text-muted2">{i + 1}</span>
+              <GradeBadge grade={r.grade} size="sm" />
+              <span className="min-w-0 flex-1 truncate text-[13px] font-bold text-ink">
+                {r.name}
+                <span className="ml-1.5 text-[11px] font-normal text-muted2">{r.sigungu}</span>
+              </span>
+              <div className="hidden h-1.5 w-12 shrink-0 overflow-hidden rounded-full bg-navy2/60 sm:block">
+                <div className="h-full rounded-full" style={{ width: `${r.klai}%`, background: `linear-gradient(90deg, ${GRADE_HEX[r.grade]}99, ${GRADE_HEX[r.grade]})` }} />
+              </div>
+              <span className="w-7 text-right text-[12px] font-semibold tabular-nums" style={{ color: GRADE_HEX[r.grade] }}>
+                {r.klai}
+              </span>
+              <MomentumChip m={r.momentum} />
+              <span className="w-3 shrink-0 text-center text-muted2 transition-transform group-open:rotate-90">›</span>
+            </summary>
+            <div className="border-t border-line px-3 py-3">
+              <div className={`mb-2.5 text-[12px] font-semibold ${tone}`}>{r.reason}</div>
+              {/* 4축 미니 바 */}
+              <div className="mb-2.5 grid grid-cols-4 gap-2">
+                {([["D1 인구", r.detail.d1], ["D2 상권", r.detail.d2], ["D3 공간", r.detail.d3], ["D4 인식", r.detail.d4]] as [string, number][]).map(([k, v]) => (
+                  <div key={k}>
+                    <div className="flex justify-between text-[10px] text-muted2">
+                      <span>{k}</span>
+                      <span className="tabular-nums">{v}</span>
+                    </div>
+                    <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-navy2/60">
+                      <div className="h-full rounded-full" style={{ width: `${Math.max(0, Math.min(100, v))}%`, background: barColor }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* 핵심 지표 태그 */}
+              <div className="mb-2.5 flex flex-wrap gap-1.5">
+                <Tag>젠트리 {r.detail.gentriStage}단계</Tag>
+                <Tag>시장 {MV[r.detail.marketVitality] ?? r.detail.marketVitality}</Tag>
+                <Tag>내러티브 {NS[r.detail.narrativeStage] ?? r.detail.narrativeStage}</Tag>
+                <Tag>
+                  인구 {r.detail.popChangeRate >= 0 ? "+" : ""}
+                  {r.detail.popChangeRate}%
+                </Tag>
+                {r.detail.budgetInflow >= 1 && <Tag>공공예산 {Math.round(r.detail.budgetInflow)}억</Tag>}
+                {r.detail.negativeNarrative && <Tag warn>부정서사 갭{r.detail.authenticityGap}</Tag>}
+              </div>
+              {/* 논리적 설명 */}
+              <p className="text-[12px] leading-relaxed text-muted">{r.detail.explanation}</p>
+              <div className="mt-2.5 flex gap-4 text-[11.5px]">
+                <Link href={`/place/${r.admCd2}`} className="font-semibold text-blue-l hover:underline">
+                  동 리포트 →
+                </Link>
+                <Link href={`/diagnose?admCd=${r.admCd2}`} className="font-semibold text-blue-l hover:underline">
+                  정밀 진단 →
+                </Link>
+              </div>
             </div>
-            <span className="w-7 text-right text-[12px] font-semibold tabular-nums" style={{ color: GRADE_HEX[r.grade] }}>
-              {r.klai}
-            </span>
-            <MomentumChip m={r.momentum} />
-          </div>
-          <div className={`mt-1 pl-7 text-[11.5px] leading-snug ${dir === "up" ? "text-grade-b" : "text-warn"}`}>{r.reason}</div>
+          </details>
         </li>
       ))}
     </ol>
+  );
+}
+
+function Tag({ children, warn }: { children: React.ReactNode; warn?: boolean }) {
+  return (
+    <span className={`rounded-full border px-2 py-0.5 text-[10.5px] font-semibold ${warn ? "border-warn/40 bg-warn/10 text-warn" : "border-line bg-navy/40 text-muted"}`}>
+      {children}
+    </span>
   );
 }
 
