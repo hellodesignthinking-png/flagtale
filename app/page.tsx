@@ -4,7 +4,7 @@ import { SiteFooter } from "@/components/page-shell";
 import { ArticleCard, toCardItem, reasonInfo } from "@/components/landing/ArticleCard";
 import { Carousel } from "@/components/landing/Carousel";
 import { FeedTabs } from "@/components/landing/FeedTabs";
-import { NationalScatter, type ScatterPoint } from "@/components/landing/NationalScatter";
+import { Iso3DMap, type IsoPoint } from "@/components/landing/Iso3DMap";
 import { CountUp } from "@/components/landing/CountUp";
 import { Reveal } from "@/components/landing/Reveal";
 
@@ -32,9 +32,9 @@ export default function LandingPage() {
     poolMap.set(it.cd, it);
   }
   const pool = [...poolMap.values()].sort((a, b) => Math.abs(b.momentum) - Math.abs(a.momentum));
-  const scatterPoints: ScatterPoint[] = [
-    ...risers.map((r) => ({ name: r.name, momentum: r.momentum, lng: r.lng, lat: r.lat, kind: "riser" as const, reason: reasonInfo(r).label })),
-    ...fallers.map((r) => ({ name: r.name, momentum: r.momentum, lng: r.lng, lat: r.lat, kind: "faller" as const, reason: reasonInfo(r).label })),
+  const isoPoints: IsoPoint[] = [
+    ...risers.map((r) => ({ name: r.name, klai: r.klai, momentum: r.momentum, lng: r.lng, lat: r.lat, kind: "riser" as const, reason: reasonInfo(r).label })),
+    ...fallers.map((r) => ({ name: r.name, klai: r.klai, momentum: r.momentum, lng: r.lng, lat: r.lat, kind: "faller" as const, reason: reasonInfo(r).label })),
   ];
 
   return (
@@ -83,30 +83,35 @@ export default function LandingPage() {
           <FeedTabs items={pool} />
         </Reveal>
 
-        {/* 전국 한눈에 — 지도 + 카운트업 */}
+        {/* 전국 3D 매력도 지도 (풀폭) + 카운트업 */}
         <Reveal as="section" className="py-10">
-          <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
-            <Link href="/map" className="lift group block overflow-hidden rounded-2xl border border-line bg-card2/40">
-              <div className="bg-navy/40 p-3">
-                <NationalScatter points={scatterPoints} className="h-[320px] w-full" />
-              </div>
-              <div className="flex items-center justify-between border-t border-line px-4 py-3">
-                <div className="min-w-0">
-                  <div className="cat-tag">NATIONAL MAP</div>
-                  <div className="truncate text-[15px] font-extrabold text-ink group-hover:text-blue-l">전국 매력도 지도 · 인터랙티브 →</div>
-                </div>
-                <div className="flex shrink-0 gap-1.5">
-                  <span className="status-pill" style={{ background: "color-mix(in srgb, var(--gB) 16%, transparent)", color: "var(--gB)" }}>▲ {rising.toLocaleString()}</span>
-                  <span className="status-pill border border-warn/40 text-warn">▼ {declining.toLocaleString()}</span>
-                </div>
-              </div>
-            </Link>
-            <div className="grid grid-cols-2 content-center gap-3">
-              <Stat to={total} label="분석 행정동" />
-              <Stat to={13} label="실데이터 소스" />
-              <Stat to={rising} label="상승 동네" />
-              <Stat to={declining} label="위기 동네" warn />
+          <div className="mb-4 flex items-end justify-between">
+            <div>
+              <span className="klai-eyebrow">3D National Map</span>
+              <h2 className="mt-1 text-[1.4rem] font-extrabold tracking-tight sm:text-[1.7rem]">전국 <span className="hl-mark">3D 매력도</span> 지도</h2>
             </div>
+            <Link href="/map" className="hidden shrink-0 rounded-full border border-line bg-card2 px-4 py-2 text-[13px] font-bold text-ink transition-colors hover:border-blue/50 sm:inline-block">인터랙티브 지도 →</Link>
+          </div>
+          <Link href="/map" className="lift group block overflow-hidden rounded-2xl border border-line bg-card2/40">
+            <div className="bg-gradient-to-b from-white/60 to-card2/30 px-2 pt-2">
+              <Iso3DMap points={isoPoints} className="h-[300px] w-full sm:h-[440px]" />
+            </div>
+            <div className="flex items-center justify-between border-t border-line px-4 py-3">
+              <div className="min-w-0">
+                <div className="cat-tag">기둥 높이 = KLAI · 색 = 상승/하락</div>
+                <div className="truncate text-[15px] font-extrabold text-ink group-hover:text-blue-l">동네별 매력도를 입체로 한눈에 · 인터랙티브 →</div>
+              </div>
+              <div className="flex shrink-0 gap-1.5">
+                <span className="status-pill" style={{ background: "color-mix(in srgb, var(--gB) 16%, transparent)", color: "var(--gB)" }}>▲ {rising.toLocaleString()}</span>
+                <span className="status-pill border border-warn/40 text-warn">▼ {declining.toLocaleString()}</span>
+              </div>
+            </div>
+          </Link>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Stat to={total} label="분석 행정동" />
+            <Stat to={13} label="실데이터 소스" />
+            <Stat to={rising} label="상승 동네" />
+            <Stat to={declining} label="위기 동네" warn />
           </div>
         </Reveal>
 
