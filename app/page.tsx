@@ -92,21 +92,21 @@ export default function LandingPage() {
             </div>
             <Link href="/map" className="hidden shrink-0 rounded-full border border-line bg-card2 px-4 py-2 text-[13px] font-bold text-ink transition-colors hover:border-blue/50 sm:inline-block">인터랙티브 지도 →</Link>
           </div>
-          <Link href="/map" className="lift group block overflow-hidden rounded-2xl border border-line bg-card2/40">
+          <div className="overflow-hidden rounded-2xl border border-line bg-card2/40">
             <div className="bg-gradient-to-b from-white/60 to-card2/30 px-2 pt-2">
               <Iso3DMap points={isoPoints} className="h-[300px] w-full sm:h-[440px]" />
             </div>
-            <div className="flex items-center justify-between border-t border-line px-4 py-3">
+            <Link href="/map" className="group flex items-center justify-between border-t border-line px-4 py-3">
               <div className="min-w-0">
-                <div className="cat-tag">기둥 높이 = KLAI · 색 = 상승/하락</div>
-                <div className="truncate text-[15px] font-extrabold text-ink group-hover:text-blue-l">동네별 매력도를 입체로 한눈에 · 인터랙티브 →</div>
+                <div className="cat-tag">기둥 높이 = KLAI · 색 = 상승/하락 · 드래그 회전</div>
+                <div className="truncate text-[15px] font-extrabold text-ink group-hover:text-blue-l">동네별 매력도를 입체로 한눈에 · 인터랙티브 지도 →</div>
               </div>
               <div className="flex shrink-0 gap-1.5">
                 <span className="status-pill" style={{ background: "color-mix(in srgb, var(--gB) 16%, transparent)", color: "var(--gB)" }}>▲ {rising.toLocaleString()}</span>
                 <span className="status-pill border border-warn/40 text-warn">▼ {declining.toLocaleString()}</span>
               </div>
-            </div>
-          </Link>
+            </Link>
+          </div>
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Stat to={total} label="분석 행정동" />
             <Stat to={13} label="실데이터 소스" />

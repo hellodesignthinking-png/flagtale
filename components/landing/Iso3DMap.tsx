@@ -1,5 +1,10 @@
-// 전국 3D 아이소메트릭 매력도 — 동네별 KLAI를 입체 컬럼 높이로, 상승(초록)/하락(로즈) 음영.
-// 서버 렌더 SVG(항상 렌더·경량). viewBox를 콘텐츠에 맞춰 동적 프레이밍 → 군집 데이터도 화면을 가득 채움.
+"use client";
+
+import { useRef, useState } from "react";
+import type React from "react";
+
+// 전국 3D 아이소메트릭 매력도 — 동네별 KLAI=기둥 높이, 상승(초록)/하락(로즈) 음영.
+// 드래그로 회전(ⓖ), 기둥 호버/클릭 시 상세 툴팁(ⓕ). 고정 viewBox 안에서 씬이 회전.
 export interface IsoPoint {
   name: string;
   lng: number;
@@ -16,102 +21,143 @@ const SHADE = {
 };
 
 export function Iso3DMap({ points, className }: { points: IsoPoint[]; className?: string }) {
-  const LNG0 = Math.min(...points.map((p) => p.lng));
-  const LNG1 = Math.max(...points.map((p) => p.lng));
-  const LAT0 = Math.min(...points.map((p) => p.lat));
-  const LAT1 = Math.max(...points.map((p) => p.lat));
-  const padLng = Math.max((LNG1 - LNG0) * 0.18, 0.08);
-  const padLat = Math.max((LAT1 - LAT0) * 0.18, 0.08);
-  const lo0 = LNG0 - padLng;
-  const lo1 = LNG1 + padLng;
-  const la0 = LAT0 - padLat;
-  const la1 = LAT1 + padLat;
-  const UX = 360;
-  const UY = 84;
-  const ox = 480;
-  const oy = 180;
+  const [theta, setTheta] = useState(0.5);
+  const [hovered, setHovered] = useState<number | null>(null);
+  const drag = useRef<{ x: number; t: number } | null>(null);
+  const moved = useRef(false);
+
+  const lngs = points.map((p) => p.lng);
+  const lats = points.map((p) => p.lat);
+  const padLng = Math.max((Math.max(...lngs) - Math.min(...lngs)) * 0.18, 0.08);
+  const padLat = Math.max((Math.max(...lats) - Math.min(...lats)) * 0.18, 0.08);
+  const lo0 = Math.min(...lngs) - padLng;
+  const lo1 = Math.max(...lngs) + padLng;
+  const la0 = Math.min(...lats) - padLat;
+  const la1 = Math.max(...lats) + padLat;
+
+  const W = 820;
+  const H = 560;
+  const UX = 270;
+  const UY = 126;
+  const ox = 410;
+  const oy = 345;
   const fw = 13;
   const fy = 6.5;
-  const gx = (lng: number) => (lng - lo0) / (lo1 - lo0);
-  const gy = (lat: number) => (la1 - lat) / (la1 - la0); // 북쪽=뒤
-  const corner = (X: number, Y: number) => ({ x: ox + (X - Y) * UX, y: oy + (X + Y) * UY });
+  const cos = Math.cos(theta);
+  const sin = Math.sin(theta);
+  const rot = (X: number, Y: number) => ({ rx: X * cos - Y * sin, ry: X * sin + Y * cos });
   const cols = points
-    .map((p) => {
-      const X = gx(p.lng);
-      const Y = gy(p.lat);
-      return { ...p, bx: ox + (X - Y) * UX, by: oy + (X + Y) * UY, depth: X + Y, h: 16 + (p.klai / 100) * 110 };
+    .map((p, i) => {
+      const { rx, ry } = rot((p.lng - lo0) / (lo1 - lo0) - 0.5, (la1 - p.lat) / (la1 - la0) - 0.5);
+      return { ...p, i, bx: ox + (rx - ry) * UX, by: oy + (rx + ry) * UY, depth: rx + ry, h: 16 + (p.klai / 100) * 116 };
     })
     .sort((a, b) => a.depth - b.depth);
-  const labelNames = new Set([...points].sort((a, b) => b.momentum - a.momentum).slice(0, 1).map((p) => p.name));
+  const gpt = (X: number, Y: number) => {
+    const { rx, ry } = rot(X - 0.5, Y - 0.5);
+    return { x: ox + (rx - ry) * UX, y: oy + (rx + ry) * UY };
+  };
 
-  // 콘텐츠 바운딩 → viewBox 동적 프레이밍(컨테이너 가로비에 맞춰 좌우 여백 확보)
-  const minX = Math.min(...cols.map((c) => c.bx - fw));
-  const maxX = Math.max(...cols.map((c) => c.bx + fw));
-  const minTop = Math.min(...cols.map((c) => c.by - c.h));
-  const maxBot = Math.max(...cols.map((c) => c.by + fy));
-  const vbY = minTop - 40;
-  const vbH = maxBot + 18 - vbY;
-  const contentW = maxX - minX;
-  const desiredW = vbH * 2.3;
-  const padX = Math.max(40, (desiredW - contentW) / 2);
-  const vbX = minX - padX;
-  const vbW = contentW + padX * 2;
+  const onDown = (e: React.PointerEvent<SVGSVGElement>) => {
+    drag.current = { x: e.clientX, t: theta };
+    moved.current = false;
+    setHovered(null);
+  };
+  const onMove = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (!drag.current) return;
+    const dx = e.clientX - drag.current.x;
+    if (Math.abs(dx) > 3) moved.current = true;
+    setTheta(drag.current.t + dx * 0.012);
+  };
+  const onUp = () => {
+    drag.current = null;
+  };
 
-  const back = corner(0, 0);
-  const right = corner(1, 0);
-  const front = corner(1, 1);
-  const left = corner(0, 1);
+  const c00 = gpt(0, 0);
+  const c10 = gpt(1, 0);
+  const c11 = gpt(1, 1);
+  const c01 = gpt(0, 1);
+  const hc = hovered != null ? cols.find((c) => c.i === hovered) : null;
 
   return (
-    <svg viewBox={`${vbX} ${vbY} ${vbW} ${vbH}`} className={className} role="img" aria-label="전국 3D 매력도 다이어그램(컬럼 높이=KLAI, 색=상승/하락)" preserveAspectRatio="xMidYMid meet">
-      {/* 아이소 지면 + 격자 */}
-      <polygon points={`${back.x},${back.y} ${right.x},${right.y} ${front.x},${front.y} ${left.x},${left.y}`} fill="#eaf0f2" stroke="var(--line)" strokeWidth={1} />
-      {[0.2, 0.4, 0.6, 0.8].map((t) => {
-        const a = corner(t, 0);
-        const b = corner(t, 1);
-        const c = corner(0, t);
-        const d = corner(1, t);
-        return (
-          <g key={t} stroke="var(--line)" strokeWidth={0.8} opacity={0.55}>
-            <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} />
-            <line x1={c.x} y1={c.y} x2={d.x} y2={d.y} />
-          </g>
-        );
-      })}
+    <div className={`relative ${className ?? ""}`}>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        role="img"
+        aria-label="전국 3D 매력도 다이어그램(드래그로 회전, 기둥 높이=KLAI, 상승/하락 색)"
+        className="h-full w-full cursor-grab touch-none select-none active:cursor-grabbing"
+        onPointerDown={onDown}
+        onPointerMove={onMove}
+        onPointerUp={onUp}
+        onPointerLeave={onUp}
+      >
+        <polygon points={`${c00.x},${c00.y} ${c10.x},${c10.y} ${c11.x},${c11.y} ${c01.x},${c01.y}`} fill="#eaf0f2" stroke="var(--line)" strokeWidth={1} />
+        {[0.2, 0.4, 0.6, 0.8].map((t) => {
+          const a = gpt(t, 0);
+          const b = gpt(t, 1);
+          const c = gpt(0, t);
+          const d = gpt(1, t);
+          return (
+            <g key={t} stroke="var(--line)" strokeWidth={0.8} opacity={0.5}>
+              <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} />
+              <line x1={c.x} y1={c.y} x2={d.x} y2={d.y} />
+            </g>
+          );
+        })}
 
-      {/* 컬럼(뒤→앞) */}
-      {cols.map((c, i) => {
-        const sh = SHADE[c.kind];
-        const ty = c.by - c.h;
-        const topFace = `${c.bx},${ty - fy} ${c.bx + fw},${ty} ${c.bx},${ty + fy} ${c.bx - fw},${ty}`;
-        const leftFace = `${c.bx - fw},${ty} ${c.bx},${ty + fy} ${c.bx},${c.by + fy} ${c.bx - fw},${c.by}`;
-        const rightFace = `${c.bx},${ty + fy} ${c.bx + fw},${ty} ${c.bx + fw},${c.by} ${c.bx},${c.by + fy}`;
-        return (
-          <g key={i}>
-            <ellipse cx={c.bx} cy={c.by + fy} rx={fw + 2} ry={4} fill="#000" opacity={0.12} />
-            <polygon points={leftFace} fill={sh.left} />
-            <polygon points={rightFace} fill={sh.right} />
-            <polygon points={topFace} fill={sh.top} stroke="#fff" strokeWidth={0.8} />
-            <text x={c.bx} y={ty - 7} fontSize={10} fontWeight={800} fill="#fff" textAnchor="middle" style={{ paintOrder: "stroke" }} stroke={c.kind === "riser" ? "#15803d" : "#be123c"} strokeWidth={2.5}>
-              {c.klai}
-            </text>
-            {labelNames.has(c.name) && (
-              <text x={c.bx} y={ty - 21} fontSize={11.5} fontWeight={800} fill="var(--ink)" stroke="#fff" strokeWidth={3} paintOrder="stroke" textAnchor="middle">
-                {c.name} · {c.reason}
+        {cols.map((c) => {
+          const sh = SHADE[c.kind];
+          const ty = c.by - c.h;
+          const on = hovered === c.i;
+          return (
+            <g
+              key={c.i}
+              style={{ cursor: "pointer" }}
+              onMouseEnter={() => {
+                if (!drag.current) setHovered(c.i);
+              }}
+              onMouseLeave={() => setHovered((h) => (h === c.i ? null : h))}
+              onPointerUp={() => {
+                if (!moved.current) setHovered((v) => (v === c.i ? null : c.i));
+              }}
+            >
+              <ellipse cx={c.bx} cy={c.by + fy} rx={fw + 2} ry={4} fill="#000" opacity={0.12} />
+              <polygon points={`${c.bx - fw},${ty} ${c.bx},${ty + fy} ${c.bx},${c.by + fy} ${c.bx - fw},${c.by}`} fill={sh.left} />
+              <polygon points={`${c.bx},${ty + fy} ${c.bx + fw},${ty} ${c.bx + fw},${c.by} ${c.bx},${c.by + fy}`} fill={sh.right} />
+              <polygon points={`${c.bx},${ty - fy} ${c.bx + fw},${ty} ${c.bx},${ty + fy} ${c.bx - fw},${ty}`} fill={sh.top} stroke={on ? "#0D2B5E" : "#fff"} strokeWidth={on ? 2 : 0.8} />
+              <text x={c.bx} y={ty - 7} fontSize={10} fontWeight={800} fill="#fff" textAnchor="middle" style={{ paintOrder: "stroke" }} stroke={c.kind === "riser" ? "#15803d" : "#be123c"} strokeWidth={2.5}>
+                {c.klai}
               </text>
-            )}
-          </g>
-        );
-      })}
+            </g>
+          );
+        })}
 
-      {/* 범례(동적 좌하단) */}
-      <g transform={`translate(${vbX + 12}, ${vbY + vbH - 10})`}>
-        <rect x={0} y={-10} width={12} height={10} fill={SHADE.riser.top} />
-        <text x={18} y={0} fontSize={12} fontWeight={700} fill="var(--muted)">상승</text>
-        <rect x={62} y={-10} width={12} height={10} fill={SHADE.faller.top} />
-        <text x={80} y={0} fontSize={12} fontWeight={700} fill="var(--muted)">하락</text>
-        <text x={134} y={0} fontSize={11.5} fontWeight={600} fill="var(--muted2)">기둥 높이 = KLAI</text>
-      </g>
-    </svg>
+        {hc &&
+          (() => {
+            const tw = 168;
+            const th = 60;
+            let tx = hc.bx + 14;
+            if (tx + tw > W) tx = hc.bx - 14 - tw;
+            let tyy = hc.by - hc.h - th - 6;
+            if (tyy < 4) tyy = 4;
+            return (
+              <g pointerEvents="none">
+                <rect x={tx} y={tyy} width={tw} height={th} rx={9} fill="#0D2B5E" opacity={0.97} />
+                <text x={tx + 12} y={tyy + 20} fontSize={13} fontWeight={800} fill="#fff">{hc.name}</text>
+                <text x={tx + 12} y={tyy + 37} fontSize={11} fill="#cdd8ec">KLAI {hc.klai} · 모멘텀 {hc.momentum >= 0 ? "+" : ""}{hc.momentum}</text>
+                <text x={tx + 12} y={tyy + 52} fontSize={11} fontWeight={700} fill={hc.kind === "riser" ? "#34d399" : "#fb7185"}>{hc.reason}</text>
+              </g>
+            );
+          })()}
+
+        <g transform={`translate(14, ${H - 12})`} pointerEvents="none">
+          <rect x={0} y={-10} width={12} height={10} fill={SHADE.riser.top} />
+          <text x={18} y={0} fontSize={12} fontWeight={700} fill="var(--muted)">상승</text>
+          <rect x={62} y={-10} width={12} height={10} fill={SHADE.faller.top} />
+          <text x={80} y={0} fontSize={12} fontWeight={700} fill="var(--muted)">하락</text>
+          <text x={132} y={0} fontSize={11.5} fontWeight={600} fill="var(--muted2)">기둥 = KLAI</text>
+        </g>
+      </svg>
+      <div className="pointer-events-none absolute right-3 top-3 rounded-full bg-[#0D2B5E]/85 px-2.5 py-1 text-[11px] font-bold text-white/90">드래그로 회전 ↻ · 클릭/호버 상세</div>
+    </div>
   );
 }
