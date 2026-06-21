@@ -112,3 +112,78 @@ export async function naverInterest(query: string): Promise<NaverInterest | null
   cache.set(q, { at: Date.now(), data });
   return data;
 }
+
+// ── 경량(버스트 안전) ── 트렌딩 섹션용: 뉴스 검색 단독(고한도) + 데이터랩 배치.
+export interface NaverNews {
+  newsTotal: number;
+  sentiment: number;
+  pos: number;
+  neg: number;
+  headlines: { title: string; date: string; link: string; tone: 1 | 0 | -1 }[];
+}
+const newsCache = new Map<string, { at: number; data: NaverNews }>();
+
+export async function naverNews(query: string): Promise<NaverNews | null> {
+  const q = query.trim();
+  if (!ID || !SECRET || !q) return null;
+  const c = newsCache.get(q);
+  if (c && Date.now() - c.at < TTL) return c.data;
+  const headers = { "X-Naver-Client-Id": ID, "X-Naver-Client-Secret": SECRET };
+  const j = await fetch(`https://openapi.naver.com/v1/search/news.json?query=${encodeURIComponent(q)}&display=30&sort=date`, { headers, cache: "no-store", signal: AbortSignal.timeout(4500) })
+    .then((r) => r.json())
+    .catch(() => null);
+  if (!j) return null;
+  const items = (j.items ?? []) as { title: string; description?: string; pubDate: string; originallink?: string; link: string }[];
+  const clean = (s: string) => String(s).replace(/<[^>]+>/g, "").replace(/&[a-z]+;/g, " ");
+  let pos = 0, neg = 0, neut = 0;
+  const tagged = items.map((it) => {
+    const t = toneOf(clean(it.title) + " " + clean(it.description ?? ""));
+    if (t > 0) pos++;
+    else if (t < 0) neg++;
+    else neut++;
+    return { title: clean(it.title), date: it.pubDate ? new Date(it.pubDate).toISOString().slice(0, 10) : "", link: it.originallink || it.link, tone: t };
+  });
+  const n = pos + neg + neut || 1;
+  const data: NaverNews = { newsTotal: Number(j.total ?? 0), sentiment: Math.round(((pos - neg) / n) * 100), pos, neg, headlines: tagged.slice(0, 2) };
+  newsCache.set(q, { at: Date.now(), data });
+  return data;
+}
+
+const trendCache = new Map<string, { at: number; now: number; delta: number }>();
+
+// 데이터랩 검색어트렌드 — 한 요청에 최대 5개 그룹 → 12개를 3요청으로(레이트리밋 회피).
+export async function naverTrendBatch(queries: string[]): Promise<Record<string, { now: number; delta: number }>> {
+  const out: Record<string, { now: number; delta: number }> = {};
+  const todo: string[] = [];
+  for (const q of queries) {
+    const c = trendCache.get(q);
+    if (c && Date.now() - c.at < TTL) out[q] = { now: c.now, delta: c.delta };
+    else todo.push(q);
+  }
+  if (!ID || !SECRET || !todo.length) return out;
+  const headers = { "X-Naver-Client-Id": ID, "X-Naver-Client-Secret": SECRET, "Content-Type": "application/json" };
+  const now = new Date();
+  const start = new Date(now);
+  start.setFullYear(start.getFullYear() - 3);
+  for (let i = 0; i < todo.length; i += 5) {
+    const groups = todo.slice(i, i + 5).map((q) => ({ groupName: q, keywords: [q] }));
+    const j = await fetch("https://openapi.naver.com/v1/datalab/search", {
+      method: "POST",
+      headers,
+      cache: "no-store",
+      signal: AbortSignal.timeout(4500),
+      body: JSON.stringify({ startDate: ymd(start), endDate: ymd(now), timeUnit: "month", keywordGroups: groups }),
+    })
+      .then((r) => r.json())
+      .catch(() => null);
+    for (const res of (j?.results ?? []) as { title: string; data: { ratio: number }[] }[]) {
+      const d = res.data ?? [];
+      const nowR = d.length ? d[d.length - 1].ratio : 0;
+      const prev = d.length >= 13 ? d[d.length - 13].ratio : d.length ? d[0].ratio : nowR;
+      const o = { now: Math.round(nowR * 10) / 10, delta: Math.round(nowR - prev) };
+      out[res.title] = o;
+      trendCache.set(res.title, { at: Date.now(), ...o });
+    }
+  }
+  return out;
+}
