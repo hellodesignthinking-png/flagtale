@@ -1,16 +1,52 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { PageShell } from "@/components/page-shell";
-import { Button, Panel, Pill, SectionHead, Stat } from "@/components/ui";
+import { Button, Panel, Pill, SectionHead } from "@/components/ui";
+import { LogoutButton } from "@/components/auth/LogoutButton";
+import { getUser } from "@/lib/supabase/server";
+import { isSupabaseEnabled } from "@/lib/config";
 
 export const metadata: Metadata = { title: "계정" };
+export const dynamic = "force-dynamic"; // 세션 쿠키 기반 사용자 조회
 
-export default function AccountPage() {
+export default async function AccountPage() {
+  const user = await getUser(); // Supabase 키 있을 때만 실제 사용자
+  const loggedIn = !!user;
+  const email = user?.email ?? (isSupabaseEnabled ? "—" : "demo@klai.local");
+  const joined = user?.created_at ? user.created_at.slice(0, 10) : "2026-06-19";
+
+  // Supabase 연동됐는데 비로그인 → 로그인/회원가입 유도
+  if (isSupabaseEnabled && !loggedIn) {
+    return (
+      <PageShell width="narrow">
+        <div className="mb-6">
+          <span className="klai-eyebrow">Account</span>
+          <h1 className="mt-1 text-3xl font-black">내 계정</h1>
+        </div>
+        <Panel>
+          <div className="py-6 text-center">
+            <div className="text-3xl">🔐</div>
+            <p className="mt-2 text-[14px] text-muted">로그인이 필요합니다.</p>
+            <div className="mt-4">
+              <Button href="/auth" variant="primary">로그인 · 회원가입 →</Button>
+            </div>
+          </div>
+        </Panel>
+      </PageShell>
+    );
+  }
+
   return (
     <PageShell width="narrow">
-      <div className="mb-6">
-        <span className="klai-eyebrow">Account</span>
-        <h1 className="mt-1 text-3xl font-black">내 계정</h1>
-        <p className="mt-1 text-[13px] text-muted">목업 데모 계정 · 실서비스는 Supabase Auth 연동</p>
+      <div className="mb-6 flex items-start justify-between gap-3">
+        <div>
+          <span className="klai-eyebrow">Account</span>
+          <h1 className="mt-1 text-3xl font-black">내 계정</h1>
+          <p className="mt-1 text-[13px] text-muted">
+            {loggedIn ? "Supabase Auth 로그인됨" : "데모 계정 · Supabase 키 연동 시 실제 회원 활성화"}
+          </p>
+        </div>
+        {loggedIn ? <LogoutButton /> : <Button href="/auth" variant="primary">로그인 →</Button>}
       </div>
 
       {/* 플랜 히어로 */}
@@ -42,7 +78,6 @@ export default function AccountPage() {
             </Button>
           </div>
         </div>
-        {/* 크레딧 사용 게이지 (데모) */}
         <div className="mt-4 border-t border-line/60 pt-3">
           <div className="mb-1 flex items-center justify-between text-[11px] text-muted2">
             <span>크레딧 잔량</span>
@@ -57,8 +92,8 @@ export default function AccountPage() {
       <Panel className="mb-5">
         <SectionHead title="프로필" />
         <div className="space-y-2 text-[13px]">
-          <Row label="이메일" value="demo@klai.local" />
-          <Row label="가입" value="2026-06-19" />
+          <Row label="이메일" value={email} />
+          <Row label="가입" value={joined} />
           <Row label="권한" value={<Pill tone="muted">free</Pill>} />
         </div>
       </Panel>
@@ -66,7 +101,7 @@ export default function AccountPage() {
       <Panel>
         <SectionHead title="구매 내역" desc="ReportPurchase" />
         <div className="rounded-lg border border-line bg-card2 px-3 py-6 text-center text-[13px] text-muted2">
-          구매 내역이 없습니다. <a href="/diagnose" className="text-blue-l hover:underline">지번 진단</a>으로 시작하세요.
+          구매 내역이 없습니다. <Link href="/diagnose" className="text-blue-l hover:underline">지번 진단</Link>으로 시작하세요.
         </div>
       </Panel>
     </PageShell>

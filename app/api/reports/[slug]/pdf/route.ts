@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getReport } from "@/lib/data";
+import { computeWeekly, parseWeekSlug } from "@/lib/weekly";
 import { renderPdf } from "@/lib/pdf/render";
 import { reportPdfHtml } from "@/lib/pdf/template";
 
 // 서버 PDF (스펙 §10·§15). 권한자 한정 다운로드 — 여기서는 주간/연간 공개.
 export async function GET(_req: NextRequest, { params }: { params: { slug: string } }) {
-  const report = getReport(params.slug);
+  const wk = parseWeekSlug(params.slug);
+  const report = wk ? computeWeekly(wk.year, wk.week) : getReport(params.slug);
   if (!report) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
   const pdf = await renderPdf(reportPdfHtml(report));

@@ -1,10 +1,12 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { loadReports } from "@/lib/data";
+import { listRecentWeeklies } from "@/lib/weekly";
 import { PageShell } from "@/components/page-shell";
 import { Pill, ProvisionalBadge } from "@/components/ui";
 
 export const metadata: Metadata = { title: "리포트 아카이브" };
+export const dynamic = "force-dynamic"; // 매 요청 시 현재 주차 기준으로 주간 리포트 자동 산출
 
 const KINDS = [
   { id: "", label: "전체" },
@@ -14,7 +16,10 @@ const KINDS = [
 
 export default function ReportsPage({ searchParams }: { searchParams: { kind?: string } }) {
   const kind = searchParams.kind ?? "";
-  let reports = loadReports();
+  // 주간: 현재 주차부터 과거 12주를 데이터에서 자동 계산(매주 자동 발행). 연간: 시드 아카이브.
+  const annuals = loadReports().filter((r) => r.kind === "annual");
+  const weeklies = listRecentWeeklies(12, new Date());
+  let reports = [...weeklies, ...annuals];
   if (kind) reports = reports.filter((r) => r.kind === kind);
   reports = [...reports].sort((a, b) => (a.publishedAt < b.publishedAt ? 1 : -1));
 
