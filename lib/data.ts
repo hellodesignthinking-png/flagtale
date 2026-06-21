@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { BOUNDARY_SOURCE } from "./config";
+import { buildSignalSeries } from "./signalGen";
 import type {
   DemographicsFile,
   DemographicYear,
@@ -121,7 +122,7 @@ export function getPlace(admCd2: string): PlaceBundle | null {
     diagnosis: loadDiagnoses()[admCd2] ?? null,
     demographics: loadDemographics().byPlace[admCd2] ?? [],
     procurement: loadProcurement().byPlace[admCd2] ?? null,
-    signals: loadSignals().byPlace[admCd2] ?? null,
+    signals: series.length ? buildSignalSeries(series[series.length - 1], admCd2) : null,
   };
 }
 
