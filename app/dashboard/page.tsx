@@ -67,15 +67,17 @@ export default function DashboardPage({ searchParams }: { searchParams: { region
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <span className="klai-eyebrow">Institution Dashboard</span>
-          <h1 className="mt-1 text-3xl font-black">기관 모니터링 대시보드</h1>
-          <p className="mt-1 text-[14px] text-muted">
-            관할 행정동 경보 인박스 · 랭킹 · 정책 우선순위. <Pill tone="amber">B2G/B2B 구독</Pill>
+          <h1 className="display-hero mt-2 text-4xl">
+            관할 동네, <span className="hl-mark">한눈에</span> 모니터링
+          </h1>
+          <p className="mt-2 text-[14px] text-muted">
+            경보 인박스 · 랭킹 · 공공예산 · 정책 우선순위. <Pill tone="amber">B2G/B2B 구독</Pill>
           </p>
         </div>
         <div className="flex flex-wrap gap-1.5">
           <Link
             href="/dashboard"
-            className={`rounded-lg px-3 py-1.5 text-[13px] font-semibold ${!region ? "bg-blue text-white" : "border border-line text-muted hover:bg-card2"}`}
+            className={`rounded-full px-3.5 py-1.5 text-[13px] font-bold ${!region ? "bg-amber text-onaccent" : "border border-line text-muted hover:bg-card2 hover:text-ink"}`}
           >
             전체
           </Link>
@@ -83,7 +85,7 @@ export default function DashboardPage({ searchParams }: { searchParams: { region
             <Link
               key={r}
               href={`/dashboard?region=${encodeURIComponent(r)}`}
-              className={`rounded-lg px-3 py-1.5 text-[13px] font-semibold ${region === r ? "bg-blue text-white" : "border border-line text-muted hover:bg-card2"}`}
+              className={`rounded-full px-3.5 py-1.5 text-[13px] font-bold ${region === r ? "bg-amber text-onaccent" : "border border-line text-muted hover:bg-card2 hover:text-ink"}`}
             >
               {r}
             </Link>

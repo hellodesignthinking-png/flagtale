@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { loadReports } from "@/lib/data";
 import { listRecentWeeklies } from "@/lib/weekly";
 import { PageShell } from "@/components/page-shell";
-import { Pill, ProvisionalBadge } from "@/components/ui";
+import { ProvisionalBadge } from "@/components/ui";
 
 export const metadata: Metadata = { title: "리포트 아카이브" };
 export const dynamic = "force-dynamic"; // 매 요청 시 현재 주차 기준으로 주간 리포트 자동 산출
@@ -14,23 +14,34 @@ const KINDS = [
   { id: "annual", label: "KLAI Annual" },
 ];
 
+type Nat = { avgKlai: number; risingCount: number; decliningCount: number };
+const natOf = (r: { blocks?: Record<string, unknown> }) => (r.blocks?.national as Nat | undefined) ?? undefined;
+const isAnnual = (k: string) => k === "annual";
+function gradOf(kind: string): string {
+  return isAnnual(kind)
+    ? "linear-gradient(135deg, var(--gC), var(--gD))"
+    : "linear-gradient(135deg, var(--blue-l), color-mix(in srgb, var(--amber) 70%, var(--blue-l)))";
+}
+
 export default function ReportsPage({ searchParams }: { searchParams: { kind?: string } }) {
   const kind = searchParams.kind ?? "";
-  // 주간: 현재 주차부터 과거 12주를 데이터에서 자동 계산(매주 자동 발행). 연간: 시드 아카이브.
   const annuals = loadReports().filter((r) => r.kind === "annual");
   const weeklies = listRecentWeeklies(12, new Date());
-  let reports = [...weeklies, ...annuals];
+  let reports = [...weeklies, ...annuals].sort((a, b) => (a.publishedAt < b.publishedAt ? 1 : -1));
   if (kind) reports = reports.filter((r) => r.kind === kind);
-  reports = [...reports].sort((a, b) => (a.publishedAt < b.publishedAt ? 1 : -1));
+  const featured = reports[0];
+  const rest = reports.slice(1);
 
   return (
     <PageShell>
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+      <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div>
           <span className="klai-eyebrow">Reports</span>
-          <h1 className="mt-1 text-3xl font-black">리포트 아카이브</h1>
-          <p className="mt-1 text-[14px] text-muted">
-            주간 <b className="text-ink">Flagtale Weekly</b> · 연간 <b className="text-ink">KLAI Annual</b> — 자동 발행되어 쌓입니다.
+          <h1 className="display-hero mt-2 text-4xl">
+            전국 동네 변화, <span className="hl-mark">매주</span> 발행
+          </h1>
+          <p className="mt-2 text-[14px] text-muted">
+            주간 <b className="text-ink">Flagtale Weekly</b> · 연간 <b className="text-ink">KLAI Annual</b> — 연구자 관점으로 자동 발행되어 쌓입니다.
           </p>
         </div>
         <div className="flex gap-1.5">
@@ -38,8 +49,8 @@ export default function ReportsPage({ searchParams }: { searchParams: { kind?: s
             <Link
               key={k.id}
               href={k.id ? `/reports?kind=${k.id}` : "/reports"}
-              className={`rounded-lg px-3 py-1.5 text-[13px] font-semibold ${
-                kind === k.id ? "bg-blue text-white" : "border border-line text-muted hover:bg-card2 hover:text-ink"
+              className={`rounded-full px-3.5 py-1.5 text-[13px] font-bold transition-colors ${
+                kind === k.id ? "bg-amber text-onaccent" : "border border-line text-muted hover:bg-card2 hover:text-ink"
               }`}
             >
               {k.label}
@@ -48,32 +59,71 @@ export default function ReportsPage({ searchParams }: { searchParams: { kind?: s
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {reports.map((r) => (
-          <Link key={r.id} href={`/reports/${r.slug}`} className="klai-panel group relative overflow-hidden p-5 transition-colors hover:border-blue">
-            <span
-              className="absolute left-0 top-0 h-full w-1"
-              style={{
-                background: r.kind === "annual" ? "var(--amber)" : "var(--blue-l)",
-                boxShadow: `0 0 12px ${r.kind === "annual" ? "var(--amber)" : "var(--blue-l)"}`,
-              }}
-            />
-            <div className="flex items-center justify-between">
-              <Pill tone={r.kind === "annual" ? "amber" : "blue"}>
-                {r.kind === "annual" ? "🏆 KLAI Annual" : "📰 Flagtale Weekly"}
-              </Pill>
-              <span className="text-[12px] text-muted2">{r.publishedAt}</span>
+      {/* 피처드 — 최신 리포트(careet 대형 카드) */}
+      {featured && (
+        <Link href={`/reports/${featured.slug}`} className="lift group mb-6 block overflow-hidden rounded-3xl border border-line bg-card2/40">
+          <div className="grid md:grid-cols-[1.05fr_1fr]">
+            <div className="relative flex min-h-[210px] flex-col justify-between overflow-hidden p-7 text-white" style={{ background: gradOf(featured.kind) }}>
+              <div className="flex items-center justify-between">
+                <span className="status-pill" style={{ background: "rgba(255,255,255,.22)" }}>{isAnnual(featured.kind) ? "🏆 ANNUAL" : "📰 최신호"}</span>
+                <span className="text-[12px] font-bold text-white/85">{featured.publishedAt}</span>
+              </div>
+              <div>
+                <div className="text-[13px] font-bold text-white/80">{featured.period}</div>
+                {(() => {
+                  const n = natOf(featured);
+                  return n ? (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <span className="status-pill" style={{ background: "rgba(255,255,255,.18)" }}>평균 KLAI {n.avgKlai}</span>
+                      <span className="status-pill" style={{ background: "rgba(255,255,255,.18)" }}>▲ 상승 {n.risingCount.toLocaleString()}</span>
+                      <span className="status-pill" style={{ background: "rgba(255,255,255,.18)" }}>▼ 하락 {n.decliningCount.toLocaleString()}</span>
+                    </div>
+                  ) : null;
+                })()}
+              </div>
             </div>
-            <h2 className="mt-3 text-lg font-extrabold text-ink group-hover:text-blue-l">{r.title}</h2>
-            <p className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-muted">{r.summary}</p>
-            <div className="mt-3 flex items-center justify-between">
-              <ProvisionalBadge />
-              <span className="text-[13px] font-semibold text-blue-l opacity-0 transition-opacity group-hover:opacity-100">
-                열람 →
-              </span>
+            <div className="flex flex-col p-7">
+              <div className="cat-tag">{isAnnual(featured.kind) ? "KLAI ANNUAL" : "FLAGTALE WEEKLY"}</div>
+              <h2 className="mt-1 text-2xl font-black leading-tight text-ink group-hover:text-blue-l">{featured.title}</h2>
+              <p className="mt-2 line-clamp-3 flex-1 text-[13.5px] leading-relaxed text-muted">{featured.summary}</p>
+              <div className="mt-4 flex items-center justify-between">
+                <ProvisionalBadge />
+                <span className="text-[14px] font-bold text-blue-l">리포트 열람 →</span>
+              </div>
             </div>
-          </Link>
-        ))}
+          </div>
+        </Link>
+      )}
+
+      {/* 그리드 — careet 콘텐츠 카드 */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {rest.map((r) => {
+          const n = natOf(r);
+          return (
+            <Link key={r.id} href={`/reports/${r.slug}`} className="lift group flex flex-col overflow-hidden rounded-2xl border border-line bg-card2/40">
+              <div className="relative flex h-20 items-end justify-between p-3.5 text-white" style={{ background: gradOf(r.kind) }}>
+                <span className="text-[15px] font-black">{r.period}</span>
+                <span className="text-[11px] font-bold text-white/85">{isAnnual(r.kind) ? "🏆 연간" : "📰 주간"}</span>
+              </div>
+              <div className="flex flex-1 flex-col p-4">
+                <div className="cat-tag">{isAnnual(r.kind) ? "KLAI ANNUAL" : "FLAGTALE WEEKLY"}</div>
+                <h3 className="mt-1 line-clamp-2 text-[15px] font-extrabold text-ink group-hover:text-blue-l">{r.title}</h3>
+                <p className="mt-1.5 line-clamp-2 flex-1 text-[12.5px] leading-relaxed text-muted">{r.summary}</p>
+                {n && (
+                  <div className="mt-2.5 flex flex-wrap gap-1.5 text-[10.5px]">
+                    <span className="status-pill bg-card2 text-muted">평균 {n.avgKlai}</span>
+                    <span className="status-pill text-grade-b" style={{ background: "color-mix(in srgb, var(--gB) 14%, transparent)" }}>▲ {n.risingCount.toLocaleString()}</span>
+                    <span className="status-pill text-warn" style={{ background: "color-mix(in srgb, var(--warn) 12%, transparent)" }}>▼ {n.decliningCount.toLocaleString()}</span>
+                  </div>
+                )}
+                <div className="mt-2.5 flex items-center justify-between">
+                  <span className="text-[10.5px] text-muted2">{r.publishedAt}</span>
+                  <span className="text-[12px] font-bold text-blue-l opacity-0 transition-opacity group-hover:opacity-100">열람 →</span>
+                </div>
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </PageShell>
   );
