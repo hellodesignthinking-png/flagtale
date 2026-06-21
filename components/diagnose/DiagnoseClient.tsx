@@ -78,6 +78,7 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd }: { initialQue
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<DiagnoseResult | null>(null);
+  const [selAnchor, setSelAnchor] = useState<number | null>(null); // 앵커 점포 선택(리스트↔지도 핀 연동)
 
   // admCd가 있으면 동명 지오코딩(모호) 대신 그 행정동을 직접 진단
   async function runDiagnose(q: string, admCd?: string) {
@@ -85,6 +86,7 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd }: { initialQue
     setLoading(true);
     setError(null);
     setResult(null);
+    setSelAnchor(null);
     try {
       const res = await fetch("/api/diagnose", {
         method: "POST",
@@ -753,21 +755,51 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd }: { initialQue
               <p className="mb-2 text-[11.5px] text-muted2">
                 진단 지점 <b className="text-muted">반경 1km 이내</b> 점포 × 블로그 회자도. (네이버 지도 &lsquo;좋아요·리뷰 수&rsquo;는 공식 API 미제공 → 블로그 글 수로 대체)
               </p>
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 {result.anchor.map((s, i) => {
                   const max = result.anchor![0].blogBuzz || 1;
+                  const open = selAnchor === i;
+                  const hasPt = Number.isFinite(s.lng) && Number.isFinite(s.lat);
                   return (
-                    <div key={i} className="flex items-center gap-2 text-[12px]">
-                      <span className="w-4 text-muted2">{i + 1}</span>
-                      <span className="w-28 shrink-0 truncate font-bold text-ink">{s.name}</span>
-                      {s.distanceM != null && (
-                        <span className="w-12 shrink-0 text-right text-[10.5px] text-muted2">{s.distanceM}m</span>
+                    <div key={i}>
+                      <button
+                        type="button"
+                        onClick={() => setSelAnchor(open ? null : i)}
+                        aria-expanded={open}
+                        className={`flex w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left text-[12px] transition-colors ${open ? "bg-green/10 ring-1 ring-green/40" : "hover:bg-card2"}`}
+                      >
+                        <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] font-bold" style={{ background: "var(--green)", color: "#06210d" }}>{i + 1}</span>
+                        <span className="w-24 shrink-0 truncate font-bold text-ink sm:w-28">{s.name}</span>
+                        {s.distanceM != null && (
+                          <span className="w-12 shrink-0 text-right text-[10.5px] text-muted2">{s.distanceM}m</span>
+                        )}
+                        <span className="hidden w-20 shrink-0 truncate text-muted2 sm:block">{s.category}</span>
+                        <div className="h-2.5 flex-1 rounded bg-navy2">
+                          <div className="h-full rounded" style={{ width: `${Math.round((s.blogBuzz / max) * 100)}%`, background: "var(--green)" }} />
+                        </div>
+                        <span className="w-14 text-right tabular-nums text-muted sm:w-16">{s.blogBuzz.toLocaleString()}</span>
+                        <span className={`w-3 shrink-0 text-muted2 transition-transform ${open ? "rotate-90" : ""}`}>›</span>
+                      </button>
+                      {open && (
+                        <div className="mb-1 ml-7 mr-1 rounded-lg border border-green/30 bg-card2 px-3 py-2.5 text-[11.5px]">
+                          <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                            <div><span className="text-muted2">업종</span> <span className="font-medium text-ink">{s.category || "—"}</span></div>
+                            <div><span className="text-muted2">거리</span> <span className="font-medium text-ink">{s.distanceM != null ? `진단지점 ${s.distanceM}m` : "—"}</span></div>
+                            <div className="col-span-2"><span className="text-muted2">주소</span> <span className="font-medium text-ink">{s.address || "—"}</span></div>
+                            <div><span className="text-muted2">블로그 회자도</span> <span className="font-bold" style={{ color: "var(--green)" }}>{s.blogBuzz.toLocaleString()}건</span></div>
+                            <div><span className="text-muted2">버즈 순위</span> <span className="font-medium text-ink">#{i + 1} / {result.anchor!.length}</span></div>
+                          </div>
+                          <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1">
+                            <a href={`https://search.naver.com/search.naver?query=${encodeURIComponent(s.name)}`} target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-l hover:underline">네이버에서 보기 →</a>
+                            {hasPt && (
+                              <a href={`https://map.naver.com/p/search/${encodeURIComponent(s.name)}`} target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-l hover:underline">네이버 지도에서 보기 →</a>
+                            )}
+                          </div>
+                          <div className="mt-1.5 text-[10.5px] text-muted2">
+                            {hasPt ? `아래 지도의 ●${i + 1} 핀이 강조됩니다 — 핀을 눌러도 이 정보가 뜹니다.` : "이 점포는 좌표 미제공이라 지도에 표시되지 않습니다."}
+                          </div>
+                        </div>
                       )}
-                      <span className="hidden w-20 shrink-0 truncate text-muted2 sm:block">{s.category}</span>
-                      <div className="h-2.5 flex-1 rounded bg-navy2">
-                        <div className="h-full rounded" style={{ width: `${Math.round((s.blogBuzz / max) * 100)}%`, background: "var(--green)" }} />
-                      </div>
-                      <span className="w-16 text-right tabular-nums text-muted">{s.blogBuzz.toLocaleString()}</span>
                     </div>
                   );
                 })}
@@ -781,7 +813,7 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd }: { initialQue
                     : null;
                 return center ? (
                   <div className="mt-3">
-                    <DiagnoseMap stores={result.anchor!} center={center} venues={result.venues?.venues ?? []} />
+                    <DiagnoseMap stores={result.anchor!} center={center} venues={result.venues?.venues ?? []} selected={selAnchor} onSelect={setSelAnchor} />
                   </div>
                 ) : null;
               })()}
