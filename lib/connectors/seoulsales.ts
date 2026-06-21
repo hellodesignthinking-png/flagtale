@@ -13,7 +13,7 @@ let _loading: Promise<void> | null = null;
 async function page(p: number) {
   const start = (p - 1) * 1000 + 1;
   const url = `${BASE}/${SK}/json/VwsmAdstrdSelngW/${start}/${start + 999}/${LATEST_Q}`;
-  const r = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(8000) });
+  const r = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(4000) });
   const j = await r.json().catch(() => null);
   return (j?.VwsmAdstrdSelngW?.row ?? []) as { ADSTRD_CD_NM: string; SVC_INDUTY_CD_NM: string; THSMON_SELNG_AMT: number; THSMON_SELNG_CO: number }[];
 }

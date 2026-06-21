@@ -10,7 +10,7 @@ let _date = "";
 let _loading: Promise<void> | null = null;
 
 async function pickDate(): Promise<string> {
-  const r = await fetch(`${BASE}/${SK}/json/SPOP_LOCAL_RESD_DONG/1/1/`, { cache: "no-store", signal: AbortSignal.timeout(7000) });
+  const r = await fetch(`${BASE}/${SK}/json/SPOP_LOCAL_RESD_DONG/1/1/`, { cache: "no-store", signal: AbortSignal.timeout(4000) });
   const j = await r.json().catch(() => null);
   return j?.SPOP_LOCAL_RESD_DONG?.row?.[0]?.STDR_DE_ID ?? "";
 }
@@ -18,7 +18,7 @@ async function pickDate(): Promise<string> {
 async function page(p: number, date: string) {
   const start = (p - 1) * 1000 + 1;
   const url = `${BASE}/${SK}/json/SPOP_LOCAL_RESD_DONG/${start}/${start + 999}/${date}`;
-  const r = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(8000) });
+  const r = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(4000) });
   const j = await r.json().catch(() => null);
   return (j?.SPOP_LOCAL_RESD_DONG?.row ?? []) as { ADSTRD_CODE_SE: string; TMZON_PD_SE: string; TOT_LVPOP_CO: string }[];
 }
