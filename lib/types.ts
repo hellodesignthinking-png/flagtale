@@ -18,7 +18,8 @@ export type LayerId =
   | "market"
   | "narrative"
   | "popchange"
-  | "budget";
+  | "budget"
+  | "vitality";
 
 export interface DistrictProps {
   admCd2: string;

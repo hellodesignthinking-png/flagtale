@@ -83,7 +83,7 @@ export interface LayerDef {
   label: string;
   desc: string;
   kind: "grade" | "diverging" | "alert" | "categorical-market" | "categorical-narrative" | "categorical-axis" | "sequential";
-  group: "종합" | "매력 4축" | "변화·동학" | "위기 신호" | "공공 투입";
+  group: "종합" | "매력 4축" | "변화·동학" | "위기 신호" | "공공 투입" | "플래그테일";
   real?: boolean; // 실데이터 여부 (지도 레이어 기준)
 }
 
@@ -114,6 +114,7 @@ export const LAYERS: LayerDef[] = [
   { id: "market", label: "시장 활성도", desc: "활발 / 정체 / 위축(거래절벽)", kind: "categorical-market", group: "위기 신호" },
   { id: "narrative", label: "내러티브", desc: "형성·확산·절정·쇠퇴 + 부정서사", kind: "categorical-narrative", group: "위기 신호" },
   { id: "budget", label: "공공예산 유입", desc: "나라장터 공고예산 유입 강도 (억/년)", kind: "sequential", group: "공공 투입" },
+  { id: "vitality", label: "플래그테일 활력", desc: "등록 공급 + 검색 수요(인스타) 밀도 · 네트워크 효과", kind: "sequential", group: "플래그테일", real: true },
 ];
 
 // 공공예산 유입 색 스케일 상한 (억/년) — 정규화 기준

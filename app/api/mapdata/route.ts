@@ -39,15 +39,17 @@ export function GET(req: NextRequest) {
     const narrColor = narr ? hexRgb(STAGE_META[narr.stage].color) : null;
     const narrLabel = narr ? `${STAGE_META[narr.stage].emoji} ${STAGE_META[narr.stage].short} · ${narr.name}` : null;
     const narrAlert = narr ? (narr.stage === "gentri" || narr.stage === "decline" ? 1 : 0) : null;
-    // 종합(klai) 레이어엔 공급(등록 콘텐츠)+수요(인스타 검색량) 가산을 반영 → /place·패널과 일관.
+    // 공급(등록 콘텐츠)+수요(인스타 검색량) 가산 — 종합(klai)엔 점수 보정, 활력(vitality) 레이어엔 단독 표시.
     let boost = 0;
-    if (layer === "klai") {
+    if (layer === "klai" || layer === "vitality") {
       const nb = narrativeForPlace(cd);
       boost = Math.round((supplyBoost(cd) + buzzBoost(nb ? instagramFor(nb.name)?.postsCount : null)) * 10) / 10;
     }
     for (let t = 0; t < periods.length; t++) {
       const s0 = series[t] ?? series[series.length - 1];
-      const s = boost ? { ...s0, klai: Math.min(100, Math.round((s0.klai + boost) * 10) / 10), grade: gradeOf(s0.klai + boost) } : s0;
+      let s = s0;
+      if (layer === "klai" && boost) s = { ...s0, klai: Math.min(100, Math.round((s0.klai + boost) * 10) / 10), grade: gradeOf(s0.klai + boost) };
+      else if (layer === "vitality") s = { ...s0, vitalityBoost: boost } as typeof s0;
       c.push(narrColor ?? colorForLayer(layer, s));
       l.push(narrLabel ?? displayForLayer(layer, s));
       e.push(Math.round(elevationForLayer(layer, s)));

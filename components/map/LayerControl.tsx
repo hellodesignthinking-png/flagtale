@@ -4,7 +4,7 @@ import { LAYERS } from "@/lib/constants";
 import { useMapStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
-const GROUPS = ["종합", "매력 4축", "변화·동학", "위기 신호", "공공 투입"] as const;
+const GROUPS = ["종합", "매력 4축", "변화·동학", "위기 신호", "공공 투입", "플래그테일"] as const;
 
 export function LayerControl() {
   const layer = useMapStore((s) => s.layer);

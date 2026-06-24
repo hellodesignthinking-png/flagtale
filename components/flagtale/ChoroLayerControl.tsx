@@ -6,7 +6,7 @@ import { Legend } from "@/components/map/Legend";
 import type { LayerId } from "@/lib/types";
 
 // 매력도 choropleth 레이어 — 네이버 부동산식 우측 레일 옆 세로 플라이아웃(매력도 버튼 아래). + 3D 전체보기(/map).
-const GROUPS = ["종합", "매력 4축", "변화·동학", "위기 신호", "공공 투입"];
+const GROUPS = ["종합", "매력 4축", "변화·동학", "위기 신호", "공공 투입", "플래그테일"];
 
 export function ChoroLayerControl({ layer, onLayer, simple, onSimple }: { layer: LayerId; onLayer: (l: LayerId) => void; simple: boolean; onSimple: (v: boolean) => void }) {
   const gradeLayer = ["klai", "d1", "d2", "d3", "d4"].includes(layer);

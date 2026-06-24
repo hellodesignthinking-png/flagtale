@@ -43,6 +43,12 @@ export function Legend({ layer }: { layer: LayerId }) {
         { color: "#9a7a3e", label: "중간" },
         { color: "#E8A83A", label: "유입 많음" },
       ];
+    if (layer === "vitality")
+      return [
+        { color: "#28405f", label: "등록 없음" },
+        { color: "#9a7a3e", label: "공급·검색" },
+        { color: "#F09628", label: "활력 높음" },
+      ];
     if (layer === "gentri")
       return [
         { color: "#2e456b", label: "정상" },

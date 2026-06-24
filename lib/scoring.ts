@@ -103,6 +103,14 @@ export function colorForLayer(
       alpha = 150 + Math.round(t * 90);
       break;
     }
+    case "vitality": {
+      // 플래그테일 등록 공급 + 검색 수요 밀도(0~16) → 네이비 → 앰버. 등록 없으면 베이스.
+      const v = (s as unknown as Record<string, number>).vitalityBoost ?? 0;
+      const t = Math.min(v / 12, 1);
+      rgb = mix([40, 60, 95], [240, 150, 40], Math.pow(t, 0.7));
+      alpha = v > 0 ? 150 + Math.round(t * 95) : 110;
+      break;
+    }
     default:
       rgb = SLATE;
   }
@@ -144,6 +152,8 @@ export function elevationForLayer(layer: LayerId, s: PlaceScore): number {
       return clamp01(((s.popChangeRate + 3) / 6) * 100);
     case "budget":
       return clamp01((s.budgetInflow / 110) * 100);
+    case "vitality":
+      return clamp01((((s as unknown as Record<string, number>).vitalityBoost ?? 0) / 12) * 100);
     default:
       return clamp01(s.klai);
   }
@@ -189,6 +199,10 @@ export function displayForLayer(layer: LayerId, s: PlaceScore): string {
       return `${s.popChangeRate > 0 ? "+" : ""}${s.popChangeRate}%/년 · 인구 ${s.population.toLocaleString()}`;
     case "budget":
       return `${s.budgetInflow}억/년 유입`;
+    case "vitality": {
+      const v = (s as unknown as Record<string, number>).vitalityBoost ?? 0;
+      return v > 0 ? `활력 +${v} · 등록·검색 밀도` : "플래그테일 등록 없음";
+    }
     default:
       return `${s.klai}`;
   }
