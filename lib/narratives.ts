@@ -414,18 +414,6 @@ export const AREA_NARRATIVES: AreaNarrative[] = [
   },
 ];
 
-/** 동/지역명 → 큐레이션 내러티브 (부분 일치). 핫지역만 매칭, 없으면 null. */
-export function getAreaNarrative(name?: string | null): AreaNarrative | null {
-  if (!name) return null;
-  const q = name.replace(/\s/g, "");
-  return (
-    AREA_NARRATIVES.find((a) => {
-      const an = a.name.replace(/\s|\(.*\)/g, "");
-      return q.includes(an) || an.includes(q) || a.keywords.some((k) => q.includes(k));
-    }) ?? null
-  );
-}
-
 // 큐레이션 핫지역 → 실제 행정동 코드(adm_cd2). 지도(choropleth)·동 리포트(/place)와 같은 키로 연결.
 // (geojson admdong.simplified에서 추출. 일부 지역은 여러 행정동에 걸침.)
 export const NARRATIVE_ADMCD: Record<string, string[]> = {

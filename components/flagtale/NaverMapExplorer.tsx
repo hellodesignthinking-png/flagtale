@@ -350,11 +350,10 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
     if (!map) return;
     try { map.setZoom(Math.round(map.getZoom()) + d, true); } catch { /* noop */ }
   }
-  // 핫지역으로 날아가 실제 이야기 인포윈도우를 띄움(디스커버리).
+  // 핫지역으로 날아가 실제 이야기 인포윈도우를 띄움(디스커버리). 패널·마커는 유지(연속 탐색).
   function flyToHotspot(it: HotspotJump) {
     const map = mapRef.current, naver = naverRef.current;
     if (!map || !naver) return;
-    setHotspots(false);
     const ll = new naver.maps.LatLng(it.coord[0], it.coord[1]);
     try { map.setCenter(ll); map.setZoom(14, true); } catch { /* noop */ }
     const narr = narrativeForPlace(it.admCd2);
@@ -567,10 +566,10 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
           {[
             { icon: mapType === "normal" ? "🛰" : "🗺", label: mapType === "normal" ? "위성" : "일반", on: mapType === "sat", locked: false, onClick: toggleType },
             { icon: "📍", label: "현위치", on: false, locked: false, onClick: locate },
-            { icon: "🎨", label: "매력도", on: heat, locked: !canChoro, onClick: () => { if (canChoro) setHeat((h) => !h); else { setUpsell(true); setTimeout(() => setUpsell(false), 4500); } } },
-            { icon: "🔥", label: "핫지역", on: hotspots, locked: false, onClick: () => setHotspots((v) => !v) },
+            { icon: "🎨", label: "매력도", on: heat, locked: !canChoro, onClick: () => { if (canChoro) { setHeat((h) => !h); setHotspots(false); } else { setUpsell(true); setTimeout(() => setUpsell(false), 4500); } } },
+            { icon: "🔥", label: "핫지역", on: hotspots, locked: false, onClick: () => { setHotspots((v) => !v); setHeat(false); } },
           ].map((c) => (
-            <button key={c.label} onClick={c.onClick} title={c.locked ? "매력도 색칠(choropleth)은 Pro 전용" : c.label} className={`relative grid w-[46px] place-items-center gap-0.5 rounded-[13px] border-[1.5px] px-1 py-1.5 shadow-lg transition-colors ${c.on ? "border-ink bg-ink text-white" : "border-line bg-card text-ink hover:border-ink"}`}>
+            <button key={c.label} onClick={c.onClick} aria-label={c.label} aria-pressed={c.on} title={c.locked ? "매력도 색칠(choropleth)은 Pro 전용" : c.label} className={`relative grid w-[46px] place-items-center gap-0.5 rounded-[13px] border-[1.5px] px-1 py-2 shadow-lg transition-colors ${c.on ? "border-ink bg-ink text-white" : "border-line bg-card text-ink hover:border-ink"}`}>
               {c.locked && <span className="absolute -right-1.5 -top-1.5 grid h-4 w-4 place-items-center rounded-full bg-amber text-[8px] shadow">🔒</span>}
               <span className="text-[15px] leading-none">{c.icon}</span>
               <span className="text-[9px] font-extrabold leading-none">{c.label}</span>
@@ -580,10 +579,10 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
       )}
       {/* 커스텀 줌 +/− (우측 하단, 데스크톱) — 네이버 기본 컨트롤 대체로 레이아웃 정렬 */}
       {engine === "naver" && (
-        <div className="absolute bottom-3 right-2 z-[5] hidden flex-col overflow-hidden rounded-[12px] border-[1.5px] border-line bg-card shadow-lg md:flex">
-          <button onClick={() => zoomBy(1)} aria-label="확대" className="grid h-9 w-9 place-items-center text-[19px] font-bold leading-none text-ink transition-colors hover:bg-card2">+</button>
+        <div className="absolute bottom-3 right-2 z-[5] flex flex-col overflow-hidden rounded-[12px] border-[1.5px] border-line bg-card shadow-lg">
+          <button onClick={() => zoomBy(1)} aria-label="확대" className="grid h-10 w-10 place-items-center text-[20px] font-bold leading-none text-ink transition-colors hover:bg-card2">+</button>
           <div className="h-px bg-line" />
-          <button onClick={() => zoomBy(-1)} aria-label="축소" className="grid h-9 w-9 place-items-center text-[19px] font-bold leading-none text-ink transition-colors hover:bg-card2">−</button>
+          <button onClick={() => zoomBy(-1)} aria-label="축소" className="grid h-10 w-10 place-items-center text-[20px] font-bold leading-none text-ink transition-colors hover:bg-card2">−</button>
         </div>
       )}
       {engine === "naver" && hotspots && (

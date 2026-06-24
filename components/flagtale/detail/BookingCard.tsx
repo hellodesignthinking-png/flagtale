@@ -65,9 +65,9 @@ export function BookingCard({
         <div className="flex items-center justify-between p-2.5">
           <span className="text-[10px] font-extrabold uppercase tracking-wide text-muted2">{peopleLabel} · 최대 {maxPeople}</span>
           <div className="flex items-center gap-2.5">
-            <button onClick={() => setPeople((p) => Math.max(1, p - 1))} aria-label="인원 감소" disabled={people <= 1} className="grid h-7 w-7 place-items-center rounded-full border border-line text-[16px] font-bold text-ink transition-colors hover:border-ink disabled:opacity-30">−</button>
-            <span className="w-5 text-center text-[14px] font-extrabold tabular-nums text-ink">{people}</span>
-            <button onClick={() => setPeople((p) => Math.min(maxPeople, p + 1))} aria-label="인원 증가" disabled={people >= maxPeople} className="grid h-7 w-7 place-items-center rounded-full border border-line text-[16px] font-bold text-ink transition-colors hover:border-ink disabled:opacity-30">+</button>
+            <button onClick={() => setPeople((p) => Math.max(1, p - 1))} aria-label="인원 감소" disabled={people <= 1} className="grid h-9 w-9 place-items-center rounded-full border border-line text-[18px] font-bold text-ink transition-colors hover:border-ink disabled:opacity-30">−</button>
+            <span className="w-6 text-center text-[15px] font-extrabold tabular-nums text-ink">{people}</span>
+            <button onClick={() => setPeople((p) => Math.min(maxPeople, p + 1))} aria-label="인원 증가" disabled={people >= maxPeople} className="grid h-9 w-9 place-items-center rounded-full border border-line text-[18px] font-bold text-ink transition-colors hover:border-ink disabled:opacity-30">+</button>
           </div>
         </div>
       </div>

@@ -56,10 +56,12 @@ export function Legend({ layer }: { layer: LayerId }) {
       }));
     if (layer === "narrative")
       return [
-        ...(["formation", "spread", "peak", "decline"] as const).map((k) => ({
+        ...(["formation", "spread", "peak"] as const).map((k) => ({
           color: NARRATIVE_HEX[k],
           label: NARRATIVE_LABEL[k],
         })),
+        { color: "#D2691E", label: "젠트리" }, // 검증 핫지역 5단계(서사<자본)
+        { color: NARRATIVE_HEX.decline, label: NARRATIVE_LABEL.decline },
         { color: "#c44030", label: "부정서사" },
       ];
     if (layer === "axis4")

@@ -12,7 +12,7 @@ export function HotspotPanel({ onJump, onClose }: { onJump: (it: HotspotJump) =>
     <div className="ft-panel-in absolute right-[58px] top-[100px] z-[22] flex max-h-[calc(100%_-_8.5rem)] w-[210px] flex-col overflow-hidden rounded-[14px] border-2 border-ink/15 bg-card shadow-2xl md:top-16">
       <div className="flex shrink-0 items-center justify-between border-b border-line px-2.5 py-2">
         <span className="text-[11.5px] font-extrabold text-ink">🔥 검증된 핫지역 {list.length}</span>
-        <button onClick={onClose} aria-label="닫기" className="text-[14px] leading-none text-muted2 transition-colors hover:text-ink">✕</button>
+        <button onClick={onClose} aria-label="닫기" className="-mr-1.5 grid h-8 w-8 place-items-center rounded-full text-[14px] leading-none text-muted2 transition-colors hover:bg-card2 hover:text-ink">✕</button>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto p-1.5">
         {ORDER.map((s) => {
