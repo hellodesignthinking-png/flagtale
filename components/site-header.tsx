@@ -21,6 +21,7 @@ export function SiteHeader() {
   const pathname = usePathname();
   const onMap = pathname.startsWith("/map"); // /map-tale·/map 모두
   const [email, setEmail] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => {
     const supabase = createClient();
     if (!supabase) return;
@@ -28,6 +29,7 @@ export function SiteHeader() {
     const { data } = supabase.auth.onAuthStateChange((_e, session) => setEmail(session?.user?.email ?? null));
     return () => data.subscription.unsubscribe();
   }, []);
+  useEffect(() => setMenuOpen(false), [pathname]); // 라우트 이동 시 모바일 메뉴 닫기
 
   return (
     <header
@@ -83,14 +85,46 @@ export function SiteHeader() {
           <Link
             href="/diagnose"
             className={cn(
-              "rounded-full px-4 py-1.5 text-[13.5px] font-extrabold transition-transform hover:scale-[1.03]",
+              "rounded-full px-3.5 py-1.5 text-[13px] font-extrabold transition-transform hover:scale-[1.03] sm:px-4 sm:text-[13.5px]",
               onMap ? "btn-glow bg-amber text-onaccent" : "bg-ink text-white"
             )}
           >
             지번 진단 →
           </Link>
+          <button
+            type="button"
+            aria-label="메뉴 열기"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((o) => !o)}
+            className="grid h-9 w-9 place-items-center rounded-lg text-ink hover:bg-card2/70 md:hidden"
+          >
+            <span className="text-[18px] leading-none">{menuOpen ? "✕" : "☰"}</span>
+          </button>
         </div>
       </div>
+
+      {/* 모바일 내비 드롭다운 */}
+      {menuOpen && (
+        <div className={cn("absolute inset-x-0 top-14 border-b shadow-xl md:hidden", onMap ? "border-line/40 bg-card" : "theme-light border-line bg-card")}>
+          <nav className="mx-auto grid max-w-[1400px] gap-0.5 px-3 py-2">
+            {NAV.map((n) => {
+              const active = pathname === n.href || pathname.startsWith(n.href + "/");
+              return (
+                <Link
+                  key={n.href}
+                  href={n.href}
+                  className={cn(
+                    "rounded-lg px-3 py-2.5 text-[14.5px] font-bold transition-colors",
+                    active ? "bg-amber/12 text-ink ring-1 ring-amber/30" : "text-muted hover:bg-card2/70 hover:text-ink"
+                  )}
+                >
+                  {n.label}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+      )}
     </header>
   );
 }

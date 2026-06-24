@@ -64,6 +64,17 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
   const gradeUp = totalBoost ? gradeOf(latest.klai + totalBoost) : latest.grade;
   const gap = authenticityGap(sBoost, bBoost); // 진정성 갭: 검색 수요 vs 등록 공급 괴리
 
+  // 일반 사용자용 한 줄 요약(연구 톤↓) — 등급·흐름·뜨는 이유를 평이하게
+  const trendWord = latest.momentum > 1.5 ? "상승세" : latest.momentum < -1.5 ? "하락세" : "안정적";
+  const gapPhrase =
+    gap.verdict === "hype" ? "검색 관심은 뜨겁지만 등록된 가게·콘텐츠는 아직 적어 '과열' 신호가 보여요"
+      : gap.verdict === "hidden" ? "등록된 로컬 콘텐츠는 많은데 아직 덜 알려진 '숨은 강세' 동네예요"
+      : gap.verdict === "balanced" ? "검색 관심과 로컬 콘텐츠가 함께 크는 건강한 흐름이에요"
+      : "";
+  const summary = area
+    ? `${props.name} · 전국이 주목하는 '뜨는 동네' — ${gapPhrase || "지금 활발히 변하고 있어요"}.`
+    : `${props.name} · 매력도 ${gradeUp}등급(${GRADE_LABEL[gradeUp]}) ${props.typology} 동네 — 흐름은 ${trendWord}예요.`;
+
   return (
     <PageShell>
       {/* 헤더 */}
@@ -86,6 +97,15 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
           </p>
         </div>
         <KlaiGauge klai={klaiUp} grade={gradeUp} momentum={latest.momentum} size={148} />
+      </div>
+
+      {/* 일반 사용자용 한 줄 요약 */}
+      <div className="mb-6 flex items-start gap-3 rounded-2xl border-[1.5px] border-line bg-card2 px-5 py-4">
+        <span className="shrink-0 text-[22px]">🧭</span>
+        <div>
+          <div className="text-[12px] font-extrabold text-blue-l">한눈에 보기</div>
+          <p className="mt-0.5 text-[15px] font-bold leading-relaxed text-ink">{summary}</p>
+        </div>
       </div>
 
       {/* 점수 요약 스탯 */}

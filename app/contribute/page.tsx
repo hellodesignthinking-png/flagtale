@@ -17,12 +17,11 @@ export default async function ContributePage() {
   return (
     <PageShell>
       <div className="mb-6">
-        <span className="klai-eyebrow">Human Sensor Network</span>
-        <h1 className="mt-1 font-display text-[clamp(28px,4vw,38px)] font-black leading-[1.06] tracking-[-0.03em]">현장 리포트 — 사람이 보강하는 데이터</h1>
+        <span className="klai-eyebrow">✋ 우리 동네 제보</span>
+        <h1 className="mt-1 font-display text-[clamp(28px,4vw,38px)] font-black leading-[1.06] tracking-[-0.03em]">우리 동네, <span className="hl-mark">직접 알려주세요</span></h1>
         <p className="mt-1.5 max-w-2xl text-[14px] leading-relaxed text-muted">
-          데이터로 못 잡는 것 — <b className="text-ink">객층·회전율·분위기·뜨는 가게</b>를 현장의 belocal 크리에이터·상인이 입력합니다.
-          이 <b className="text-ink">휴먼 센서망</b>이 KLAI의 D4 인식·내러티브를 <b className="text-ink">ground-truth로 보정</b>합니다.
-          (장소=KLAI · 사업자=belocal K-Local · 현장=크라우드 → 3중 데이터)
+          데이터가 못 잡는 진짜 동네 이야기 — <b className="text-ink">뜨는 가게·분위기·객층·회전율</b>을 알려주시면 동네 매력도에 반영됩니다. 누구나 1분이면 제보할 수 있어요.
+          {" "}<Link href="/host" className="font-bold text-blue-l hover:underline">매장·스테이·투어를 직접 운영한다면 → 호스트 등록</Link>
         </p>
       </div>
 
