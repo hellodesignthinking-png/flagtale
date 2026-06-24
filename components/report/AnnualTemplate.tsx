@@ -3,6 +3,7 @@ import type { RankingRow, Report } from "@/lib/types";
 import { GradeBadge, MomentumChip, ProvisionalBadge, Stat } from "@/components/ui";
 import { GRADE_HEX } from "@/lib/constants";
 import { gradeOf } from "@/lib/scoring";
+import { gapMovers } from "@/lib/supply";
 
 interface AnnualBlocks {
   ranking: RankingRow[];
@@ -16,6 +17,7 @@ interface AnnualBlocks {
 export function AnnualTemplate({ report }: { report: Report }) {
   const b = report.blocks as unknown as AnnualBlocks;
   const top = b.ranking.slice(0, 30);
+  const gm = gapMovers(8); // 올해의 과열/미발견 동네 — 진정성 갭(검색 수요 vs 등록 공급)
 
   return (
     <article className="space-y-8">
@@ -109,6 +111,54 @@ export function AnnualTemplate({ report }: { report: Report }) {
           ))}
         </div>
       </div>
+
+      {/* 올해의 과열 / 미발견 동네 — 진정성 갭 (검색 수요 vs 등록 공급) */}
+      {(gm.hype.length || gm.hidden.length) ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="klai-panel p-5">
+            <h2 className="text-[16px] font-extrabold">🔴 올해의 과열·거품 동네</h2>
+            <p className="mb-3 mt-0.5 text-[12px] text-muted2">검색 관심 ≫ 등록 공급 — 서사가 실체를 앞선 곳</p>
+            {gm.hype.length ? (
+              <ol className="space-y-0.5">
+                {gm.hype.map((g, i) => (
+                  <li key={g.admCd2}>
+                    <Link href={`/place/${g.admCd2}`} className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-card2">
+                      <span className="w-5 text-center text-[13px] font-black text-warn">{i + 1}</span>
+                      <span className="min-w-0 flex-1 truncate text-[13px] font-bold text-ink">
+                        {g.name} <span className="text-[11px] font-normal text-muted2">{g.sigungu}</span>
+                      </span>
+                      <span className="shrink-0 text-[12px] font-bold text-warn">갭 +{g.gap}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="text-[12px] text-muted">해당 없음</p>
+            )}
+          </div>
+          <div className="klai-panel p-5">
+            <h2 className="text-[16px] font-extrabold">🟢 올해의 미발견 강세 동네</h2>
+            <p className="mb-3 mt-0.5 text-[12px] text-muted2">등록 공급 ≫ 검색 관심 — 저평가·노출 여력</p>
+            {gm.hidden.length ? (
+              <ol className="space-y-0.5">
+                {gm.hidden.map((g, i) => (
+                  <li key={g.admCd2}>
+                    <Link href={`/place/${g.admCd2}`} className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-card2">
+                      <span className="w-5 text-center text-[13px] font-black text-grade-b">{i + 1}</span>
+                      <span className="min-w-0 flex-1 truncate text-[13px] font-bold text-ink">
+                        {g.name} <span className="text-[11px] font-normal text-muted2">{g.sigungu}</span>
+                      </span>
+                      <span className="shrink-0 text-[12px] font-bold text-grade-b">갭 {g.gap}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="text-[12px] text-muted">해당 없음</p>
+            )}
+          </div>
+        </div>
+      ) : null}
 
       {/* 유형별 분석 */}
       <div className="klai-panel p-5">

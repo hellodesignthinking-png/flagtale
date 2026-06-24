@@ -25,6 +25,7 @@ import type { DriverAttribution } from "@/lib/driver";
 import type { Sustainability } from "@/lib/sustainability";
 import type { TenantRx } from "@/lib/tenant";
 import type { DiffusionResult } from "@/lib/diffusion";
+import type { Supply, AuthGap } from "@/lib/supply";
 import { GradeBadge, MomentumChip, Pill, ProvisionalBadge, Stat } from "@/components/ui";
 import { KlaiGauge } from "@/components/charts/KlaiGauge";
 import { ScoreRadar } from "@/components/charts/ScoreRadar";
@@ -73,6 +74,10 @@ interface DiagnoseResult {
   tenantRx: TenantRx | null;
   diffusion: DiffusionResult | null;
   brand: BrandReport | null;
+  supply: Supply | null;
+  supplyBoost: number;
+  buzzBoost: number;
+  authGap: AuthGap | null;
   periods: string[];
   reportId: string;
 }
@@ -188,6 +193,15 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd, mode = "parcel
   }, []);
 
   const d = result?.diagnosis;
+  const ag = result?.authGap ?? null; // 진정성 갭(검색 수요 vs 등록 공급)
+  const gapStrategy =
+    ag?.verdict === "hype"
+      ? { title: "과열 관리 — 임대 안정·맥락 보전", detail: "검색 관심이 실체를 앞섭니다. 상생협약·공공임대상가로 임대료를 안정시키고, 고유 점포·콘텐츠를 실제로 채워 서사·실체 격차를 좁혀 역티핑(급랭)을 예방하세요." }
+      : ag?.verdict === "hidden"
+      ? { title: "노출 확대 — 저평가 강세 알리기", detail: "등록 콘텐츠는 충분한데 검색 노출이 낮습니다. SNS·리포트·콜라보로 발견성을 높이면 빠른 성장 여력이 있습니다." }
+      : ag?.verdict === "balanced"
+      ? { title: "균형 유지 — 동반 성장", detail: "검색 수요와 등록 공급이 균형입니다. 현 페이스로 콘텐츠와 홍보를 함께 키우는 전략이 유효합니다." }
+      : null;
   const popFirst = result?.demographics[0];
   const popLast = result?.demographics[result.demographics.length - 1];
   const proc = result?.procurement?.annual ?? [];
@@ -1097,6 +1111,13 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd, mode = "parcel
               {(!d || d.risks.length === 0) && (
                 <div className="rounded-lg border border-line bg-card2 px-3 py-2 text-[12.5px] text-muted">임계 경보 없음 — 정상 범위. 선제 모니터링 권장.</div>
               )}
+              {ag?.verdict === "hype" && (
+                <div className="rounded-lg border border-warn/30 bg-warn/10 px-3 py-2">
+                  <div className="text-[13px] font-bold text-warn">🎭 진정성 갭 — {ag.headline}</div>
+                  <div className="mt-0.5 text-[12.5px] text-muted">{ag.desc}</div>
+                  <div className="mt-1 text-[11px] text-muted2">검색 수요 {Math.round(ag.demandN * 100)} vs 등록 공급 {Math.round(ag.supplyN * 100)} · 갭 +{ag.gap}</div>
+                </div>
+              )}
             </div>
           </Section>
 
@@ -1133,6 +1154,16 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd, mode = "parcel
                   <div className="mt-0.5 text-[12.5px] text-muted">{s.detail}</div>
                 </div>
               ))}
+              {gapStrategy && (
+                <div className="rounded-lg border border-line bg-card2 px-3 py-2">
+                  <div className="text-[13px] font-bold text-grade-b">🎭 → {gapStrategy.title}</div>
+                  <div className="mt-0.5 text-[12.5px] text-muted">{gapStrategy.detail}</div>
+                  <div className="mt-1 text-[11px] text-muted2">
+                    검색 수요 {Math.round((ag?.demandN ?? 0) * 100)} / 등록 공급 {Math.round((ag?.supplyN ?? 0) * 100)}
+                    {result?.supply && result.supply.count > 0 ? ` · 현재 플래그테일 등록 ${result.supply.count}곳` : ""}
+                  </div>
+                </div>
+              )}
             </div>
             {/* 업종 처방 — 다양성 보강 추천 (모듈 D) */}
             {result.tenantRx && result.tenantRx.gaps.length > 0 && (

@@ -1,5 +1,7 @@
 import { buildMapItems } from "./flagtale";
 import { loadDistricts } from "./data";
+import { narrativeForPlace } from "./narratives";
+import { instagramFor, buzzBoost } from "./connectors/instagram";
 
 // 지역 공급 밀도 — 플래그테일에 등록된 공간·프로그램(매장·스테이·투어·축제·거점)을 행정동에 매핑.
 // 철학: 동네에 등록이 늘수록 그 지역의 매력도가 올라간다(네트워크 효과). 등록 수 + 관심(리뷰) → 매력도 가산.
@@ -80,6 +82,36 @@ export function authenticityGap(supplyBoost: number, buzzBoost: number): AuthGap
       desc: "등록된 로컬 콘텐츠(공급)가 검색 관심(수요)보다 많습니다. 아직 덜 알려진 저평가 강세 지역으로, 노출·홍보 시 성장 여력이 큽니다.", tone: "ok" };
   return { verdict: "balanced", supplyN, demandN, gap, label: "균형", headline: "균형 성장",
     desc: "검색 관심과 등록 콘텐츠가 균형을 이룹니다. 서사와 실체가 함께 가는 건강한 동반 성장 구간입니다.", tone: "ok" };
+}
+
+// 전국 진정성 갭 무버 — 과열(수요≫공급)·미발견(공급≫수요) 상위. 주간/연간 리포트 공용. 메모이즈.
+export interface GapMoverRow {
+  admCd2: string;
+  name: string;
+  sigungu: string;
+  demandN: number;
+  supplyN: number;
+  gap: number;
+}
+let _gapAll: { hype: GapMoverRow[]; hidden: GapMoverRow[] } | null = null;
+export function gapMovers(limit = 6): { hype: GapMoverRow[]; hidden: GapMoverRow[] } {
+  if (!_gapAll) {
+    const hype: GapMoverRow[] = [];
+    const hidden: GapMoverRow[] = [];
+    for (const f of loadDistricts().features) {
+      const cd = f.properties.admCd2;
+      const nb = narrativeForPlace(cd);
+      const g = authenticityGap(supplyBoost(cd), buzzBoost(nb ? instagramFor(nb.name)?.postsCount : null));
+      if (g.verdict === "none") continue;
+      const row: GapMoverRow = { admCd2: cd, name: f.properties.name, sigungu: f.properties.sigungu, demandN: g.demandN, supplyN: g.supplyN, gap: g.gap };
+      if (g.verdict === "hype") hype.push(row);
+      else if (g.verdict === "hidden") hidden.push(row);
+    }
+    hype.sort((a, b) => b.gap - a.gap);
+    hidden.sort((a, b) => a.gap - b.gap);
+    _gapAll = { hype, hidden };
+  }
+  return { hype: _gapAll.hype.slice(0, limit), hidden: _gapAll.hidden.slice(0, limit) };
 }
 
 /** 종류별 개수를 보기 좋게: "매장 5 · 스테이 2 · 투어 1" */

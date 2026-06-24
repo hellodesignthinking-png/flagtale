@@ -18,6 +18,9 @@ import { prescribeTenants } from "@/lib/tenant";
 import { diffusionFor } from "@/lib/diffusion";
 import { buildBrandReport } from "@/lib/brandReport";
 import { storeBuzz, areaCore } from "@/lib/connectors/storebuzz";
+import { supplyFor, supplyBoost, authenticityGap } from "@/lib/supply";
+import { narrativeForPlace } from "@/lib/narratives";
+import { instagramFor, buzzBoost } from "@/lib/connectors/instagram";
 
 // 한국 정부 API(VWorld 지오코딩·KOSIS 등)는 한국 IP에서만 안정. Vercel 기본 리전 iad1(미국)이면
 // VWorld가 실패 → 좌표 매핑 불가 → 엉뚱한 동. 서울 리전(icn1)으로 고정해 정확한 행정동 매핑 보장.
@@ -60,6 +63,13 @@ export async function POST(req: NextRequest) {
   const bundle = getPlace(place.admCd2)!;
   const entitled = !!body.demoPaid;
   const peer = getPeerAvg(bundle.props.typology);
+
+  // 플래그테일 공급(등록 콘텐츠 밀도) + 진정성 갭(검색 수요 vs 등록 공급) — 위기·전략에 반영
+  const nb = narrativeForPlace(place.admCd2);
+  const sBoost = supplyBoost(place.admCd2);
+  const bBoost = buzzBoost(nb ? instagramFor(nb.name)?.postsCount : null);
+  const authGap = authenticityGap(sBoost, bBoost);
+  const supply = supplyFor(place.admCd2);
 
   // 좌표 — 골목상권·앵커 반경 검색 기준점(실지오코딩 좌표 우선, 없으면 동 중심)
   const sLng = geo?.point.lng ?? bundle.props.centroidLng;
@@ -141,6 +151,10 @@ export async function POST(req: NextRequest) {
     tenantRx, // 업종 처방(부족 업종 추천 Top3) — 모듈 D
     diffusion, // 확산 경로(인접 핫동 + 다음 확장 후보 동) — 모듈 A
     brand, // 브랜드 진단(매장 신호·경쟁력·임대료·성장·위기) — label 있을 때만
+    supply, // 플래그테일 등록 공급(매장·스테이·투어·축제·거점) 밀도
+    supplyBoost: sBoost, // 공급 가산점(0~10)
+    buzzBoost: bBoost, // 검색 수요(인스타 버즈) 가산점(0~6)
+    authGap, // 진정성 갭(검색 수요 vs 등록 공급) — 과열/미발견/균형
     periods: bundle.series.map((s) => s.period),
     entitled,
     reportId: `parcel_${place.admCd2}_${bundle.latest.period}`,
