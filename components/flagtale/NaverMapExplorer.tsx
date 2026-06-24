@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Supercluster from "supercluster";
 import { MAP_CATS, ftImage, type MapItem } from "@/lib/flagtale-types";
+import { narrativeForPlace, STAGE_META, AUTH_META } from "@/lib/narratives";
 import { MapResultsPanel, sortItems } from "./MapResultsPanel";
 import { markerPillHtml, clusterBadgeHtml, markerTier } from "./mapMarkers";
 import { openState, nowParts, type NowT } from "@/lib/openNow";
@@ -302,7 +303,13 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
           naver.maps.Event.addListener(pg, "mouseout", () => setChoroHover(null));
           naver.maps.Event.addListener(pg, "click", (e: any) => {
             if (!choroIWRef.current) choroIWRef.current = new naver.maps.InfoWindow({ borderWidth: 0, backgroundColor: "transparent", disableAnchor: true, pixelOffset: new naver.maps.Point(0, -2) });
-            choroIWRef.current.setContent(`<div style="background:#0d2b5e;color:#fff;border-radius:10px;padding:6px 11px;font:800 12px Pretendard,system-ui,sans-serif;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.4)"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${meta.color};margin-right:6px"></span>${f.properties.name} · ${meta.label}</div>`);
+            const narr = narrativeForPlace(f.properties.admCd2); // 핫지역이면 실제 이야기 카드
+            if (narr) {
+              const sm = STAGE_META[narr.stage];
+              choroIWRef.current.setContent(`<div style="max-width:236px;background:#fff;border-radius:12px;padding:11px 13px;font-family:Pretendard,system-ui,sans-serif;box-shadow:0 6px 22px rgba(0,0,0,.28);border:1.5px solid ${sm.color}55"><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap"><span style="background:${sm.color};color:#fff;border-radius:999px;padding:2px 8px;font-size:10.5px;font-weight:800">${sm.emoji} ${sm.label}</span><span style="font-size:12px;font-weight:800;color:#0d2b5e">${narr.name}</span></div><div style="margin-top:7px;font-size:13px;font-weight:800;line-height:1.35;color:#16223a">“${narr.theme}”</div><div style="margin-top:6px;font-size:10.5px;color:#5b6b86;line-height:1.4">${AUTH_META[narr.authenticity].label} · ${narr.authNote}</div><a href="/place/${f.properties.admCd2}" style="display:inline-block;margin-top:8px;background:#0d2b5e;color:#fff;border-radius:999px;padding:5px 11px;font-size:11px;font-weight:800;text-decoration:none">이 동네 진단 →</a></div>`);
+            } else {
+              choroIWRef.current.setContent(`<div style="background:#0d2b5e;color:#fff;border-radius:10px;padding:6px 11px;font:800 12px Pretendard,system-ui,sans-serif;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.4)"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${meta.color};margin-right:6px"></span>${f.properties.name} · ${meta.label}</div>`);
+            }
             choroIWRef.current.open(map, e.coord);
           });
           heatRef.current.push(pg);
