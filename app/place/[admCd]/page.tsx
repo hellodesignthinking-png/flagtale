@@ -24,15 +24,9 @@ import { narrativeForPlace } from "@/lib/narratives";
 import { AreaNarrativeCard } from "@/components/flagtale/AreaNarrativeCard";
 import { formatKRW, signed } from "@/lib/utils";
 
-// 전국 수천 동 → 빌드 시 전체 프리렌더 대신 요청 시 온디맨드 렌더 + ISR 캐시(하루).
-// 데이터가 정적 시드(모듈 캐시)라 force-dynamic(매 요청 SSR) 대신 revalidate로 CDN 캐시.
-export const revalidate = 86400;
-export const dynamicParams = true;
-// 빈 목록 → 빌드 시 프리렌더 0(경량), 동 페이지는 첫 요청 시 렌더 후 ISR 캐시(revalidate).
-// (동적 세그먼트는 generateStaticParams가 있어야 동적 렌더 대신 ISR 캐시 파이프라인을 탄다.)
-export function generateStaticParams() {
-  return [];
-}
+// 전국 수천 동 → 빌드 시 전체 프리렌더 대신 요청 시 온디맨드 렌더 (빌드 경량화).
+// ⚠️ ISR(revalidate+generateStaticParams [])로 바꿨더니 온디맨드 생성이 런타임 500 → force-dynamic 유지.
+export const dynamic = "force-dynamic";
 
 export function generateMetadata({ params }: { params: { admCd: string } }): Metadata {
   const b = getPlace(params.admCd);
