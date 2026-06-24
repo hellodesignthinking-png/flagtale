@@ -9,7 +9,7 @@ export interface Supply {
   count: number;
   kinds: Record<string, number>; // 종류별 개수(매장/스테이/투어/축제/거점)
   reviews: number; // 등록 콘텐츠 총 리뷰·관심(수요·검색 프록시)
-  items: { name: string; kind: string; rating?: number }[];
+  items: { name: string; kind: string; rating?: number; href?: string }[];
 }
 
 const KIND_LABEL: Record<string, string> = { spot: "매장", stay: "스테이", tour: "투어", festival: "축제", basecamp: "거점" };
@@ -19,12 +19,14 @@ function build(): Map<string, Supply> {
   if (_byAdm) return _byAdm;
   const feats = loadDistricts().features.map((f) => ({ cd: f.properties.admCd2, lat: f.properties.centroidLat, lng: f.properties.centroidLng }));
   const m = new Map<string, Supply>();
-  const addTo = (cd: string, kind: string, it: { name: string; rating?: number; reviewCount?: number }) => {
+  const addTo = (cd: string, kind: string, it: { name: string; rating?: number; reviewCount?: number; id?: string }) => {
     const s = m.get(cd) ?? { count: 0, kinds: {}, reviews: 0, items: [] };
     s.count++;
     s.kinds[kind] = (s.kinds[kind] ?? 0) + 1;
     s.reviews += it.reviewCount ?? 0;
-    if (s.items.length < 16) s.items.push({ name: it.name, kind: KIND_LABEL[kind] ?? kind, rating: it.rating });
+    // 상세 페이지가 있는 종류(투어·스테이)는 링크 부여 → /place에서 확인→경험(예약) 연결.
+    const href = it.id?.startsWith("tour-") ? `/tour/${it.id.slice(5)}` : it.id?.startsWith("stay-") ? `/stay/${it.id.slice(5)}` : undefined;
+    if (s.items.length < 16) s.items.push({ name: it.name, kind: KIND_LABEL[kind] ?? kind, rating: it.rating, href });
     m.set(cd, s);
   };
   // 투어 포함 모든 등록 콘텐츠는 실좌표 기반(tours.json에 lat/lng 부여) → 최근접 행정동에 정확히 매핑.

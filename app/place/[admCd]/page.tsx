@@ -137,9 +137,13 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
               등록 <b className="text-ink">{supply.count}곳</b> · {supplyBreakdown(supply)} · 관심(리뷰) <b className="text-ink">{supply.reviews.toLocaleString()}</b> → 매력도 <b className="text-ink">{latest.klai}</b> + 공급 <b className="text-ink">{sBoost}</b>{bBoost > 0 ? <> + 검색 <b className="text-ink">{bBoost}</b></> : null} = <b className="text-ink">{klaiUp}</b>
             </p>
             <div className="mt-2.5 flex flex-wrap gap-1.5">
-              {supply.items.slice(0, 10).map((it, i) => (
-                <span key={i} className="rounded-full border border-line bg-card px-2.5 py-1 text-[11px] font-bold text-ink">{it.kind} {it.name}{it.rating ? ` ★${it.rating}` : ""}</span>
-              ))}
+              {supply.items.slice(0, 10).map((it, i) =>
+                it.href ? (
+                  <Link key={i} href={it.href} className="rounded-full border border-line bg-card px-2.5 py-1 text-[11px] font-bold text-ink transition-colors hover:border-amber hover:text-amber-d">{it.kind} {it.name}{it.rating ? ` ★${it.rating}` : ""} →</Link>
+                ) : (
+                  <span key={i} className="rounded-full border border-line bg-card px-2.5 py-1 text-[11px] font-bold text-ink">{it.kind} {it.name}{it.rating ? ` ★${it.rating}` : ""}</span>
+                )
+              )}
             </div>
           </>
         ) : (
