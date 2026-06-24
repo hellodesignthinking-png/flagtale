@@ -33,7 +33,7 @@ export default function HomePage() {
         </p>
         <div className="mt-6 flex flex-wrap gap-2.5">
           <Link href="/map-tale" className="btn-glow inline-flex items-center gap-1.5 rounded-full bg-amber px-6 py-3.5 text-[15px] font-extrabold text-onaccent">🗺 지도로 탐색 →</Link>
-          <Link href="/auth" className="rounded-full border-[1.5px] border-line bg-card px-6 py-3.5 text-[15px] font-extrabold text-ink transition-colors hover:border-ink">FLAG PASS 구매</Link>
+          <Link href="/pricing" className="rounded-full border-[1.5px] border-line bg-card px-6 py-3.5 text-[15px] font-extrabold text-ink transition-colors hover:border-ink">FLAG PASS 보기</Link>
         </div>
       </section>
 
@@ -75,7 +75,7 @@ export default function HomePage() {
                       <li key={`${p.id}-${bi}`} className="flex gap-2 text-[12.5px] text-muted"><span className="text-grade-b">✓</span><span>{b.trim()}</span></li>
                     ))}
                   </ul>
-                  <Link href="/auth" className={`mt-5 flex items-center justify-center rounded-full px-5 py-3 text-[14px] font-extrabold ${featured ? "btn-glow bg-amber text-onaccent" : "border-[1.5px] border-line bg-card text-ink hover:border-ink"}`}>패스 구매하기</Link>
+                  <Link href="/pricing" className={`mt-5 flex items-center justify-center rounded-full px-5 py-3 text-[14px] font-extrabold ${featured ? "btn-glow bg-amber text-onaccent" : "border-[1.5px] border-line bg-card text-ink hover:border-ink"}`}>플랜 보기</Link>
                 </div>
               );
             })}
@@ -93,7 +93,7 @@ export default function HomePage() {
         </section>
 
         {/* 경험 — 스테이 */}
-        <section className="py-7">
+        <section id="stays" className="scroll-mt-20 py-7">
           <div className="mb-4">
             <span className="klai-eyebrow">경험 · Local Stays</span>
             <h2 className="mt-1.5 font-display text-[clamp(22px,3vw,28px)] font-black tracking-[-0.03em]">하룻밤 더, <span className="hl-mark">로컬 스테이</span></h2>

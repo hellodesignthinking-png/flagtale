@@ -176,7 +176,7 @@ export function PlacePanel({ admCd2, onClose }: { admCd2: string; onClose: () =>
             </Link>
             <Link
               href={`/diagnose?admCd=${admCd2}`}
-              className="rounded-lg bg-amber py-2 text-center text-[13px] font-bold text-onaccent hover:bg-[#65a30d]"
+              className="rounded-lg bg-amber py-2 text-center text-[13px] font-bold text-onaccent hover:bg-[var(--amber-d)]"
             >
               상세 진단(유료)
             </Link>

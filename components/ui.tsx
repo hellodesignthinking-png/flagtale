@@ -97,8 +97,8 @@ type ButtonProps = {
 const BTN_BASE =
   "inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
 const BTN_VARIANT: Record<string, string> = {
-  primary: "bg-blue text-white hover:bg-[#65a30d] btn-glow",
-  amber: "bg-amber text-onaccent hover:bg-[#65a30d] btn-glow",
+  primary: "bg-blue text-white hover:brightness-110 btn-glow",
+  amber: "bg-amber text-onaccent hover:bg-[var(--amber-d)] btn-glow",
   ghost: "text-ink hover:bg-card2",
   outline: "border border-line text-ink hover:border-blue/50 hover:bg-card2",
 };

@@ -18,7 +18,7 @@ const NAV = [
 
 export function SiteHeader() {
   const pathname = usePathname();
-  const onMap = pathname === "/map";
+  const onMap = pathname.startsWith("/map"); // /map-tale·/map 모두
   const [email, setEmail] = useState<string | null>(null);
   useEffect(() => {
     const supabase = createClient();

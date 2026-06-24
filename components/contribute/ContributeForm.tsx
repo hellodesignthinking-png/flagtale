@@ -139,7 +139,7 @@ export function ContributeForm() {
       <button
         onClick={submit}
         disabled={!ready || status === "submitting" || status === "geocoding"}
-        className="h-11 w-full rounded-lg bg-amber text-[14px] font-bold text-onaccent hover:bg-[#65a30d] disabled:opacity-50"
+        className="h-11 w-full rounded-lg bg-amber text-[14px] font-bold text-onaccent hover:bg-[var(--amber-d)] disabled:opacity-50"
       >
         {status === "geocoding" ? "위치 확인 중…" : status === "submitting" ? "접수 중…" : "현장 리포트 제출"}
       </button>

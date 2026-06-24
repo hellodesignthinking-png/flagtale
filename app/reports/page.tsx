@@ -71,12 +71,24 @@ export default function ReportsPage({ searchParams }: { searchParams: { kind?: s
               <div>
                 <div className="text-[13px] font-bold text-white/80">{featured.period}</div>
                 {(() => {
+                  const sp = (t: string) => <span className="status-pill" style={{ background: "rgba(255,255,255,.18)" }}>{t}</span>;
+                  // 연간은 blocks.national이 없음 → ranking·avgKlai·gentriCount로 KPI 노출(이전엔 빈 카드)
+                  if (isAnnual(featured.kind)) {
+                    const b = featured.blocks as { avgKlai?: number; ranking?: unknown[]; gentriCount?: number } | undefined;
+                    return b ? (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {b.avgKlai != null && sp(`평균 KLAI ${b.avgKlai}`)}
+                        {!!b.ranking?.length && sp(`🏅 매력동네 ${b.ranking.length}`)}
+                        {b.gentriCount != null && sp(`⚠ 젠트리 경보 ${b.gentriCount}`)}
+                      </div>
+                    ) : null;
+                  }
                   const n = natOf(featured);
                   return n ? (
                     <div className="mt-2 flex flex-wrap gap-2">
-                      <span className="status-pill" style={{ background: "rgba(255,255,255,.18)" }}>평균 KLAI {n.avgKlai}</span>
-                      <span className="status-pill" style={{ background: "rgba(255,255,255,.18)" }}>▲ 상승 {n.risingCount.toLocaleString()}</span>
-                      <span className="status-pill" style={{ background: "rgba(255,255,255,.18)" }}>▼ 하락 {n.decliningCount.toLocaleString()}</span>
+                      {sp(`평균 KLAI ${n.avgKlai}`)}
+                      {sp(`▲ 상승 ${n.risingCount.toLocaleString()}`)}
+                      {sp(`▼ 하락 ${n.decliningCount.toLocaleString()}`)}
                     </div>
                   ) : null;
                 })()}
