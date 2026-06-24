@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loadDistricts, loadScores } from "@/lib/data";
-import { colorForLayer, displayForLayer, elevationForLayer, isPulseAlert } from "@/lib/scoring";
+import { colorForLayer, displayForLayer, elevationForLayer, isPulseAlert, gradeOf } from "@/lib/scoring";
 import { narrativeForPlace, STAGE_META } from "@/lib/narratives";
+import { supplyBoost } from "@/lib/supply";
+import { instagramFor, buzzBoost } from "@/lib/connectors/instagram";
 import type { LayerId } from "@/lib/types";
 
 // hex(#RRGGBB) → [r,g,b,a]. 핫지역 큐레이션 5단계 색을 지도 narrative 레이어에 적용.
@@ -37,8 +39,15 @@ export function GET(req: NextRequest) {
     const narrColor = narr ? hexRgb(STAGE_META[narr.stage].color) : null;
     const narrLabel = narr ? `${STAGE_META[narr.stage].emoji} ${STAGE_META[narr.stage].short} · ${narr.name}` : null;
     const narrAlert = narr ? (narr.stage === "gentri" || narr.stage === "decline" ? 1 : 0) : null;
+    // 종합(klai) 레이어엔 공급(등록 콘텐츠)+수요(인스타 검색량) 가산을 반영 → /place·패널과 일관.
+    let boost = 0;
+    if (layer === "klai") {
+      const nb = narrativeForPlace(cd);
+      boost = Math.round((supplyBoost(cd) + buzzBoost(nb ? instagramFor(nb.name)?.postsCount : null)) * 10) / 10;
+    }
     for (let t = 0; t < periods.length; t++) {
-      const s = series[t] ?? series[series.length - 1];
+      const s0 = series[t] ?? series[series.length - 1];
+      const s = boost ? { ...s0, klai: Math.min(100, Math.round((s0.klai + boost) * 10) / 10), grade: gradeOf(s0.klai + boost) } : s0;
       c.push(narrColor ?? colorForLayer(layer, s));
       l.push(narrLabel ?? displayForLayer(layer, s));
       e.push(Math.round(elevationForLayer(layer, s)));
