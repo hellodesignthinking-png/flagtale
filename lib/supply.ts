@@ -52,6 +52,36 @@ export function supplyBoost(admCd2?: string | null): number {
   return Math.round(Math.min(10, s.count * 1.5 + eng) * 10) / 10;
 }
 
+// 진정성 갭(authenticity gap) — 스펙 §5: 서사(검색 수요) vs 실제 상권(등록 공급)의 괴리.
+//  수요≫공급 = 과열·거품 신호 / 공급≫수요 = 미발견 강세 / 균형 = 건강.
+export interface AuthGap {
+  verdict: "hype" | "balanced" | "hidden" | "none";
+  supplyN: number; // 0~1 (등록 공급 정규화)
+  demandN: number; // 0~1 (검색 수요 정규화)
+  gap: number; // demandN - supplyN (-1~+1)
+  label: string; // 짧은 라벨: 과열 / 균형 / 미발견 / —
+  headline: string;
+  desc: string;
+  tone: "warn" | "ok" | "info";
+}
+
+/** supplyBoost(0~10) + buzzBoost(0~6)로 진정성 갭 진단. 둘 다 0이면 none. */
+export function authenticityGap(supplyBoost: number, buzzBoost: number): AuthGap {
+  const supplyN = Math.round(Math.min(supplyBoost / 10, 1) * 100) / 100;
+  const demandN = Math.round(Math.min(buzzBoost / 6, 1) * 100) / 100;
+  if (supplyN === 0 && demandN === 0)
+    return { verdict: "none", supplyN, demandN, gap: 0, label: "—", headline: "", desc: "", tone: "info" };
+  const gap = Math.round((demandN - supplyN) * 100) / 100;
+  if (gap >= 0.3)
+    return { verdict: "hype", supplyN, demandN, gap, label: "과열", headline: "과열·거품 주의",
+      desc: "검색 관심(수요)이 등록된 로컬 콘텐츠(공급)를 크게 앞섭니다. 서사가 실체보다 빠른 과열·투기 신호이거나, 아직 로컬 콘텐츠가 채워지지 않은 단계일 수 있습니다.", tone: "warn" };
+  if (gap <= -0.3)
+    return { verdict: "hidden", supplyN, demandN, gap, label: "미발견", headline: "미발견 강세",
+      desc: "등록된 로컬 콘텐츠(공급)가 검색 관심(수요)보다 많습니다. 아직 덜 알려진 저평가 강세 지역으로, 노출·홍보 시 성장 여력이 큽니다.", tone: "ok" };
+  return { verdict: "balanced", supplyN, demandN, gap, label: "균형", headline: "균형 성장",
+    desc: "검색 관심과 등록 콘텐츠가 균형을 이룹니다. 서사와 실체가 함께 가는 건강한 동반 성장 구간입니다.", tone: "ok" };
+}
+
 /** 종류별 개수를 보기 좋게: "매장 5 · 스테이 2 · 투어 1" */
 export function supplyBreakdown(s: Supply): string {
   return Object.entries(s.kinds)

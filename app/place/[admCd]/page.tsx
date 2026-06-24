@@ -22,7 +22,7 @@ import { MethodologyFlow } from "@/components/diagram/MethodologyFlow";
 import { GRADE_LABEL, MARKET_LABEL, NARRATIVE_LABEL, TRAJECTORY_LABEL } from "@/lib/constants";
 import { narrativeForPlace } from "@/lib/narratives";
 import { instagramFor, igCountLabel, buzzBoost } from "@/lib/connectors/instagram";
-import { supplyFor, supplyBoost, supplyBreakdown } from "@/lib/supply";
+import { supplyFor, supplyBoost, supplyBreakdown, authenticityGap } from "@/lib/supply";
 import { gradeOf } from "@/lib/scoring";
 import { AreaNarrativeCard } from "@/components/flagtale/AreaNarrativeCard";
 import { formatKRW, signed } from "@/lib/utils";
@@ -62,6 +62,7 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
   const totalBoost = Math.round((sBoost + bBoost) * 10) / 10;
   const klaiUp = totalBoost ? Math.min(100, Math.round((latest.klai + totalBoost) * 10) / 10) : latest.klai;
   const gradeUp = totalBoost ? gradeOf(latest.klai + totalBoost) : latest.grade;
+  const gap = authenticityGap(sBoost, bBoost); // 진정성 갭: 검색 수요 vs 등록 공급 괴리
 
   return (
     <PageShell>
@@ -343,9 +344,34 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
             <SummaryCell label="추세" value={diagnosis ? TRAJECTORY_LABEL[diagnosis.trajectory] : "—"} />
             <SummaryCell label="레버리지" value={diagnosis?.leverage ?? "—"} />
             <SummaryCell label="내러티브 주제" value={diagnosis?.narrativeTheme ?? "—"} />
-            <SummaryCell label="진정성 갭" value={diagnosis ? `${diagnosis.authenticityGap}` : "—"} />
+            <SummaryCell label="진정성 갭" value={gap.verdict !== "none" ? gap.label : diagnosis ? `${diagnosis.authenticityGap}` : "—"} />
           </div>
         </div>
+
+        {/* 🎭 진정성 갭 — 서사(검색 수요) vs 실체(등록 공급) 괴리. 스펙 §5. 무료·실데이터 근사 */}
+        {gap.verdict !== "none" && (
+          <div className="mt-4 rounded-xl border-[1.5px] border-line bg-card2 px-4 py-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-[13px] font-black text-ink">
+                🎭 진정성 갭 — <span className={gap.tone === "warn" ? "text-warn" : "text-grade-b"}>{gap.headline}</span>
+              </div>
+              <span className="shrink-0 text-[10.5px] font-bold text-muted2">서사(검색) vs 실체(등록)</span>
+            </div>
+            <div className="mt-2.5 grid gap-1.5">
+              {([["검색 수요(버즈)", gap.demandN, "#3E9AA8"], ["등록 공급(콘텐츠)", gap.supplyN, "#D4861E"]] as [string, number, string][]).map(([l, v, c]) => (
+                <div key={l} className="flex items-center gap-2">
+                  <span className="w-[92px] shrink-0 text-[11px] font-bold text-muted">{l}</span>
+                  <div className="h-2 flex-1 overflow-hidden rounded-full" style={{ background: "rgba(255,255,255,0.07)" }}>
+                    <div className="h-full rounded-full" style={{ width: `${Math.max(3, Math.round(v * 100))}%`, background: c }} />
+                  </div>
+                  <span className="w-7 shrink-0 text-right text-[11px] font-bold text-ink">{Math.round(v * 100)}</span>
+                </div>
+              ))}
+            </div>
+            <p className="mt-2.5 text-[12px] leading-relaxed text-muted">{gap.desc}</p>
+            <p className="mt-1 text-[10.5px] text-muted2">* 검색=인스타 버즈, 공급=플래그테일 등록 콘텐츠 밀도 기반 근사 신호(원인 후보).</p>
+          </div>
+        )}
 
         {/* 기여요인 Top3 (무료 요약) */}
         {diagnosis && (
