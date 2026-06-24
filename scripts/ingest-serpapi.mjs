@@ -5,8 +5,16 @@
 import fs from "node:fs";
 import path from "node:path";
 
+// .env.local(git 무시됨)에서 키 로드 — 키를 셸 기록/명령에 노출하지 않아도 됨.
+try {
+  for (const line of fs.readFileSync(path.join(process.cwd(), ".env.local"), "utf-8").split("\n")) {
+    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
+    if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
+  }
+} catch { /* .env.local 없음 — 인라인 env 사용 */ }
+
 const KEY = process.env.SERPAPI_KEY;
-if (!KEY) { console.error("SERPAPI_KEY 환경변수가 필요합니다. (예: SERPAPI_KEY=xxxx node scripts/ingest-serpapi.mjs)"); process.exit(1); }
+if (!KEY) { console.error("SERPAPI_KEY가 없습니다. .env.local에 SERPAPI_KEY=... 추가 후 `npm run ingest:serp` (또는 SERPAPI_KEY=xxxx npm run ingest:serp)."); process.exit(1); }
 
 // 내러티브명(키) → 구글 트렌드 질의(로마자=해외 검색 포착). 필요시 확장.
 const REGIONS = [
