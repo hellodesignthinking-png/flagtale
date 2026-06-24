@@ -1,0 +1,57 @@
+name: 데이터 갱신 (실데이터 인제스트 → 커밋 → 배포)
+
+on:
+  schedule:
+    - cron: "0 18 1 * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data-refresh
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    env:
+      KOSIS_API_KEY: ${{ secrets.KOSIS_API_KEY }}
+      G2B_API_KEY: ${{ secrets.G2B_API_KEY }}
+      RONE_API_KEY: ${{ secrets.RONE_API_KEY }}
+      RTMS_API_KEY: ${{ secrets.RTMS_API_KEY }}
+      LOCALDATA_API_KEY: ${{ secrets.LOCALDATA_API_KEY }}
+      BIGKINDS_API_KEY: ${{ secrets.BIGKINDS_API_KEY }}
+      NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
+      NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: 인구(KOSIS) 갱신
+        run: node scripts/build-population.mjs --write || echo "population skip"
+      - name: 기타 소스 인제스트
+        run: npm run ingest || echo "ingest skip"
+      - name: data/ 변경분 커밋
+        id: commit
+        run: |
+          git config user.name "flagtale-bot"
+          git config user.email "bot@flagtale.app"
+          git add data/
+          if git diff --staged --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git commit -m "robot: 실데이터 인제스트 갱신"
+            git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Vercel 배포
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: team_yP6triEhdtU8ELdrN3J6JRnQ
+          VERCEL_PROJECT_ID: prj_kAADx9Fe0XzGMAErwRJa0U1R3eL4
+        run: npx vercel@latest --prod --yes --archive=tgz --token "$VERCEL_TOKEN"
