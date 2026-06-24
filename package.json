@@ -13,7 +13,8 @@
     "seed": "node seed/generate.mjs",
     "ingest": "node scripts/ingest.mjs",
     "check-apis": "node scripts/test-apis.mjs",
-    "ingest:ig": "node scripts/ingest-instagram.mjs"
+    "ingest:ig": "node scripts/ingest-instagram.mjs",
+    "ingest:serp": "node scripts/ingest-serpapi.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",

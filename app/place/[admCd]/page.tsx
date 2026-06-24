@@ -22,6 +22,7 @@ import { MethodologyFlow } from "@/components/diagram/MethodologyFlow";
 import { GRADE_LABEL, MARKET_LABEL, NARRATIVE_LABEL, TRAJECTORY_LABEL } from "@/lib/constants";
 import { narrativeForPlace } from "@/lib/narratives";
 import { instagramFor, igCountLabel, buzzBoost } from "@/lib/connectors/instagram";
+import { googleInterestFor, countryKo } from "@/lib/connectors/googleinterest";
 import { supplyFor, supplyBoost, supplyBreakdown, authenticityGap } from "@/lib/supply";
 import { gradeOf } from "@/lib/scoring";
 import { AreaNarrativeCard } from "@/components/flagtale/AreaNarrativeCard";
@@ -55,6 +56,7 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
   const popReal = populationMeta(); // 있으면 인구·세대수 = KOSIS 실데이터(시군구 단위)
   const area = narrativeForPlace(props.admCd2); // 핫지역이면 큐레이션 '실제 이야기'
   const ig = instagramFor(area?.name); // 핫지역이면 인스타 해시태그 버즈(Apify 수집)
+  const gi = googleInterestFor(area?.name); // 구글 국가별 검색 관심(해외·국내, SerpApi)
   // 동네 공급 밀도 — 등록된 플래그테일 공간·프로그램이 많을수록 매력도↑(네트워크 효과).
   const supply = supplyFor(props.admCd2);
   const sBoost = supplyBoost(props.admCd2); // 공급: 등록 콘텐츠 밀도
@@ -165,6 +167,30 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
               <span className="text-[12.5px] font-bold text-ink">📸 인스타그램 <span className="text-blue-l">#{ig.tag}</span> · 약 {igCountLabel(ig.postsCount)} 게시물{bBoost > 0 ? <span className="text-amber-d"> · 검색 매력도 +{bBoost}</span> : null}</span>
               <span className="shrink-0 rounded-full bg-card px-2 py-0.5 text-[10px] font-bold text-muted2">Apify 수집·잠정 →</span>
             </a>
+          )}
+          {gi && (
+            <div className="mt-3 rounded-[14px] border border-line bg-card2/40 px-3.5 py-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[12.5px] font-bold text-ink">🌐 글로벌 검색 관심 <span className="text-blue-l">구글 트렌드</span></span>
+                <span className="shrink-0 rounded-full bg-card px-2 py-0.5 text-[10px] font-bold text-muted2">{gi.sample ? "샘플 · SerpApi 미수집" : "SerpApi 수집"}</span>
+              </div>
+              <p className="mt-1 text-[12px] text-muted">이 지역을 검색하는 나라 · 해외 관심 <b className="text-amber-d">{gi.foreignShare}%</b>{gi.foreignTop[0] ? ` · 해외 1위 ${countryKo(gi.foreignTop[0].name)}` : ""}</p>
+              <div className="mt-2.5 space-y-1.5">
+                {gi.countries.map((c) => {
+                  const kr = /korea/i.test(c.name);
+                  return (
+                    <div key={c.name} className="flex items-center gap-2">
+                      <span className={`w-16 shrink-0 text-[11.5px] font-bold ${kr ? "text-ink" : "text-muted"}`}>{countryKo(c.name)}</span>
+                      <div className="h-2 flex-1 overflow-hidden rounded-full" style={{ background: "rgba(255,255,255,0.07)" }}>
+                        <div className="h-full rounded-full" style={{ width: `${Math.max(3, c.value)}%`, background: kr ? "#1E5FA8" : "#D4861E" }} />
+                      </div>
+                      <span className="w-6 shrink-0 text-right text-[11px] font-bold text-ink">{c.value}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="mt-2 text-[10.5px] leading-snug text-muted2">구글 트렌드 국가별 검색 관심도(0~100 상대값) — 해외 방문·관심 가늠용이며 실제 방문객 수가 아닙니다.</p>
+            </div>
           )}
         </div>
       )}

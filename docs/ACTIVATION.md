@@ -111,6 +111,16 @@ if (res.code != null) return alert("결제 실패: " + res.message);
 3. 지역 추가: `scripts/ingest-instagram.mjs`의 `TAGS`(내러티브명→해시태그)에 추가
 > ⚠️ 인스타 해시태그 카운트는 집계 특성상 과대/편차가 있어 **"잠정" 라벨 + 태그 링크(검증 가능)**로 노출. 정밀 버즈는 기간 필터·관련태그(`related`)·게시물 샘플로 고도화 가능.
 
+## 5.6 구글 트렌드 국가별 관심 — SerpApi (구현됨, 샘플 데이터 포함)
+
+핫지역의 **구글 검색 관심을 국가별**로 수집해(`engine=google_trends`, `data_type=GEO_MAP_0`, `region=COUNTRY`) `data/google-interest.json`에 저장 → 동 리포트(/place)의 핫지역에 **"🌐 글로벌 검색 관심"** 패널(국내+해외 국가 막대 + 해외 관심 비중)로 노출. **해외 방문객 관심** 가늠용(국내 인스타 버즈와 상호보완). 현재 7개 지역 **샘플 시드**(SerpApi 미수집 라벨).
+
+**갱신/확장**:
+1. [serpapi.com/dashboard](https://serpapi.com/dashboard)에서 **API key** 발급 → `.env.local`(+ Vercel 환경변수)에 `SERPAPI_KEY=...` (⚠️ 키는 코드/커밋에 절대 넣지 말 것)
+2. `SERPAPI_KEY=... node scripts/ingest-serpapi.mjs` (또는 `npm run ingest:serp`) → 해외 검색 포착용 **로마자 질의**로 수집 → `data/google-interest.json` 비파괴 갱신
+3. 지역 추가: `scripts/ingest-serpapi.mjs`의 `REGIONS`(내러티브명→로마자 질의)에 추가
+> ⚠️ 구글 트렌드는 **상대값(0~100)·검색 관심**이며 실제 방문객 수가 아님. SerpApi는 search당 과금이라 **페이지뷰가 아닌 ingest 시점에만** 호출(인스타와 동일 패턴).
+
 ## 6. 기타
 
 - **주간 리포트 이메일**: `RESEND_API_KEY` + `RESEND_FROM` (+ `WEEKLY_RECIPIENTS` 또는 Supabase 구독자) → `/api/cron/weekly`(헤더 `CRON_SECRET`)
