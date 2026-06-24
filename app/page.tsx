@@ -4,6 +4,9 @@ import { loadCreators, loadTours, loadStays, loadFlagPasses, ftImage, round1 } f
 import { SiteFooter } from "@/components/page-shell";
 import { CreatorShowroom } from "@/components/flagtale/CreatorShowroom";
 import { TourList } from "@/components/flagtale/TourList";
+import { narrativeJumpList, reasonsFor, STAGE_META } from "@/lib/narratives";
+import { authenticityGap, supplyBoost } from "@/lib/supply";
+import { instagramFor, buzzBoost, igCountLabel } from "@/lib/connectors/instagram";
 
 export const metadata: Metadata = { title: "Flagtale · 로컬을 발견하고 경험하다" };
 
@@ -14,6 +17,18 @@ export default function HomePage() {
   const passes = loadFlagPasses();
   const creatorsMap = Object.fromEntries(creators.map((c) => [c.id, { name: c.name, nickname: c.nickname, image: c.image }]));
   const regions = new Set(creators.map((c) => c.region)).size;
+
+  // 🔥 지금 뜨는 동네 — 핫지역 내러티브 + 인스타 버즈 + 진정성 갭. 일반 사용자용 '확인' 피드.
+  // 라이프사이클 단계 우선(절정·확산 먼저) → 그 안에서 버즈순. 태그수 큰 지역이 무조건 앞서지 않게.
+  const STAGE_RANK: Record<string, number> = { peak: 0, spread: 1, gentri: 2, formation: 3, decline: 4 };
+  const trending = narrativeJumpList()
+    .map((n) => {
+      const ig = instagramFor(n.name);
+      const gap = authenticityGap(supplyBoost(n.admCd2), buzzBoost(ig?.postsCount));
+      return { name: n.name, admCd2: n.admCd2, stage: n.stage, sm: STAGE_META[n.stage], reason: reasonsFor(n.name)[0] ?? n.theme, posts: ig?.postsCount ?? 0, verdict: gap.verdict };
+    })
+    .sort((a, b) => (STAGE_RANK[a.stage] - STAGE_RANK[b.stage]) || b.posts - a.posts)
+    .slice(0, 12);
 
   return (
     <div className="theme-light relative min-h-screen overflow-hidden bg-navy pt-14 text-ink">
@@ -35,9 +50,48 @@ export default function HomePage() {
           <Link href="/map-tale" className="btn-glow inline-flex items-center gap-1.5 rounded-full bg-amber px-6 py-3.5 text-[15px] font-extrabold text-onaccent">🗺 지도로 탐색 →</Link>
           <Link href="/pricing" className="rounded-full border-[1.5px] border-line bg-card px-6 py-3.5 text-[15px] font-extrabold text-ink transition-colors hover:border-ink">FLAG PASS 보기</Link>
         </div>
+        {trending.length > 0 && (
+          <div className="mt-5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px] text-muted2">
+            <span className="font-extrabold text-warn">🔥 지금 뜨는</span>
+            {trending.slice(0, 5).map((t) => (
+              <Link key={t.admCd2} href={`/place/${t.admCd2}`} className="font-bold text-ink underline-offset-2 hover:text-amber hover:underline">
+                {t.name}
+              </Link>
+            ))}
+            <a href="#trending" className="font-bold text-blue-l hover:text-amber">더 보기 →</a>
+          </div>
+        )}
       </section>
 
       <main className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6">
+        {/* 🔥 지금 뜨는 동네 — 일반 사용자용 '확인' 피드 (핫지역 내러티브·인스타 버즈·진정성 갭) */}
+        {trending.length > 0 && (
+          <section id="trending" className="scroll-mt-20 pt-9">
+            <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
+              <div>
+                <span className="klai-eyebrow">🔥 지금 뜨는 동네</span>
+                <h2 className="mt-1.5 font-display text-[clamp(24px,3.4vw,32px)] font-black tracking-[-0.03em]">실시간으로 뜨는 동네, <span className="hl-mark">우리 동네는?</span></h2>
+              </div>
+              <Link href="/map-tale" className="shrink-0 rounded-full border-[1.5px] border-line bg-card px-4 py-2 text-[13px] font-extrabold text-ink transition-colors hover:border-ink">🗺 지도에서 전체 보기 →</Link>
+            </div>
+            <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
+              {trending.map((t) => (
+                <Link key={t.admCd2} href={`/place/${t.admCd2}`} className="lift flex w-[230px] shrink-0 snap-start flex-col rounded-[18px] border-[1.5px] border-line bg-card p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="rounded-full px-2.5 py-1 text-[11px] font-extrabold" style={{ background: `${t.sm.color}22`, color: t.sm.color }}>{t.sm.emoji} {t.sm.short}</span>
+                    {t.verdict === "hype" && <span className="text-[10.5px] font-extrabold text-warn">🔴 과열</span>}
+                    {t.verdict === "hidden" && <span className="text-[10.5px] font-extrabold text-grade-b">🟢 미발견</span>}
+                  </div>
+                  <h3 className="mt-2.5 font-display text-[19px] font-black tracking-tight text-ink">{t.name}</h3>
+                  {t.posts > 0 && <div className="mt-0.5 text-[11.5px] font-extrabold text-blue-l">📸 인스타 {igCountLabel(t.posts)} 게시물</div>}
+                  <p className="mt-2 line-clamp-3 flex-1 text-[12px] leading-relaxed text-muted">{t.reason}</p>
+                  <span className="mt-3 inline-flex items-center text-[12.5px] font-extrabold text-ink">왜 떴나 →</span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* 발견 — 크리에이터 쇼룸 */}
         <section className="pt-10 pb-1">
           <div className="mb-1 flex flex-wrap items-end justify-between gap-2">
@@ -125,6 +179,34 @@ export default function HomePage() {
             ))}
           </div>
           <p className="mt-4 text-center text-[11.5px] text-muted2">샘플·잠정 데이터 · 실제 예약·결제(PortOne)·외부 OTA 연동은 백엔드 통합 단계에서 활성화됩니다.</p>
+        </section>
+
+        {/* ✋ 참여 — 동네를 함께 만들기 */}
+        <section className="py-9">
+          <div className="rounded-[28px] border-[1.5px] border-line bg-card2 px-6 py-8 sm:px-9">
+            <div className="text-center">
+              <span className="klai-eyebrow">✋ 참여 · Be Local</span>
+              <h2 className="mt-2 font-display text-[clamp(22px,3.2vw,30px)] font-black tracking-[-0.03em]">동네는 <span className="hl-mark">함께</span> 만들어집니다</h2>
+              <p className="mt-2 text-[14px] text-muted">확인하고, 제보하고, 경험하세요 — 당신의 참여가 동네의 매력을 키웁니다.</p>
+            </div>
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              <Link href="/map-tale" className="lift rounded-[18px] border-[1.5px] border-line bg-card p-5 text-center">
+                <div className="text-[26px]">🔍</div>
+                <div className="mt-1.5 text-[15px] font-black text-ink">내 동네 확인</div>
+                <p className="mt-1 text-[12px] text-muted">우리 동네 매력도·등급·뜨는 이유를 지도에서</p>
+              </Link>
+              <Link href="/contribute" className="lift rounded-[18px] border-[1.5px] border-line bg-card p-5 text-center">
+                <div className="text-[26px]">📝</div>
+                <div className="mt-1.5 text-[15px] font-black text-ink">우리 동네 제보</div>
+                <p className="mt-1 text-[12px] text-muted">뜨는 가게·공간·분위기를 직접 알려주세요</p>
+              </Link>
+              <Link href="#tours" className="lift rounded-[18px] border-[1.5px] border-line bg-card p-5 text-center">
+                <div className="text-[26px]">🎒</div>
+                <div className="mt-1.5 text-[15px] font-black text-ink">로컬 경험</div>
+                <p className="mt-1 text-[12px] text-muted">크리에이터가 큐레이션한 투어·스테이</p>
+              </Link>
+            </div>
+          </div>
         </section>
 
         {/* 플래그테일랩(데이터 부문) 진입 */}
