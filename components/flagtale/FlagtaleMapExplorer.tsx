@@ -160,7 +160,7 @@ export default function FlagtaleMapExplorer({ items, title }: { items: MapItem[]
 
   return (
     <div className="absolute inset-0 overflow-hidden">
-      <div ref={mapEl} className="absolute inset-0" />
+      <div ref={mapEl} className="h-full w-full" />
 
       {/* 지도 컨트롤: 지도타입 · 현재위치 (네이버부동산식) */}
       <div className="absolute right-2 top-[92px] z-10 flex flex-col gap-1.5 md:top-14">

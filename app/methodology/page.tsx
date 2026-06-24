@@ -257,6 +257,7 @@ export default function MethodologyPage() {
       </Panel>
 
       {/* 내러티브 — 실제 핫지역에 적용 (검증) */}
+      <div id="narrative" className="scroll-mt-20" />
       <Panel className="mb-5">
         <SectionHead no="내러티브" title="실제 핫지역에 적용한 내러티브" desc="문래·연희·성수·연남… 핫지역의 ‘이야기’를 5단계 라이프사이클에 매핑 — 단계를 눌러 확인" />
         <NarrativeShowcase />

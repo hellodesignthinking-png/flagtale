@@ -76,6 +76,8 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
   const [heat, setHeat] = useState(false);
   const [choroBusy, setChoroBusy] = useState(false);
   const [choroLayer, setChoroLayer] = useState<LayerId>("klai");
+  const [choroSimple, setChoroSimple] = useState(false); // 3단계(상/중/하) 단순화
+  const choroSimpleRef = useRef(false);
   const { plan } = usePlan();
   const canChoro = canUse(plan, "choropleth"); // choropleth = Pro 이상
   const [upsell, setUpsell] = useState(false);
@@ -83,12 +85,14 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
   const routeRef = useRef<any[]>([]);
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [hoverCard, setHoverCard] = useState<{ it: MapItem; x: number; y: number } | null>(null);
+  const [choroHover, setChoroHover] = useState<{ name: string; label: string; color: string; x: number; y: number } | null>(null);
   const panoEl = useRef<HTMLDivElement>(null);
   const panoRef = useRef<any>(null);
   const heatRef = useRef<any[]>([]);
   const heatOnRef = useRef(false);
   const choroGeoRef = useRef<any>(null);
   const choroColorsRef = useRef<Record<string, Record<string, { color: string; label: string }>>>({});
+  const choroSiguRef = useRef<Record<string, Record<string, string>>>({}); // 레이어→시군구→평균색(저줌 블록)
   const choroLayerRef = useRef<string>("klai");
   const choroIWRef = useRef<any>(null);
   const choroTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -219,7 +223,7 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
     });
   }
 
-  // 매력도 choropleth — 행정동 경계(/api/geojson, 1회) + 선택 레이어 색(/api/mapdata?layer=, 레이어별 캐시)을 네이버 위 Polygon으로.
+  // 매력도 choropleth — 경계(1회) + 레이어 색 + 시군구 평균색(저줌 블록).
   async function ensureChoroLayer(layer: string) {
     if (!choroGeoRef.current) {
       try { const geo = await fetch("/api/geojson").then((r) => (r.ok ? r.json() : null)); if (!geo?.features) return false; choroGeoRef.current = geo; } catch { return false; }
@@ -232,30 +236,51 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
         for (const cd in md.byPlace) {
           const e = md.byPlace[cd]; const c = e?.c, l = e?.l;
           if (!c?.length) continue;
-          const col = c[c.length - 1]; // 최신 기간 [r,g,b,a]
+          const col = c[c.length - 1];
           cmap[cd] = { color: `rgb(${col[0]},${col[1]},${col[2]})`, label: l?.length ? l[l.length - 1] : "" };
         }
         choroColorsRef.current[layer] = cmap;
+        // 시군구 평균색 (저줌 블록)
+        const acc: Record<string, { r: number; g: number; b: number; n: number }> = {};
+        for (const f of choroGeoRef.current.features) {
+          const m = cmap[f.properties.admCd2]; const sg = f.properties.sigungu;
+          if (!m || !sg) continue;
+          const rgb = (m.color.match(/\d+/g) || ["0", "0", "0"]).map(Number);
+          const a = (acc[sg] ??= { r: 0, g: 0, b: 0, n: 0 });
+          a.r += rgb[0]; a.g += rgb[1]; a.b += rgb[2]; a.n++;
+        }
+        const sigu: Record<string, string> = {};
+        for (const sg in acc) { const a = acc[sg]; sigu[sg] = `rgb(${Math.round(a.r / a.n)},${Math.round(a.g / a.n)},${Math.round(a.b / a.n)})`; }
+        choroSiguRef.current[layer] = sigu;
       } catch { return false; }
     }
     return true;
   }
 
-  // 뷰포트 내 행정동만(중심좌표 기준) 색칠, 중앙 가까운 순 캡(700). 레이어 전환·idle 시 재렌더.
+  // 줌 기반: 저줌=시군구 블록 / 고줌=동별+값라벨. 단순(3단계). 베이스 톤다운(흰 사각형).
   async function renderChoro() {
     const map = mapRef.current, naver = naverRef.current;
     if (!map || !naver) return;
     heatRef.current.forEach((o) => { try { o.setMap(null); } catch { /* noop */ } });
     heatRef.current = [];
-    if (!heatOnRef.current) { try { choroIWRef.current?.close(); } catch { /* noop */ } return; }
+    if (!heatOnRef.current) { try { choroIWRef.current?.close(); } catch { /* noop */ } setChoroHover(null); return; }
     const layer = choroLayerRef.current;
     if (!choroGeoRef.current || !choroColorsRef.current[layer]) { setChoroBusy(true); const ok = await ensureChoroLayer(layer); setChoroBusy(false); if (!ok || !heatOnRef.current) return; }
-    const geo = choroGeoRef.current, cmap = choroColorsRef.current[layer] || {};
+    const geo = choroGeoRef.current, cmap = choroColorsRef.current[layer] || {}, sigu = choroSiguRef.current[layer] || {};
     let b: any;
     try { b = map.getBounds(); } catch { return; }
     const sw = b.getSW(), ne = b.getNE();
     const minLat = sw.lat(), maxLat = ne.lat(), minLng = sw.lng(), maxLng = ne.lng();
     const cLat = (minLat + maxLat) / 2, cLng = (minLng + maxLng) / 2;
+    const zoom = map.getZoom();
+    const lowZoom = zoom < 9.5;      // 시군구 블록
+    const labelZoom = zoom >= 12.5;  // 값 라벨
+    const simple = choroSimpleRef.current && ["klai", "d1", "d2", "d3", "d4"].includes(layer);
+    const tier3 = (label: string) => { const v = parseFloat(label); return v >= 66 ? "#0F6E5C" : v >= 33 ? "#E2A33A" : "#A23A2A"; };
+
+    // 베이스 톤다운 — 뷰포트에 흰 반투명(zIndex 0), choropleth는 위(zIndex 1)
+    try { heatRef.current.push(new naver.maps.Rectangle({ map, bounds: b, fillColor: "#ffffff", fillOpacity: 0.5, strokeWeight: 0, zIndex: 0, clickable: false })); } catch { /* noop */ }
+
     const inView: { f: any; d: number }[] = [];
     for (const f of geo.features) {
       const p = f.properties;
@@ -264,14 +289,17 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
       inView.push({ f, d: (p.centroidLat - cLat) ** 2 + (p.centroidLng - cLng) ** 2 });
     }
     inView.sort((a, z) => a.d - z.d);
-    for (const { f } of inView.slice(0, 700)) {
+    for (const { f } of inView.slice(0, lowZoom ? 1000 : 700)) {
       const meta = cmap[f.properties.admCd2];
+      const color = lowZoom ? (sigu[f.properties.sigungu] || meta.color) : (simple ? tier3(meta.label) : meta.color);
       const g = f.geometry;
       const polys: any[] = g.type === "MultiPolygon" ? g.coordinates : [g.coordinates];
       for (const poly of polys) {
         const paths = poly.map((ring: any[]) => ring.map((pt: number[]) => new naver.maps.LatLng(pt[1], pt[0])));
         try {
-          const pg = new naver.maps.Polygon({ map, paths, fillColor: meta.color, fillOpacity: 0.42, strokeColor: meta.color, strokeOpacity: 0.9, strokeWeight: 0.8, clickable: true, zIndex: 1 });
+          const pg = new naver.maps.Polygon({ map, paths, fillColor: color, fillOpacity: 0.62, strokeColor: lowZoom ? "#ffffff" : color, strokeOpacity: lowZoom ? 0.55 : 1, strokeWeight: lowZoom ? 0.4 : 1, clickable: true, zIndex: 1 });
+          naver.maps.Event.addListener(pg, "mouseover", (e: any) => { const pe = e?.pointerEvent || e?.originalEvent; setChoroHover({ name: lowZoom ? f.properties.sigungu : f.properties.name, label: meta.label, color, x: pe?.clientX ?? 0, y: pe?.clientY ?? 0 }); });
+          naver.maps.Event.addListener(pg, "mouseout", () => setChoroHover(null));
           naver.maps.Event.addListener(pg, "click", (e: any) => {
             if (!choroIWRef.current) choroIWRef.current = new naver.maps.InfoWindow({ borderWidth: 0, backgroundColor: "transparent", disableAnchor: true, pixelOffset: new naver.maps.Point(0, -2) });
             choroIWRef.current.setContent(`<div style="background:#0d2b5e;color:#fff;border-radius:10px;padding:6px 11px;font:800 12px Pretendard,system-ui,sans-serif;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.4)"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${meta.color};margin-right:6px"></span>${f.properties.name} · ${meta.label}</div>`);
@@ -279,6 +307,11 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
           });
           heatRef.current.push(pg);
         } catch { /* noop */ }
+      }
+      // 값 라벨 (고줌·동별)
+      if (labelZoom && !lowZoom) {
+        const short = (meta.label.split(/[·\s]/)[0] || "").slice(0, 7);
+        if (short) try { heatRef.current.push(new naver.maps.Marker({ position: new naver.maps.LatLng(f.properties.centroidLat, f.properties.centroidLng), map, zIndex: 5, clickable: false, icon: { content: `<div style="transform:translate(-50%,-50%);background:rgba(13,43,94,.82);color:#fff;border-radius:6px;padding:1px 5px;font:800 10px Pretendard,system-ui,sans-serif;white-space:nowrap">${short}</div>`, anchor: new naver.maps.Point(0, 0) } })); } catch { /* noop */ }
       }
     }
   }
@@ -321,9 +354,11 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
   // SDK 로드 + 지도 초기화 (실패 시 maplibre 폴백)
   useEffect(() => {
     if (!CLIENT_ID) return;
+    // ?map=lite → 네이버 우회 강제 대체지도(MapLibre). 저사양·네이버 장애 시 탈출구.
+    try { if (new URLSearchParams(window.location.search).get("map") === "lite") { setEngine("fallback"); return; } } catch { /* noop */ }
     let alive = true;
     (window as any).navermap_authFailure = () => { if (alive) setEngine("fallback"); };
-    const timer = setTimeout(() => { if (alive) setEngine((e) => (e === "loading" ? "fallback" : e)); }, 6000);
+    const timer = setTimeout(() => { if (alive) setEngine((e) => (e === "loading" ? "fallback" : e)); }, 3500);
     loadNaver()
       .then((naver) => {
         if (!alive || !naver?.maps || !mapEl.current) { setEngine("fallback"); return; }
@@ -404,12 +439,13 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [heat, engine]);
 
-  // 레이어 전환 → 재색칠
+  // 레이어 전환·단순화 토글 → 재색칠
   useEffect(() => {
     choroLayerRef.current = choroLayer;
+    choroSimpleRef.current = choroSimple;
     if (engine === "naver" && heatOnRef.current) renderChoro();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [choroLayer]);
+  }, [choroLayer, choroSimple]);
 
   // 루트빌더 — 게임 루트 동기화
   useEffect(() => { const s = () => setRouteIds(readGame().route); s(); return onGameChange(s); }, []);
@@ -452,7 +488,17 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (engine === "fallback") return <FlagtaleMapExplorer items={items} title={title} />;
+  if (engine === "fallback")
+    return (
+      <>
+        <FlagtaleMapExplorer items={items} title={title} />
+        {CLIENT_ID && (
+          <div className="pointer-events-none absolute left-1/2 top-[60px] z-[40] -translate-x-1/2 whitespace-nowrap rounded-full border border-amber/50 bg-card/95 px-3.5 py-1.5 text-[11.5px] font-bold text-muted shadow-lg backdrop-blur">
+            ⚠️ 네이버 지도 일시 장애 — 대체 지도로 표시 중
+          </div>
+        )}
+      </>
+    );
 
   return (
     <div className="absolute inset-0 overflow-hidden">
@@ -508,7 +554,7 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
               <span className="h-3 w-3 animate-spin rounded-full border-2 border-line border-t-blue-l" /> 매력도 불러오는 중…
             </div>
           )}
-          <ChoroLayerControl layer={choroLayer} onLayer={setChoroLayer} />
+          <ChoroLayerControl layer={choroLayer} onLayer={setChoroLayer} simple={choroSimple} onSimple={setChoroSimple} />
         </>
       )}
       <MapResultsPanel
@@ -523,6 +569,15 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
         hoverId={hoverId} onHover={setHover}
         selId={selId} sel={sel} onSelect={selectItem} onClose={() => { selRef.current = null; setSelId(null); setUrlSel(null); render(); }}
       />
+      {choroHover && (
+        <div
+          className="pointer-events-none fixed z-[80] -translate-x-1/2 -translate-y-[calc(100%_+_10px)] whitespace-nowrap rounded-[10px] bg-[#0d2b5e] px-2.5 py-1.5 text-[12px] font-extrabold text-white shadow-xl"
+          style={{ left: choroHover.x, top: choroHover.y }}
+        >
+          <span className="mr-1.5 inline-block h-2.5 w-2.5 rounded-sm align-middle" style={{ background: choroHover.color }} />
+          {choroHover.name} · {choroHover.label}
+        </div>
+      )}
       {hoverCard && hoverCard.it.id !== selId && (() => {
         const it = hoverCard.it;
         const os = openState(it.hours, now);

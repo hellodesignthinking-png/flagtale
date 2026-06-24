@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AREA_NARRATIVES, STAGE_META, AUTH_META, type LifeStage } from "@/lib/narratives";
+import Link from "next/link";
+import { AREA_NARRATIVES, STAGE_META, AUTH_META, narrativePrimaryAdmCd, type LifeStage } from "@/lib/narratives";
 
 const STAGE_ORDER: LifeStage[] = ["formation", "spread", "peak", "gentri", "decline"];
 
@@ -45,6 +46,7 @@ export function NarrativeShowcase() {
         {filtered.map((a) => {
           const m = STAGE_META[a.stage];
           const auth = AUTH_META[a.authenticity];
+          const admCd = narrativePrimaryAdmCd(a.name);
           return (
             <div key={a.name} className="flex flex-col rounded-[20px] border-[1.5px] border-line bg-card p-4" style={{ borderLeftWidth: 5, borderLeftColor: m.color }}>
               <div className="flex flex-wrap items-center gap-2">
@@ -69,6 +71,9 @@ export function NarrativeShowcase() {
               </div>
               {a.caution && (
                 <div className="mt-2 rounded-[10px] px-2.5 py-1.5 text-[11.5px] font-semibold" style={{ background: "rgba(225,29,72,.08)", color: "var(--warn)" }}>⚠ {a.caution}</div>
+              )}
+              {admCd && (
+                <Link href={`/place/${admCd}`} className="mt-3 inline-flex items-center gap-1 self-start rounded-full border-[1.5px] border-line bg-card px-3 py-1.5 text-[11.5px] font-extrabold text-ink transition-colors hover:border-ink">📊 이 동네 매력도 진단 →</Link>
               )}
             </div>
           );

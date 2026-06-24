@@ -100,7 +100,7 @@ export default function HomePage() {
           </div>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {stays.map((s) => (
-              <div key={s.id} className="lift flex flex-col overflow-hidden rounded-[20px] border-[1.5px] border-line bg-card">
+              <Link key={s.id} href={`/stay/${s.id}`} className="group lift flex flex-col overflow-hidden rounded-[20px] border-[1.5px] border-line bg-card">
                 <div className="relative aspect-[16/10] overflow-hidden">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={ftImage(s.image)} alt={s.title} loading="lazy" decoding="async" className="h-full w-full object-cover" />
@@ -118,10 +118,10 @@ export default function HomePage() {
                       <span className="font-display text-[20px] font-black tabular-nums text-ink">{s.price_per_night.toLocaleString()}</span>
                       <span className="text-[12px] font-bold text-muted2">원 / 박</span>
                     </div>
-                    <Link href="/auth" className="rounded-full border-[1.5px] border-line bg-card px-3.5 py-2 text-[12.5px] font-extrabold text-ink transition-colors hover:border-ink">예약 →</Link>
+                    <span className="rounded-full border-[1.5px] border-line bg-card px-3.5 py-2 text-[12.5px] font-extrabold text-ink transition-colors group-hover:border-ink">예약 →</span>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
           <p className="mt-4 text-center text-[11.5px] text-muted2">샘플·잠정 데이터 · 실제 예약·결제(PortOne)·외부 OTA 연동은 백엔드 통합 단계에서 활성화됩니다.</p>

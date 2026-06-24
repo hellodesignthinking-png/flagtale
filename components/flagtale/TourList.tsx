@@ -58,7 +58,7 @@ export function TourList({ tours, creators }: { tours: Tour[]; creators: Record<
                   )}
                 </div>
                 <div className="flex flex-1 flex-col p-5">
-                  <h3 className="text-[18px] font-black leading-snug tracking-tight text-ink">{t.title}</h3>
+                  <Link href={`/tour/${t.id}`}><h3 className="text-[18px] font-black leading-snug tracking-tight text-ink transition-colors hover:text-blue-l">{t.title}</h3></Link>
                   {cm && (
                     <div className="mt-2 flex items-center gap-2">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -82,7 +82,7 @@ export function TourList({ tours, creators }: { tours: Tour[]; creators: Record<
                       <button onClick={() => setOpen(isOpen ? null : t.id)} className="rounded-full border-[1.5px] border-line bg-card px-3.5 py-2 text-[12.5px] font-extrabold text-ink transition-colors hover:border-ink">
                         {isOpen ? "접기" : "📋 코스"}
                       </button>
-                      <Link href="/auth" className="btn-glow rounded-full bg-amber px-4 py-2 text-[12.5px] font-extrabold text-onaccent">참여하기</Link>
+                      <Link href={`/tour/${t.id}`} className="btn-glow rounded-full bg-amber px-4 py-2 text-[12.5px] font-extrabold text-onaccent">참여하기</Link>
                     </div>
                   </div>
                 </div>

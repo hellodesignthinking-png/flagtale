@@ -9,6 +9,8 @@ import { GentriStageBar } from "@/components/charts/GentriStageBar";
 import { SignalAnalysis } from "@/components/analysis/SignalAnalysis";
 import { usePlan } from "@/lib/usePlan";
 import { canUse, FREE_MODE } from "@/lib/tier";
+import { narrativeForPlace } from "@/lib/narratives";
+import { AreaNarrativeCard } from "./AreaNarrativeCard";
 import { ProLock } from "./ProLock";
 
 // 플래그맵 상세의 "매력도 분석" 탭 — 스팟 좌표→가장 가까운 행정동→KLAI 점수·레이더·또래비교·시그널·진단 (Lab 그래프 재사용)
@@ -49,6 +51,7 @@ export function SpotKlaiPanel({ item }: { item: MapItem }) {
   if (state === "err" || !data) return <div className="py-12 text-center text-[12px] text-muted2">이 위치의 매력도 데이터가 아직 없어요.</div>;
 
   const s = data.latest, dg = data.diagnosis;
+  const area = narrativeForPlace(data.props.admCd2); // 핫지역이면 큐레이션 '실제 이야기'
   return (
     <div className="space-y-3.5 py-1">
       <div className="flex items-center justify-between gap-2">
@@ -82,10 +85,18 @@ export function SpotKlaiPanel({ item }: { item: MapItem }) {
         <div className="rounded-[12px] border border-line p-2.5"><div className="text-[10px] font-bold text-muted2">시장 활성도</div><div className="mt-0.5 text-[13px] font-black text-ink">{MARKET[s.marketVitality] ?? s.marketVitality}</div></div>
       </div>
 
+      {/* 🎭 핫지역 실제 이야기 — 쇼케이스(/methodology)와 동일 데이터로 일관, 공개 */}
+      {area && (
+        <div>
+          <div className="mb-1.5 text-[10.5px] font-extrabold text-muted2">🎭 이 동네의 실제 이야기 · 라이프사이클</div>
+          <AreaNarrativeCard n={area} compact href={`/place/${data.props.admCd2}`} />
+        </div>
+      )}
+
       {/* 내러티브·전략·시그널 = Pro 이상 */}
       {pro ? (
         <>
-          {dg?.narrativeTheme && <div className="rounded-[12px] border border-line p-2.5"><div className="text-[10.5px] font-extrabold text-muted2">🎭 지금 이 동네의 이야기<ProBadge /></div><p className="mt-1 text-[12px] leading-relaxed text-ink">{dg.narrativeTheme}</p></div>}
+          {!area && dg?.narrativeTheme && <div className="rounded-[12px] border border-line p-2.5"><div className="text-[10.5px] font-extrabold text-muted2">🎭 지금 이 동네의 이야기<ProBadge /></div><p className="mt-1 text-[12px] leading-relaxed text-ink">{dg.narrativeTheme}</p></div>}
           {dg?.leverage && <div className="rounded-[12px] border border-line p-2.5"><div className="text-[10.5px] font-extrabold text-muted2">🎯 레버리지 처방<ProBadge /></div><p className="mt-1 text-[12px] leading-relaxed text-ink">{dg.leverage}</p></div>}
           {data.signals && data.periods && (
             <div className="rounded-[14px] border border-line p-3">

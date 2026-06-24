@@ -548,7 +548,7 @@ export function MapResultsPanel({
 
           <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-line p-3">
             {bookable ? (
-              <Link href="/auth" className="btn-glow col-span-2 flex items-center justify-center rounded-full bg-amber px-4 py-2.5 text-[14px] font-extrabold text-onaccent">{sel.kind === "stay" ? "숙소 예약하기" : "투어 예약하기"} →</Link>
+              <Link href={sel.kind === "stay" ? `/stay/${sel.id.replace(/^stay-/, "")}` : `/tour/${sel.id.replace(/^tour-/, "")}`} className="btn-glow col-span-2 flex items-center justify-center rounded-full bg-amber px-4 py-2.5 text-[14px] font-extrabold text-onaccent">{sel.kind === "stay" ? "숙소 예약하기" : "투어 예약하기"} →</Link>
             ) : (
               <>
                 <Link href="/diagnose" className="flex items-center justify-center rounded-full bg-ink px-3 py-2.5 text-[13px] font-extrabold text-white hover:opacity-90">매력도 진단</Link>

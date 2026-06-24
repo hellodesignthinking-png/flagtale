@@ -20,6 +20,8 @@ import { KlaiGauge } from "@/components/charts/KlaiGauge";
 import { CompositionDiagram } from "@/components/charts/CompositionDiagram";
 import { MethodologyFlow } from "@/components/diagram/MethodologyFlow";
 import { GRADE_LABEL, MARKET_LABEL, NARRATIVE_LABEL, TRAJECTORY_LABEL } from "@/lib/constants";
+import { narrativeForPlace } from "@/lib/narratives";
+import { AreaNarrativeCard } from "@/components/flagtale/AreaNarrativeCard";
 import { formatKRW, signed } from "@/lib/utils";
 
 // 전국 수천 동 → 정적 프리렌더 대신 요청 시 온디맨드 렌더 (빌드 경량화)
@@ -47,6 +49,7 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
   const procLast = procAnnual[procAnnual.length - 1];
   const cumBudgetEok = Math.round(procAnnual.reduce((s, a) => s + a.total, 0) / 10000);
   const popReal = populationMeta(); // 있으면 인구·세대수 = KOSIS 실데이터(시군구 단위)
+  const area = narrativeForPlace(props.admCd2); // 핫지역이면 큐레이션 '실제 이야기'
 
   return (
     <PageShell>
@@ -88,6 +91,18 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
           accent={latest.negativeNarrative ? "warn" : "blue"}
         />
       </div>
+
+      {/* 🎭 이 동네의 실제 이야기 — 핫지역 큐레이션(쇼케이스와 동일 데이터로 일관) */}
+      {area && (
+        <div className="mb-6 rounded-[20px] border-[1.5px] border-line bg-card2/40 p-4 sm:p-5">
+          <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-display text-[16px] font-black tracking-tight text-ink">🎭 이 동네의 실제 이야기</h2>
+            <Link href="/methodology#narrative" className="text-[11.5px] font-bold text-blue-l hover:underline">전체 라이프사이클 →</Link>
+          </div>
+          <p className="mb-3 text-[12px] leading-relaxed text-muted2">위 ‘내러티브 단계’(샘플 산출)를 실제 핫지역 흐름으로 검증한 큐레이션입니다.</p>
+          <AreaNarrativeCard n={area} />
+        </div>
+      )}
 
       {/* 도시 평균 대비 — 기본 데이터(인구 10년) 기준 변화 */}
       {cmp && (

@@ -175,3 +175,43 @@ export function getAreaNarrative(name?: string | null): AreaNarrative | null {
     }) ?? null
   );
 }
+
+// 큐레이션 핫지역 → 실제 행정동 코드(adm_cd2). 지도(choropleth)·동 리포트(/place)와 같은 키로 연결.
+// (geojson admdong.simplified에서 추출. 일부 지역은 여러 행정동에 걸침.)
+export const NARRATIVE_ADMCD: Record<string, string[]> = {
+  "인천 개항로": ["2811061500", "2811053000"], // 개항동·신포동
+  "공주 제민천": ["4415051000", "4415056000"], // 중학동·옥룡동
+  "목포 (괜찮아마을)": ["4611059500", "4611066000"], // 목원동·유달동
+  "충주 관아골": ["4313051500"], // 성내·충인동
+  문래동: ["1156060500"],
+  "양양 (죽도·인구)": ["5183034000"], // 현남면
+  망원동: ["1144069000", "1144070000"], // 망원1·2동
+  "부산 영도": ["2620055000", "2620059000"], // 영선2동·봉래1동
+  "수원 행궁동": ["4111574000"],
+  연희동: ["1141061500"],
+  "을지로 (힙지로)": ["1114060500"], // 을지로동
+  익선동: ["1111061500"], // 종로1·2·3·4가동
+  성수동: ["1120065000", "1120066000", "1120067000", "1120069000"],
+  연남동: ["1144071000"],
+  한남동: ["1117068500"],
+  가로수길: ["1168051000"], // 신사동
+};
+
+// adm_cd2 → AreaNarrative 역인덱스(O(1)).
+const _byAdmCd: Record<string, AreaNarrative> = {};
+for (const a of AREA_NARRATIVES) {
+  for (const c of NARRATIVE_ADMCD[a.name] ?? []) _byAdmCd[c] = a;
+}
+
+/** 행정동 코드(adm_cd2) → 큐레이션 내러티브. 핫지역 행정동만 매칭, 없으면 null. */
+export function narrativeForPlace(admCd2?: string | null): AreaNarrative | null {
+  return admCd2 ? _byAdmCd[admCd2] ?? null : null;
+}
+
+/** 핫지역명 → 대표 행정동 코드(첫 번째). 쇼케이스 → /place 딥링크용. */
+export function narrativePrimaryAdmCd(name: string): string | null {
+  return NARRATIVE_ADMCD[name]?.[0] ?? null;
+}
+
+/** 큐레이션과 연결된 모든 행정동 코드 Set (지도 강조용). */
+export const NARRATIVE_ADMCD_SET = new Set(Object.values(NARRATIVE_ADMCD).flat());
