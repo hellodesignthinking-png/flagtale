@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { loadDistricts, loadScores } from "@/lib/data";
 import { loadSpots, loadStays, loadBasecamps, SPOT_CAT } from "@/lib/flagtale";
 import { MapMount } from "@/components/map/MapMount";
@@ -67,5 +68,16 @@ export default function MapPage() {
     },
   };
 
-  return <MapMount highlights={highlights} />;
+  return (
+    <>
+      {/* 이중 지도 역할 안내 — 이건 매력도 '데이터' 3D 지도, 콘텐츠 지도는 /map-tale */}
+      <Link
+        href="/map-tale"
+        className="fixed left-1/2 top-[60px] z-30 -translate-x-1/2 whitespace-nowrap rounded-full border-[1.5px] border-line bg-card/95 px-3.5 py-1.5 text-[12px] font-extrabold text-ink shadow-lg backdrop-blur transition-colors hover:border-ink"
+      >
+        📊 매력도 데이터 지도 · <span className="font-bold text-muted2">콘텐츠 플래그맵 →</span>
+      </Link>
+      <MapMount highlights={highlights} />
+    </>
+  );
 }

@@ -11,7 +11,7 @@ export default function DiagnosePage({ searchParams }: { searchParams: { admCd?:
   return (
     <PageShell width="wide">
       <div className="mb-6">
-        <span className="klai-eyebrow">Parcel Diagnosis · 무료 공개</span>
+        <span className="klai-eyebrow">🔎 지번·지역 진단 · 무료 공개</span>
         <h1 className="mt-1 font-display text-[clamp(26px,4vw,38px)] font-black tracking-[-0.03em]">지번 진단 리포트</h1>
         <p className="mt-1.5 text-[14px] leading-relaxed text-muted">
           지번/지역을 입력하면 <b className="text-ink">방향 · 2016~2026 장기변화 · 신호 · 위기 · 전략</b> 종합 리포트를 생성합니다.

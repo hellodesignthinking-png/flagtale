@@ -248,13 +248,8 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
         </Panel>
       )}
 
-      {/* 지역 흐름 — 인구 + 공공예산 (장기 이력) */}
-      <Panel className="mt-5">
-        <SectionHead
-          no="흐름"
-          title="지역의 흐름 — 인구 · 공공예산"
-          desc={`인구 ${demographics[0]?.year}~${popLast?.year} · 나라장터 조달 ${procAnnual[0]?.year}~${procLast?.year}`}
-        />
+      {/* 지역 흐름 — 인구 + 공공예산 (장기 이력) · 접이식 */}
+      <Collapsible title="📈 지역의 흐름 — 인구 · 공공예산" sub={`인구 ${demographics[0]?.year}~${popLast?.year} · 조달 ${procAnnual[0]?.year}~${procLast?.year}`}>
         {/* 요약치 */}
         <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat
@@ -346,7 +341,7 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
           공공예산 유입은 <b className="text-muted">정책 개입 신호</b> — 투입 전후 KLAI 변화를 DiD로 추정하면 정책 ROI를 읽을 수 있다(기획서 §5.7).
           소멸 진행 동에 도시재생·소멸대응 예산이 집중되는 패턴이 보이면 <b className="text-muted">레버리지(일자리·정주여건)</b> 적중 여부를 점검한다.
         </p>
-      </Panel>
+      </Collapsible>
 
       {/* 진단 요약 (무료) */}
       <Panel className="mt-5">
@@ -475,11 +470,10 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
         </Panel>
       )}
 
-      {/* 방법론 — 이 점수는 어떻게 만들어지나 */}
-      <Panel className="mt-5 dotgrid">
-        <SectionHead title="이 점수는 어떻게 만들어지나" desc="데이터 → 합성 → 진단 → 출력" />
+      {/* 방법론 — 이 점수는 어떻게 만들어지나 (접이식) */}
+      <Collapsible title="🔬 이 점수는 어떻게 만들어지나" sub="데이터 → 합성 → 진단 → 출력">
         <MethodologyFlow />
-      </Panel>
+      </Collapsible>
     </PageShell>
   );
 }
@@ -490,5 +484,21 @@ function SummaryCell({ label, value }: { label: string; value: string }) {
       <div className="text-[10px] text-muted2">{label}</div>
       <div className="text-[13px] font-semibold text-ink">{value}</div>
     </div>
+  );
+}
+
+// 접이식 섹션 — 일반 사용자가 깊은 데이터를 기본 접힘으로 보게(스크롤 부담↓). 네이티브 <details>라 JS 불필요.
+function Collapsible({ title, sub, children }: { title: string; sub?: string; children: React.ReactNode }) {
+  return (
+    <details className="klai-panel group mt-5 overflow-hidden">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 sm:px-6">
+        <span className="font-display text-[15px] font-black tracking-[-0.02em] text-ink">
+          {title}
+          {sub && <span className="ml-2 text-[12px] font-medium text-muted2">{sub}</span>}
+        </span>
+        <span className="shrink-0 rounded-full border border-line px-2.5 py-1 text-[11px] font-bold text-muted transition-transform group-open:rotate-180">▾</span>
+      </summary>
+      <div className="border-t border-line px-5 pb-5 pt-4 sm:px-6">{children}</div>
+    </details>
   );
 }
