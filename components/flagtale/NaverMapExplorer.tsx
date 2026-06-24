@@ -102,6 +102,7 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
   const heatRef = useRef<any[]>([]);
   const heatOnRef = useRef(false);
   const hotMarkersRef = useRef<any[]>([]); // 🔥 핫지역 마커
+  const hotspotsRef = useRef(false);
   const choroGeoRef = useRef<any>(null);
   const choroColorsRef = useRef<Record<string, Record<string, { color: string; label: string }>>>({});
   const choroSiguRef = useRef<Record<string, Record<string, string>>>({}); // 레이어→시군구→평균색(저줌 블록)
@@ -362,6 +363,38 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
     choroIWRef.current.setContent(narrativeCardHTML(narr, it.admCd2));
     setTimeout(() => { try { choroIWRef.current.open(map, ll); } catch { /* noop */ } }, 450);
   }
+  // 핫지역 마커 — 줌/뷰포트 기반 Supercluster 클러스터링(저줌서 서울 밀집 → 🔥N 묶음, 줌인 시 펼침).
+  function renderHotMarkers() {
+    const map = mapRef.current, naver = naverRef.current;
+    if (!map || !naver) return;
+    hotMarkersRef.current.forEach((m) => { try { m.setMap(null); } catch { /* noop */ } });
+    hotMarkersRef.current = [];
+    if (!hotspotsRef.current) return;
+    const list = narrativeJumpList();
+    const idx = new Supercluster({ radius: 46, maxZoom: 12 });
+    idx.load(list.map((it) => ({ type: "Feature" as const, properties: { it }, geometry: { type: "Point" as const, coordinates: [it.coord[1], it.coord[0]] } })));
+    let b: any;
+    try { b = map.getBounds(); } catch { return; }
+    const sw = b.getSW(), ne = b.getNE();
+    const zoom = Math.round(map.getZoom());
+    const clusters = idx.getClusters([sw.lng(), sw.lat(), ne.lng(), ne.lat()], zoom);
+    for (const c of clusters) {
+      const [lng, lat] = c.geometry.coordinates;
+      const pos = new naver.maps.LatLng(lat, lng);
+      if (c.properties.cluster) {
+        const count = c.properties.point_count;
+        const mk = new naver.maps.Marker({ position: pos, map, zIndex: 6, icon: { content: `<div style="transform:translate(-50%,-50%);height:30px;min-width:30px;display:grid;place-items:center;background:#0d2b5e;color:#fff;border:2px solid #fff;border-radius:999px;box-shadow:0 2px 10px rgba(0,0,0,.4);font:800 12px Pretendard,system-ui,sans-serif;padding:0 8px;cursor:pointer">🔥${count}</div>`, anchor: new naver.maps.Point(0, 0) } });
+        naver.maps.Event.addListener(mk, "click", () => { let ez = zoom + 2; try { ez = Math.min(14, idx.getClusterExpansionZoom(c.properties.cluster_id)); } catch { /* noop */ } try { map.setCenter(pos); map.setZoom(ez, true); } catch { /* noop */ } });
+        hotMarkersRef.current.push(mk);
+      } else {
+        const it = c.properties.it as HotspotJump;
+        const sm = STAGE_META[it.stage];
+        const mk = new naver.maps.Marker({ position: pos, map, zIndex: 6, title: it.name, icon: { content: `<div style="transform:translate(-50%,-50%);width:28px;height:28px;display:grid;place-items:center;background:#fff;border:2.5px solid ${sm.color};border-radius:50%;box-shadow:0 2px 9px rgba(0,0,0,.33);font-size:14px;cursor:pointer">${sm.emoji}</div>`, anchor: new naver.maps.Point(0, 0) } });
+        naver.maps.Event.addListener(mk, "click", () => flyToHotspot(it));
+        hotMarkersRef.current.push(mk);
+      }
+    }
+  }
   function toggleType() {
     const naver = naverRef.current, map = mapRef.current;
     if (!naver || !map) return;
@@ -416,6 +449,7 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
               setBoundsKey((k) => k + 1);
               render();
               if (heatOnRef.current) scheduleChoro();
+              if (hotspotsRef.current) renderHotMarkers();
             });
             setEngine("naver");
             setTimeout(() => { kick(); try { boundsRef.current = bbox(map); } catch { /* noop */ } setBoundsKey((k) => k + 1); render(); }, 120);
@@ -476,24 +510,10 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [choroLayer, choroSimple]);
 
-  // 🔥 핫지역 토글 → 지도에 단계색 마커(48). 클릭 시 날아가기.
+  // 🔥 핫지역 토글 → 마커 렌더(Supercluster). idle(줌/팬) 시에도 재클러스터(아래 init 리스너).
   useEffect(() => {
-    const map = mapRef.current, naver = naverRef.current;
-    if (!map || !naver || engine !== "naver") return;
-    hotMarkersRef.current.forEach((m) => { try { m.setMap(null); } catch { /* noop */ } });
-    hotMarkersRef.current = [];
-    if (!hotspots) return;
-    for (const it of narrativeJumpList()) {
-      const sm = STAGE_META[it.stage];
-      const mk = new naver.maps.Marker({
-        position: new naver.maps.LatLng(it.coord[0], it.coord[1]),
-        map, zIndex: 6, title: it.name,
-        icon: { content: `<div style="transform:translate(-50%,-50%);width:28px;height:28px;display:grid;place-items:center;background:#fff;border:2.5px solid ${sm.color};border-radius:50%;box-shadow:0 2px 9px rgba(0,0,0,.33);font-size:14px;cursor:pointer">${sm.emoji}</div>`, anchor: new naver.maps.Point(0, 0) },
-      });
-      naver.maps.Event.addListener(mk, "click", () => flyToHotspot(it));
-      hotMarkersRef.current.push(mk);
-    }
-    return () => { hotMarkersRef.current.forEach((m) => { try { m.setMap(null); } catch { /* noop */ } }); hotMarkersRef.current = []; };
+    hotspotsRef.current = hotspots;
+    if (engine === "naver") renderHotMarkers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hotspots, engine]);
 

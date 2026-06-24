@@ -3,7 +3,8 @@
 
 export function ftImage(p?: string | null): string {
   if (!p) return "/flagtale/placeholder.svg"; // 중립 플레이스홀더(이전: 사람 얼굴 폴백)
-  return "/flagtale/" + p.replace(/^images\//, "").replace(/^\/+/, "");
+  // 원본 PNG(13MB)를 1024px JPEG(q66, ~4MB)로 최적화 — 저장된 .png 참조를 .jpg로 매핑.
+  return "/flagtale/" + p.replace(/^images\//, "").replace(/^\/+/, "").replace(/\.png$/i, ".jpg");
 }
 export const round1 = (n: number) => Math.round((n ?? 0) * 10) / 10;
 export const won = (n: number) => n.toLocaleString("ko-KR") + "원";
