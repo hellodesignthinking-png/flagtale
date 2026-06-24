@@ -39,3 +39,9 @@ export function instagramFor(name?: string | null): IgTag | null {
 export function igCountLabel(n: number): string {
   return n >= 10000 ? `${Math.round(n / 10000).toLocaleString()}만` : n.toLocaleString();
 }
+
+/** 인스타 게시물 수(검색량·관심=수요) → 매력도 수요 가산점(0~6, 로그·캡). 집계 편차는 로그로 완충. */
+export function buzzBoost(postsCount?: number | null): number {
+  if (!postsCount || postsCount <= 0) return 0;
+  return Math.round(Math.min(6, Math.max(0, Math.log10(postsCount) - 4)) * 10) / 10;
+}

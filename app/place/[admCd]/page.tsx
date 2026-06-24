@@ -21,7 +21,7 @@ import { CompositionDiagram } from "@/components/charts/CompositionDiagram";
 import { MethodologyFlow } from "@/components/diagram/MethodologyFlow";
 import { GRADE_LABEL, MARKET_LABEL, NARRATIVE_LABEL, TRAJECTORY_LABEL } from "@/lib/constants";
 import { narrativeForPlace } from "@/lib/narratives";
-import { instagramFor, igCountLabel } from "@/lib/connectors/instagram";
+import { instagramFor, igCountLabel, buzzBoost } from "@/lib/connectors/instagram";
 import { supplyFor, supplyBoost, supplyBreakdown } from "@/lib/supply";
 import { gradeOf } from "@/lib/scoring";
 import { AreaNarrativeCard } from "@/components/flagtale/AreaNarrativeCard";
@@ -57,9 +57,11 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
   const ig = instagramFor(area?.name); // 핫지역이면 인스타 해시태그 버즈(Apify 수집)
   // 동네 공급 밀도 — 등록된 플래그테일 공간·프로그램이 많을수록 매력도↑(네트워크 효과).
   const supply = supplyFor(props.admCd2);
-  const boost = supplyBoost(props.admCd2);
-  const klaiUp = boost ? Math.min(100, Math.round((latest.klai + boost) * 10) / 10) : latest.klai;
-  const gradeUp = boost ? gradeOf(klaiUp) : latest.grade;
+  const sBoost = supplyBoost(props.admCd2); // 공급: 등록 콘텐츠 밀도
+  const bBoost = buzzBoost(ig?.postsCount); // 수요: 인스타 검색량(버즈)
+  const totalBoost = Math.round((sBoost + bBoost) * 10) / 10;
+  const klaiUp = totalBoost ? Math.min(100, Math.round((latest.klai + totalBoost) * 10) / 10) : latest.klai;
+  const gradeUp = totalBoost ? gradeOf(latest.klai + totalBoost) : latest.grade;
 
   return (
     <PageShell>
@@ -106,12 +108,12 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
       <div className="mb-6 rounded-[20px] border-[1.5px] border-line bg-card2/40 p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-display text-[16px] font-black tracking-tight text-ink">🏪 동네 공급 밀도 <span className="text-[12px] font-bold text-blue-l">플래그테일 등록</span></h2>
-          {boost > 0 && <span className="rounded-full bg-amber px-2.5 py-1 text-[12px] font-extrabold text-onaccent">매력도 +{boost}</span>}
+          {sBoost > 0 && <span className="rounded-full bg-amber px-2.5 py-1 text-[12px] font-extrabold text-onaccent">매력도 +{sBoost}</span>}
         </div>
         {supply && supply.count > 0 ? (
           <>
             <p className="mt-2 text-[12.5px] leading-relaxed text-muted">
-              등록 <b className="text-ink">{supply.count}곳</b> · {supplyBreakdown(supply)} · 관심(리뷰) <b className="text-ink">{supply.reviews.toLocaleString()}</b> → 매력도 <b className="text-ink">{latest.klai}</b> + <b className="text-ink">{boost}</b> = <b className="text-ink">{klaiUp}</b>
+              등록 <b className="text-ink">{supply.count}곳</b> · {supplyBreakdown(supply)} · 관심(리뷰) <b className="text-ink">{supply.reviews.toLocaleString()}</b> → 매력도 <b className="text-ink">{latest.klai}</b> + 공급 <b className="text-ink">{sBoost}</b>{bBoost > 0 ? <> + 검색 <b className="text-ink">{bBoost}</b></> : null} = <b className="text-ink">{klaiUp}</b>
             </p>
             <div className="mt-2.5 flex flex-wrap gap-1.5">
               {supply.items.slice(0, 10).map((it, i) => (
@@ -135,7 +137,7 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
           <AreaNarrativeCard n={area} />
           {ig && (
             <a href={ig.url} target="_blank" rel="noopener noreferrer" className="mt-3 flex items-center justify-between gap-2 rounded-[14px] border border-line bg-card2/40 px-3.5 py-2.5 transition-colors hover:border-ink">
-              <span className="text-[12.5px] font-bold text-ink">📸 인스타그램 <span className="text-blue-l">#{ig.tag}</span> · 약 {igCountLabel(ig.postsCount)} 게시물</span>
+              <span className="text-[12.5px] font-bold text-ink">📸 인스타그램 <span className="text-blue-l">#{ig.tag}</span> · 약 {igCountLabel(ig.postsCount)} 게시물{bBoost > 0 ? <span className="text-amber-d"> · 검색 매력도 +{bBoost}</span> : null}</span>
               <span className="shrink-0 rounded-full bg-card px-2 py-0.5 text-[10px] font-bold text-muted2">Apify 수집·잠정 →</span>
             </a>
           )}

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { loadDistricts, getPlace, getPeerAvg, nationalSignalAverage, loadScores } from "@/lib/data";
 import { supplyFor, supplyBoost } from "@/lib/supply";
 import { gradeOf } from "@/lib/scoring";
+import { narrativeForPlace } from "@/lib/narratives";
+import { instagramFor, buzzBoost } from "@/lib/connectors/instagram";
 
 // 좌표 → 가장 가까운 행정동(중심좌표 기준) → 매력도 번들. 플래그맵 스팟의 '매력도 분석' 탭용.
 export function GET(req: NextRequest) {
@@ -27,8 +29,11 @@ export function GET(req: NextRequest) {
   const peerAvg = getPeerAvg(bundle.props.typology ?? "");      // 또래(유형) 평균 4축
   const periods = loadScores().periods;                          // 시그널 차트 기간축
   const avgSignals = nationalSignalAverage();                    // 전국 평균 시그널(비교 오버레이)
-  // 동네 공급 밀도 가산(등록 콘텐츠 많을수록 매력도↑) — /place와 동일하게 반영
-  const boost = supplyBoost(bestCd);
-  const latest = boost ? { ...bundle.latest, klai: Math.min(100, Math.round((bundle.latest.klai + boost) * 10) / 10), grade: gradeOf(bundle.latest.klai + boost) } : bundle.latest;
-  return NextResponse.json({ ...bundle, latest, supply: supplyFor(bestCd), supplyBoost: boost, matchedKm, peerAvg, periods, avgSignals }, { headers: { "cache-control": "public, max-age=60, s-maxage=300" } });
+  // 공급(등록 콘텐츠) + 수요(인스타 검색량) 가산 — /place와 동일하게 매력도에 반영
+  const sBoost = supplyBoost(bestCd);
+  const narr = narrativeForPlace(bestCd);
+  const bBoost = buzzBoost(narr ? instagramFor(narr.name)?.postsCount : null);
+  const total = Math.round((sBoost + bBoost) * 10) / 10;
+  const latest = total ? { ...bundle.latest, klai: Math.min(100, Math.round((bundle.latest.klai + total) * 10) / 10), grade: gradeOf(bundle.latest.klai + total) } : bundle.latest;
+  return NextResponse.json({ ...bundle, latest, supply: supplyFor(bestCd), supplyBoost: sBoost, buzzBoost: bBoost, matchedKm, peerAvg, periods, avgSignals }, { headers: { "cache-control": "public, max-age=60, s-maxage=300" } });
 }
