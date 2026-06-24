@@ -13,6 +13,7 @@ import type {
   ProcurementPlace,
   Report,
   ScoresFile,
+  SignalKey,
   SignalSeries,
   SignalsFile,
 } from "./types";
@@ -124,6 +125,29 @@ export function getPlace(admCd2: string): PlaceBundle | null {
     procurement: loadProcurement().byPlace[admCd2] ?? null,
     signals: series.length ? buildSignalSeries(series[series.length - 1], admCd2) : null,
   };
+}
+
+const SIGNAL_KEYS: SignalKey[] = ["search", "news", "population", "listings", "rent"];
+let _natSignals: SignalSeries | null = null;
+/** 전국 평균 신호 시계열 — 모든 동의 buildSignalSeries 원소별 평균(캐시). 지역값 비교 기준선. */
+export function nationalSignalAverage(): SignalSeries {
+  if (_natSignals) return _natSignals;
+  const scores = loadScores();
+  const acc: Record<SignalKey, number[]> = { search: [], news: [], population: [], listings: [], rent: [] };
+  let n = 0;
+  for (const cd in scores.byPlace) {
+    const ser = scores.byPlace[cd];
+    if (!ser?.length) continue;
+    const sig = buildSignalSeries(ser[ser.length - 1], cd);
+    for (const k of SIGNAL_KEYS) {
+      const arr = sig[k];
+      for (let t = 0; t < arr.length; t++) acc[k][t] = (acc[k][t] ?? 0) + arr[t];
+    }
+    n++;
+  }
+  const out = {} as SignalSeries;
+  for (const k of SIGNAL_KEYS) out[k] = acc[k].map((v) => Math.round((v / (n || 1)) * 10) / 10);
+  return (_natSignals = out);
 }
 
 export function getReport(slug: string): Report | null {

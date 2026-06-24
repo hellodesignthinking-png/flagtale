@@ -62,25 +62,17 @@ export async function grantEntitlement(params: {
   if (!admin || !params.userId) {
     return { ok: true, mock: true, ...params };
   }
-  // 크레딧 적립
-  if (params.credits) {
-    await admin.rpc("increment_credits", { p_user_id: params.userId, p_amount: params.credits });
+  // user_metadata 기반 영속화 (테이블 불필요). 크레딧 적립 + 구독 + 구매기록을 계정 메타에.
+  try {
+    const { data } = await admin.auth.admin.getUserById(params.userId);
+    const m = (data.user?.user_metadata ?? {}) as Record<string, unknown>;
+    const credits = (Number(m.ft_credits) || 0) + (params.credits ?? 0);
+    const plan = params.plan ?? (typeof m.ft_plan === "string" ? m.ft_plan : "free");
+    const prev = Array.isArray(m.ft_purchases) ? (m.ft_purchases as unknown[]) : [];
+    const purchases = [...prev, { paymentId: params.paymentId, plan: params.plan ?? null, credits: params.credits ?? null, admCd2: params.admCd2 ?? null, pnu: params.pnu ?? null, at: new Date().toISOString() }].slice(-50);
+    await admin.auth.admin.updateUserById(params.userId, { user_metadata: { ...m, ft_credits: credits, ft_plan: plan, ft_purchases: purchases } });
+    return { ok: true, mock: false, credits, plan, ...params };
+  } catch (e) {
+    return { ok: false, error: String(e), ...params };
   }
-  // 구독 반영
-  if (params.plan) {
-    await admin.from("Subscription").upsert({
-      userId: params.userId,
-      plan: params.plan,
-      status: "active",
-      portoneId: params.paymentId,
-    });
-  }
-  // 구매 기록
-  await admin.from("ReportPurchase").insert({
-    userId: params.userId,
-    admCd2: params.admCd2 ?? null,
-    pnu: params.pnu ?? null,
-    paidAt: new Date().toISOString(),
-  });
-  return { ok: true, mock: false, ...params };
 }

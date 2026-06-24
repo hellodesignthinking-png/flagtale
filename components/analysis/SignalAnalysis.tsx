@@ -34,12 +34,16 @@ export function SignalAnalysis({
   signals,
   periods,
   authenticityGap = 0.2,
+  avgSignals,
 }: {
   signals: SignalSeries;
   periods: string[];
   authenticityGap?: number;
+  avgSignals?: SignalSeries;
 }) {
   const a = analyzeSignals(signals, periods, authenticityGap);
+  const avgComovement = avgSignals ? analyzeSignals(avgSignals, periods).comovement : undefined;
+  const avgPeak = avgComovement ? Math.max(...avgComovement) : null;
   const tone = PATTERN_TONE[a.pattern];
 
   return (
@@ -54,6 +58,7 @@ export function SignalAnalysis({
         </span>
         <span className="text-[12px] text-muted">
           동조도 정점 <b className="text-ink">{a.peakValue}%</b> · {a.peakPeriod}
+          {avgPeak != null && <span className="text-muted2"> · 전국 평균 {avgPeak}%</span>}
         </span>
         {a.leader && (
           <span className="ml-auto text-[12px] text-muted2">
@@ -62,8 +67,8 @@ export function SignalAnalysis({
         )}
       </div>
 
-      {/* 그래프 */}
-      <SignalChart signals={signals} periods={periods} comovement={a.comovement} height={300} />
+      {/* 그래프 — 지역값 + 전국 평균 비교(칩 클릭 시 개별 지표 격리) */}
+      <SignalChart signals={signals} periods={periods} comovement={a.comovement} avgSignals={avgSignals} avgComovement={avgComovement} height={300} />
 
       {/* 선행 순서 (lead-lag) */}
       {a.leadOrder.length > 1 && (

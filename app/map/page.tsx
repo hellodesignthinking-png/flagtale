@@ -1,6 +1,18 @@
+import type { Metadata } from "next";
 import { loadDistricts, loadScores } from "@/lib/data";
+import { loadSpots, loadStays, loadBasecamps, SPOT_CAT } from "@/lib/flagtale";
 import { MapMount } from "@/components/map/MapMount";
 import type { MapHighlights } from "@/components/map/MapExplorer";
+
+export const metadata: Metadata = {
+  title: "매력도 지도 — 전국 행정동 3D 지도",
+  description: "전국 행정동 매력도(KLAI)를 색·높이로 3D 지도에. 종합·4축·모멘텀·젠트리·시장활성도·내러티브·공공예산 레이어 + 시간 재생.",
+};
+
+const hexRgb = (h: string): [number, number, number] => {
+  const n = parseInt(h.replace("#", ""), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+};
 
 // 전국 매력도 지도(HERO). 경계·점수는 클라이언트가 /api/geojson · /api/mapdata 로 로드.
 export default function MapPage() {
@@ -30,9 +42,17 @@ export default function MapPage() {
     grade: r.s.grade,
   }));
 
+  // Flagtale 로컬 콘텐츠(발견·플래그맵의 스팟·스테이·거점)를 전국지도 위에 포인트로
+  const localPois = [
+    ...loadSpots().filter((s) => s.lat && s.lng).map((s) => ({ name: s.name, lat: s.lat, lng: s.lng, color: hexRgb(SPOT_CAT[s.category]?.color ?? "#888888"), kind: "spot", sub: `${SPOT_CAT[s.category]?.label ?? s.category} · ${s.region}` })),
+    ...loadStays().filter((s) => s.lat && s.lng).map((s) => ({ name: s.title, lat: s.lat, lng: s.lng, color: [22, 163, 74] as [number, number, number], kind: "stay", sub: `스테이 · ${s.region}` })),
+    ...loadBasecamps().filter((b) => b.lat && b.lng).map((b) => ({ name: b.name, lat: b.lat, lng: b.lng, color: [217, 242, 30] as [number, number, number], kind: "basecamp", sub: `거점 · ${b.region}` })),
+  ];
+
   const highlights: MapHighlights = {
     count: rows.length,
     hotspots,
+    localPois,
     riser: riserRow && {
       admCd2: riserRow.p.admCd2, name: riserRow.p.name, sigungu: riserRow.p.sigungu,
       klai: riserRow.s.klai, grade: riserRow.s.grade, momentum: riserRow.s.momentum,

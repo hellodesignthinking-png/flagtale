@@ -49,6 +49,8 @@ export function TimeSlider() {
           min={0}
           max={periods.length - 1}
           value={periodIndex}
+          aria-label="기간 선택"
+          aria-valuetext={periods[periodIndex]}
           onChange={(e) => {
             setPlaying(false);
             setPeriodIndex(Number(e.target.value));

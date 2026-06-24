@@ -102,8 +102,12 @@ async function main() {
   await population();
   await procurement();
   others();
-  fs.writeFileSync(path.join(DATA, ".ingested.json"), JSON.stringify(["boundary", ...ingested]));
-  log(`완료. 실연동: 경계${ingested.length ? " + " + ingested.join(", ") : ""}. 나머지는 /data 페이지에 미연동 이유 표시.`);
+  // 기존 .ingested 와 병합(비파괴) — build-population 등이 먼저 기록한 소스(population)를 덮어쓰지 않음
+  let prev = [];
+  try { prev = JSON.parse(fs.readFileSync(path.join(DATA, ".ingested.json"), "utf-8")); } catch { /* 없음 */ }
+  const merged = [...new Set(["boundary", ...prev, ...ingested])];
+  fs.writeFileSync(path.join(DATA, ".ingested.json"), JSON.stringify(merged));
+  log(`완료. 실연동: ${merged.join(", ")}. 나머지는 /data 페이지에 미연동 이유 표시.`);
   log("키를 채운 뒤 다시 실행하면 해당 소스가 실데이터로 전환됩니다.");
 }
 main();

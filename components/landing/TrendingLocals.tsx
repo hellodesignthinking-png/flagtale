@@ -30,35 +30,45 @@ export function TrendingLocals() {
   }, []);
 
   const anyLive = Object.keys(live).length > 0;
-  // ⓡ 검색 급등順(1년 검색 변화 trendDelta 큰 순) — 라이브 로드 후 정렬, 미연동은 뒤로
-  const sorted = useMemo(
-    () =>
-      [...TRENDING_LOCALS].sort((a, b) => {
-        const da = live[a.name]?.trendDelta;
-        const db = live[b.name]?.trendDelta;
-        if (da == null && db == null) return 0;
-        if (da == null) return 1;
-        if (db == null) return -1;
-        return db - da;
-      }),
-    [live]
-  );
+
+  // 변화 강도(volatility) = |검색 1년 변화| + 감성 극단치 보정.
+  // 가장 변화가 심한 곳(급등·급락 불문)을 상단으로 → 사이트가 살아있게 보이도록.
+  const volOf = (name: string) => {
+    const lv = live[name];
+    return lv ? Math.abs(lv.trendDelta) + Math.abs(lv.sentiment) / 12 : -1;
+  };
+  const sorted = useMemo(() => [...TRENDING_LOCALS].sort((a, b) => volOf(b.name) - volOf(a.name)), [live]);
+  const maxVol = useMemo(() => Math.max(1, ...sorted.map((l) => volOf(l.name))), [sorted]);
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-2">
         <div>
           <span className="klai-eyebrow">News · Blog · Social Buzz</span>
-          <h2 className="mt-1 text-[1.4rem] font-extrabold tracking-tight sm:text-[1.7rem]">📰 지금 뜨는 <span className="hl-mark">로컬 동네</span></h2>
+          <h2 className="mt-1.5 font-display text-[clamp(22px,3vw,28px)] font-black tracking-[-0.03em]">📰 지금 뜨는 <span className="hl-mark">로컬 동네</span></h2>
         </div>
-        <span className="klai-tag">{anyLive ? "🟢 네이버 실시간 · 검색 급등順 · 클릭=상세" : "에디토리얼 큐레이션 · 클릭=상세"}</span>
+        <span className="inline-flex items-center gap-2 rounded-full border-[1.5px] px-3 py-1.5 text-[11.5px] font-extrabold" style={{ background: "rgba(217,242,30,.18)", borderColor: "rgba(132,204,22,.42)", color: "var(--blue-l)" }}>
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full" style={{ background: "#16a34a", opacity: 0.65 }} />
+            <span className="relative inline-flex h-2 w-2 rounded-full" style={{ background: "#16a34a" }} />
+          </span>
+          {anyLive ? "네이버 실시간 · 변화 큰順" : "에디토리얼 큐레이션 · 클릭=상세"}
+        </span>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {sorted.map((l) => {
+        {sorted.map((l, idx) => {
           const cat = CATS[l.cat];
           const lv = live[l.name];
+          const vol = volOf(l.name);
+          const intensity = vol > 0 ? Math.max(6, Math.round((vol / maxVol) * 100)) : 0;
+          const surge = lv ? lv.trendDelta : 0;
+          const isTop = anyLive && vol > 0 && idx < 3;
           return (
-            <button key={l.name} type="button" onClick={() => setModal(l)} className="lift flex flex-col rounded-2xl border border-line bg-card2/40 p-5 text-left transition hover:border-blue/40">
+            <button key={l.name} type="button" onClick={() => setModal(l)} className="lift relative flex flex-col rounded-[20px] border-[1.5px] border-line bg-card p-5 text-left transition">
+              {/* 급변 랭크 (변화 강도 상위 3) — 생동감 */}
+              {isTop && (
+                <span className="absolute -top-2.5 left-4 inline-flex items-center gap-1 rounded-full bg-ink px-2.5 py-1 text-[10.5px] font-extrabold text-white shadow-sm">🔥 변화 TOP {idx + 1}</span>
+              )}
               <div className="flex items-center justify-between gap-2">
                 <span className="rounded-full px-2.5 py-1 text-[11px] font-extrabold" style={{ background: cat.c, color: cat.on }}>{cat.label}</span>
                 <span className="text-[11.5px] font-semibold text-muted2">{l.region}</span>
@@ -66,15 +76,21 @@ export function TrendingLocals() {
               <h3 className="mt-2.5 text-[19px] font-extrabold text-ink">{l.name}</h3>
 
               {lv ? (
-                <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11.5px] font-bold">
-                  <span className="text-muted">검색 {lv.trendNow}</span>
-                  <span style={{ color: lv.trendDelta >= 0 ? "var(--gB)" : "var(--warn)" }}>{lv.trendDelta >= 0 ? "▲" : "▼"}{Math.abs(lv.trendDelta)} <span className="font-semibold text-muted2">1년</span></span>
-                  <span className="text-muted2">·</span>
-                  <span className="text-muted">📰 {lv.newsTotal.toLocaleString()}건</span>
-                  <span className="rounded-full px-1.5 py-0.5 text-[10.5px]" style={{ background: lv.sentiment >= 10 ? "rgba(22,163,74,.15)" : lv.sentiment <= -10 ? "rgba(225,29,72,.15)" : "var(--navy)", color: lv.sentiment >= 10 ? "var(--gB)" : lv.sentiment <= -10 ? "var(--warn)" : "var(--muted2)" }}>
-                    {lv.sentiment >= 10 ? "긍정" : lv.sentiment <= -10 ? "위기" : "중립"}
-                  </span>
-                </div>
+                <>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11.5px] font-bold">
+                    <span className="text-muted">검색 {lv.trendNow}</span>
+                    <span style={{ color: surge >= 0 ? "var(--gB)" : "var(--warn)" }}>{surge >= 0 ? "▲ 급등 " : "▼ 급락 "}{Math.abs(surge)} <span className="font-semibold text-muted2">1년</span></span>
+                    <span className="text-muted2">·</span>
+                    <span className="text-muted">📰 {lv.newsTotal.toLocaleString()}건</span>
+                  </div>
+                  {/* 변화 강도 바 */}
+                  <div className="mt-2.5 flex items-center gap-2">
+                    <div className="h-1.5 flex-1 overflow-hidden rounded-full" style={{ background: "#f0f0ea" }}>
+                      <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${intensity}%`, background: surge >= 0 ? "linear-gradient(90deg,#84cc16,#16a34a)" : "linear-gradient(90deg,#fb7185,#e11d48)" }} />
+                    </div>
+                    <span className="text-[10px] font-bold tabular-nums text-muted2">강도 {intensity}</span>
+                  </div>
+                </>
               ) : (
                 <p className="mt-2 text-[13px] leading-relaxed text-muted">{l.blurb}</p>
               )}
@@ -91,7 +107,7 @@ export function TrendingLocals() {
               ) : (
                 <div className="mt-2.5 flex flex-wrap gap-1">
                   {l.tags.map((t) => (
-                    <span key={t} className="rounded-full bg-navy/40 px-2 py-0.5 text-[11px] font-semibold text-muted2">#{t}</span>
+                    <span key={t} className="rounded-full bg-card2 px-2 py-0.5 text-[11px] font-semibold text-muted2">#{t}</span>
                   ))}
                 </div>
               )}
@@ -105,7 +121,7 @@ export function TrendingLocals() {
         })}
       </div>
       <p className="mt-4 text-center text-[11.5px] text-muted2">
-        카드 클릭 → 네이버 뉴스·블로그·카페·검색트렌드(실연동) + 유튜브 + 인스타·X·쓰레드 검토 링크 · BIGKINDS는 API 종료로 미사용
+        카드 클릭 → 네이버 뉴스·블로그·카페·검색트렌드(실연동) + 유튜브 + 인스타·X·쓰레드 검토 링크 · 변화 강도 = |검색 1년 변화| 기준 정렬
       </p>
       {modal && <LocalDetailModal local={modal} onClose={() => setModal(null)} />}
     </div>

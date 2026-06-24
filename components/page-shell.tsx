@@ -60,15 +60,15 @@ export function SiteFooter() {
       <div className="mx-auto grid max-w-6xl gap-8 px-6 py-12 sm:grid-cols-2 lg:grid-cols-[1.4fr_repeat(3,1fr)]">
         <div>
           <div className="flex items-center gap-2.5">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-blue to-amber text-[14px] font-black text-white">K</span>
-            <span className="text-[16px] font-extrabold tracking-tight">
-              KLAI<span className="text-blue-l"> 매력도</span>
+            <span className="grid h-8 w-8 place-items-center rounded-[10px] bg-amber font-display text-[15px] font-extrabold text-onaccent" style={{ transform: "rotate(-4deg)" }}>F</span>
+            <span className="text-[16px] font-black tracking-tight">
+              Flagtale<span className="text-blue-l"> Lab</span>
             </span>
           </div>
           <p className="mt-3 max-w-xs text-[12px] leading-relaxed text-muted2">
-            전국 행정동·매장의 매력도와 변화를 데이터로 진단하는 로컬 인텔리전스 플랫폼. 개념 검증(MVP) · 샘플·잠정 데이터.
+            플래그테일(Flagtale)의 로컬 데이터 랩 — 전국 지역 관광·상품·상권의 매력도와 트렌드 변화를 데이터로 진단합니다. 개념 검증(MVP) · 샘플·잠정 데이터.
           </p>
-          <p className="mt-3 text-[11px] text-muted2">ZeroSite · NutUnion — KLAI Platform</p>
+          <p className="mt-3 text-[11px] text-muted2">ZeroSite · NutUnion — Flagtale Lab</p>
         </div>
         {FOOTER_NAV.map((col) => (
           <div key={col.title}>

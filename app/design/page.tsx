@@ -2,17 +2,17 @@ import type { Metadata } from "next";
 import { PageShell } from "@/components/page-shell";
 import { Button, Panel, Pill, SectionHead, Stat } from "@/components/ui";
 
-export const metadata: Metadata = { title: "디자인 시스템 — KLAI" };
+export const metadata: Metadata = { title: "디자인 시스템 — Flagtale Lab" };
 
 const SWATCHES = [
-  { name: "accent (라임 채움)", var: "--amber", note: "bg-amber · CTA·배지·활성" },
-  { name: "accent-bright (형광)", var: "--accent-bright", note: "hl-mark·강조" },
-  { name: "on-accent (라임 위 텍스트)", var: "--on-accent", note: "text-onaccent" },
+  { name: "accent (샤르트뢰즈 채움)", var: "--amber", note: "bg-amber · #d9f21e · CTA·배지·활성" },
+  { name: "accent-bright (형광)", var: "--accent-bright", note: "hl-mark·강조 · #d9f21e" },
+  { name: "on-accent (악센트 위 텍스트)", var: "--on-accent", note: "text-onaccent · #1c2b02" },
   { name: "primary (다크)", var: "--blue", note: "bg-blue · 다크 버튼" },
-  { name: "link/text 강조", var: "--blue-l", note: "text-blue-l · 링크" },
-  { name: "ink", var: "--ink", note: "본문 텍스트" },
-  { name: "muted", var: "--muted", note: "보조 텍스트" },
-  { name: "line", var: "--line", note: "테두리·구분선" },
+  { name: "link/text 강조", var: "--blue-l", note: "text-blue-l · #4d7c0f · 링크" },
+  { name: "ink", var: "--ink", note: "본문 텍스트 · #131316" },
+  { name: "muted", var: "--muted", note: "보조 텍스트 · #57575f" },
+  { name: "line", var: "--line", note: "테두리·구분선 · #ececE6" },
   { name: "green (긍정)", var: "--green", note: "상승·성공" },
   { name: "warn (경고)", var: "--warn", note: "하락·위기" },
 ];
@@ -33,9 +33,9 @@ export default function DesignSystemPage() {
     <PageShell>
       <div className="mb-8">
         <span className="klai-eyebrow">Design System</span>
-        <h1 className="display-hero mt-2 text-4xl">KLAI 디자인 시스템</h1>
+        <h1 className="display-hero mt-2 font-display text-[clamp(32px,5vw,48px)] font-black tracking-[-0.03em]">Flagtale Lab 디자인 시스템</h1>
         <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-muted">
-          <span className="hl-mark">careet 스타일 에디토리얼</span> — 라임 단일 강조색 + 중성 뉴트럴 + 볼드 타이포. 토큰·타이포·컴포넌트의 단일 출처입니다.
+          <span className="hl-mark">careet 스타일 에디토리얼</span> — 샤르트뢰즈(#d9f21e) 단일 강조색 + 중성 뉴트럴 + 볼드 타이포. 토큰·타이포·컴포넌트의 단일 출처입니다.
         </p>
       </div>
 
@@ -44,7 +44,7 @@ export default function DesignSystemPage() {
         <SectionHead no="01" title="컬러 토큰" desc="CSS 변수 단일 정의 → Tailwind 의미 토큰" />
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {SWATCHES.map((s) => (
-            <div key={s.var} className="overflow-hidden rounded-xl border border-line">
+            <div key={s.var} className="overflow-hidden rounded-[20px] border-[1.5px] border-line">
               <div className="h-16" style={{ background: `var(${s.var})` }} />
               <div className="p-2.5">
                 <div className="text-[12px] font-bold text-ink">{s.name}</div>
@@ -116,15 +116,15 @@ export default function DesignSystemPage() {
           <div>
             <div className="mb-2 text-[12px] font-bold text-muted2">카드 (lift 호버)</div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="lift rounded-2xl border border-line bg-card2/50 p-5">
+              <div className="lift rounded-[20px] border-[1.5px] border-line bg-card2/50 p-5">
                 <div className="cat-tag">EDITORIAL</div>
                 <div className="mt-1 text-[16px] font-extrabold text-ink">콘텐츠 카드</div>
                 <p className="mt-1 text-[13px] text-muted">careet식 카테고리 태그 + 볼드 제목 + 상태 배지 구조.</p>
               </div>
-              <div className="gradient-border rounded-2xl bg-card2/50 p-5">
+              <div className="gradient-border rounded-[20px] bg-card2/50 p-5">
                 <div className="cat-tag">GRADIENT BORDER</div>
                 <div className="mt-1 text-[16px] font-extrabold text-ink">그라데이션 보더 카드</div>
-                <p className="mt-1 text-[13px] text-muted">강조 컨테이너용 라임 그라데이션 테두리.</p>
+                <p className="mt-1 text-[13px] text-muted">강조 컨테이너용 샤르트뢰즈 그라데이션 테두리.</p>
               </div>
             </div>
           </div>

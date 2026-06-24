@@ -38,5 +38,8 @@ export function GET(req: NextRequest) {
     };
   });
 
-  return NextResponse.json({ type: "FeatureCollection", layer, period, features });
+  return NextResponse.json(
+    { type: "FeatureCollection", layer, period, features },
+    { headers: { "cache-control": "public, max-age=600, s-maxage=86400, stale-while-revalidate=604800" } } // 배포별 정적 → CDN 장기 캐시
+  );
 }

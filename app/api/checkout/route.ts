@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       storeId: process.env.PORTONE_STORE_ID,
       channelKey: process.env.PORTONE_CHANNEL_KEY ?? null,
       paymentId,
-      orderName: body.plan ? `KLAI ${body.plan} 구독` : "KLAI 지번 진단 크레딧",
+      orderName: body.plan ? `Flagtale Lab ${body.plan} 구독` : "Flagtale Lab 지번 진단 크레딧",
       totalAmount: amount,
       currency: "KRW",
       payMethod: "EASY_PAY",

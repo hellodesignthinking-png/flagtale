@@ -1,162 +1,144 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { loadDistricts, loadScores } from "@/lib/data";
+import { loadCreators, loadTours, loadStays, loadFlagPasses, ftImage, round1 } from "@/lib/flagtale";
 import { SiteFooter } from "@/components/page-shell";
-import { ArticleCard, toCardItem, reasonInfo } from "@/components/landing/ArticleCard";
-import { Carousel } from "@/components/landing/Carousel";
-import { FeedTabs } from "@/components/landing/FeedTabs";
-import { TrendingLocals } from "@/components/landing/TrendingLocals";
-import { LiveMapSection } from "@/components/landing/LiveMapSection";
-import type { Hero3DPoint } from "@/components/landing/LandingHero3DMap";
-import { Reveal } from "@/components/landing/Reveal";
+import { CreatorShowroom } from "@/components/flagtale/CreatorShowroom";
+import { TourList } from "@/components/flagtale/TourList";
 
-const SOURCES = ["KOSIS 인구", "네이버 검색·기사", "소진공 상권", "한국부동산원 임대", "한국문화정보원", "나라장터 예산", "VWorld 지오코딩", "서울 생활인구", "카드 매출", "건축HUB"];
+export const metadata: Metadata = { title: "Flagtale · 로컬을 발견하고 경험하다" };
 
-export default function LandingPage() {
-  const scores = loadScores();
-  const districts = loadDistricts();
-  const propBy = new Map(districts.features.map((f) => [f.properties.admCd2, f.properties]));
-  const rows = Object.entries(scores.byPlace)
-    .map(([cd, ser]) => ({ cd, p: propBy.get(cd)!, s: ser[ser.length - 1] }))
-    .filter((r) => r.p && r.s);
-  const risers = [...rows].sort((a, b) => b.s.momentum - a.s.momentum).slice(0, 10).map((r) => toCardItem(r.cd, r.p, r.s));
-  const fallers = [...rows].sort((a, b) => a.s.momentum - b.s.momentum).slice(0, 6).map((r) => toCardItem(r.cd, r.p, r.s));
-  const total = districts.features.length;
-  const rising = rows.filter((r) => r.s.momentum > 1).length;
-  const declining = rows.filter((r) => r.s.momentum < -1).length;
-  const feat = risers[0];
-  const sideTwo = risers.slice(1, 3);
-  // 탭 피드용 풀: 상승 + 하락 + 젠트리(중복 제거)
-  const allItems = rows.map((r) => toCardItem(r.cd, r.p, r.s));
-  const byMom = [...allItems].sort((a, b) => b.momentum - a.momentum);
-  const poolMap = new Map<string, ReturnType<typeof toCardItem>>();
-  for (const it of [...byMom.slice(0, 12), ...byMom.slice(-12), ...allItems.filter((i) => i.gentriStage >= 3).sort((a, b) => b.gentriStage - a.gentriStage || b.klai - a.klai).slice(0, 12)]) {
-    poolMap.set(it.cd, it);
-  }
-  const pool = [...poolMap.values()].sort((a, b) => Math.abs(b.momentum) - Math.abs(a.momentum));
-  // 또래 평균 = 같은 시도(행안부 코드 앞 2자리) 4축 평균 (업종이 비어있어 지역으로 그룹). 폴백: 전국 평균.
-  const sidoAcc = new Map<string, { d1: number; d2: number; d3: number; d4: number; n: number }>();
-  const nat = { d1: 0, d2: 0, d3: 0, d4: 0, n: 0 };
-  for (const r of rows) {
-    const k = r.cd.slice(0, 2);
-    const a = sidoAcc.get(k) ?? { d1: 0, d2: 0, d3: 0, d4: 0, n: 0 };
-    a.d1 += r.s.d1; a.d2 += r.s.d2; a.d3 += r.s.d3; a.d4 += r.s.d4; a.n++;
-    sidoAcc.set(k, a);
-    nat.d1 += r.s.d1; nat.d2 += r.s.d2; nat.d3 += r.s.d3; nat.d4 += r.s.d4; nat.n++;
-  }
-  const peerOf = (cd: string) => {
-    const a = sidoAcc.get(cd.slice(0, 2)) ?? (nat.n ? nat : null);
-    return a && a.n ? { d1: a.d1 / a.n, d2: a.d2 / a.n, d3: a.d3 / a.n, d4: a.d4 / a.n } : undefined;
-  };
-  const toHero = (r: ReturnType<typeof toCardItem>, kind: "riser" | "faller"): Hero3DPoint => {
-    const ri = reasonInfo(r);
-    return {
-      cd: r.cd, name: r.name, sigungu: r.sigungu, typology: r.typology, lng: r.lng, lat: r.lat,
-      klai: r.klai, grade: r.grade, momentum: r.momentum, reason: ri.label, reasonDetail: ri.detail,
-      d1: r.d1, d2: r.d2, d3: r.d3, d4: r.d4, gentriStage: r.gentriStage, marketVitality: r.marketVitality,
-      popChangeRate: r.popChangeRate, budgetInflow: r.budgetInflow, peer: peerOf(r.cd), kind,
-    };
-  };
-  // 3D 지도는 더 많은 동네로 밀도 있게 (도시당 하나가 아니라 상승 30 + 하락 14)
-  const mapMovers = [...byMom.slice(0, 30), ...byMom.slice(-14)];
-  const livePoints: Hero3DPoint[] = mapMovers.map((it) => toHero(it, it.momentum >= 0 ? "riser" : "faller"));
+export default function HomePage() {
+  const creators = loadCreators();
+  const tours = loadTours();
+  const stays = loadStays();
+  const passes = loadFlagPasses();
+  const creatorsMap = Object.fromEntries(creators.map((c) => [c.id, { name: c.name, nickname: c.nickname, image: c.image }]));
+  const regions = new Set(creators.map((c) => c.region)).size;
 
   return (
     <div className="theme-light relative min-h-screen overflow-hidden bg-navy pt-14 text-ink">
       <div className="deco-bg" aria-hidden />
 
-      {/* 풀폭 3D 라이브 맵 히어로 + 요약 + 상세 팝업 (넓이 제한 없음) */}
-      <LiveMapSection points={livePoints} total={total} rising={rising} declining={declining} />
+      {/* 히어로 */}
+      <section className="relative z-10 mx-auto max-w-6xl px-4 pt-12 pb-2 sm:px-6 sm:pt-14">
+        <span className="klai-eyebrow inline-flex items-center gap-2">
+          <span className="inline-block h-2 w-2 rounded-full bg-amber" style={{ boxShadow: "0 0 0 4px rgba(217,242,30,.3)" }} />
+          Discover &amp; Experience
+        </span>
+        <h1 className="mt-3.5 font-display text-[clamp(34px,5.4vw,56px)] font-black leading-[1.05] tracking-[-0.035em]">
+          로컬을 <span className="hl-mark">발견하고 경험하다</span>
+        </h1>
+        <p className="mt-4 max-w-[600px] text-[16px] text-muted">
+          전국 로컬 크리에이터가 큐레이션한 <b className="text-ink">투어 · 스테이 · FLAG PASS</b>. 지도로 둘러보려면 플래그맵에서.
+        </p>
+        <div className="mt-6 flex flex-wrap gap-2.5">
+          <Link href="/map-tale" className="btn-glow inline-flex items-center gap-1.5 rounded-full bg-amber px-6 py-3.5 text-[15px] font-extrabold text-onaccent">🗺 지도로 탐색 →</Link>
+          <Link href="/auth" className="rounded-full border-[1.5px] border-line bg-card px-6 py-3.5 text-[15px] font-extrabold text-ink transition-colors hover:border-ink">FLAG PASS 구매</Link>
+        </div>
+      </section>
 
       <main className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="flex flex-wrap items-end justify-between gap-3 pt-6 pb-5">
-          <div>
-            <span className="klai-eyebrow">Local Trend Intelligence</span>
-            <h1 className="mt-1.5 text-[1.7rem] font-extrabold tracking-tight sm:text-[2rem]">
-              지금 전국에서 <span className="hl-mark">뜨는 동네</span>를 읽다
-            </h1>
-          </div>
-          <Link href="/map" className="hidden shrink-0 rounded-full border border-line bg-card2 px-4 py-2 text-[13px] font-bold text-ink transition-colors hover:border-blue/50 sm:inline-block">지도 전체 탐색 →</Link>
-        </div>
-
-        {/* 피처드 — 큰 기사 + 사이드 2 */}
-        <section className="grid gap-4 lg:grid-cols-[1.55fr_1fr]">
-          <ArticleCard item={feat} big />
-          <div className="grid grid-rows-2 gap-4">
-            {sideTwo.map((it) => (
-              <ArticleCard key={it.cd} item={it} />
-            ))}
-          </div>
-        </section>
-
-        {/* 지금 뜨는 동네 그리드 */}
-        <Reveal as="section" className="py-10">
-          <div className="mb-4 flex items-end justify-between">
-            <h2 className="text-[1.4rem] font-extrabold tracking-tight sm:text-[1.7rem]">🔥 지금 뜨는 동네</h2>
-            <Link href="/reports" className="text-[13px] font-bold text-blue-l hover:underline">주간 리포트 전체 →</Link>
-          </div>
-          <Carousel>
-            {risers.map((it) => (
-              <ArticleCard key={it.cd} item={it} />
-            ))}
-          </Carousel>
-        </Reveal>
-
-        {/* 뉴스·블로그로 뜨는 로컬 동네 (에디토리얼 큐레이션) */}
-        <Reveal as="section" className="py-8">
-          <TrendingLocals />
-        </Reveal>
-
-        {/* 전국 동네 피드 — 카테고리 탭 필터 */}
-        <Reveal as="section" className="py-8">
-          <div className="mb-4 flex items-end justify-between">
-            <h2 className="text-[1.4rem] font-extrabold tracking-tight sm:text-[1.7rem]">🗂 전국 동네 피드</h2>
-            <span className="text-[12px] font-bold text-muted2">카테고리로 골라보기</span>
-          </div>
-          <FeedTabs items={pool} />
-        </Reveal>
-
-        {/* 데이터 소스 마퀴 */}
-        <section className="py-2">
-          <div className="marquee-mask overflow-hidden">
-            <div className="marquee-track">
-              {[...SOURCES, ...SOURCES].map((s, i) => (
-                <span key={i} className="rounded-full border border-line bg-card2/60 px-3.5 py-1.5 text-[12px] font-semibold text-muted">{s}</span>
-              ))}
+        {/* 발견 — 크리에이터 쇼룸 */}
+        <section className="pt-10 pb-1">
+          <div className="mb-1 flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <span className="klai-eyebrow">발견 · Creators</span>
+              <h2 className="mt-1.5 font-display text-[clamp(24px,3.4vw,32px)] font-black tracking-[-0.03em]">로컬 크리에이터의 <span className="hl-mark">철학</span></h2>
+            </div>
+            <div className="flex gap-2 text-[12px] font-bold text-muted2">
+              <span>크리에이터 {creators.length}</span>·<span>{regions}개 도시</span>·<span>투어 {tours.length}</span>
             </div>
           </div>
+          <CreatorShowroom creators={creators} />
         </section>
 
-        {/* 활용 4칩 */}
-        <Reveal as="section" className="py-8">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {[
-              { icon: "🗺️", t: "매력도 지도", href: "/map" },
-              { icon: "🔎", t: "지번 진단", href: "/diagnose" },
-              { icon: "🏪", t: "브랜드 진단", href: "/brand" },
-              { icon: "🏛️", t: "기관 대시보드", href: "/dashboard" },
-            ].map((f) => (
-              <Link key={f.href} href={f.href} className="lift group rounded-2xl border border-line bg-card2/40 p-5 text-center">
-                <div className="text-2xl">{f.icon}</div>
-                <div className="mt-2 text-[14px] font-extrabold text-ink group-hover:text-blue-l">{f.t}</div>
-              </Link>
+        {/* 경험 — FLAG PASS */}
+        <section className="py-7">
+          <div className="mb-4">
+            <span className="klai-eyebrow">경험 · FLAG PASS</span>
+            <h2 className="mt-1.5 font-display text-[clamp(22px,3vw,28px)] font-black tracking-[-0.03em]">패스 하나로 전국 로컬을 <span className="hl-mark">할인가</span>에</h2>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            {passes.map((p, i) => {
+              const featured = i === 1;
+              return (
+                <div key={p.id} className="relative flex flex-col rounded-[24px] border-[1.5px] border-line bg-card p-6" style={featured ? { boxShadow: "0 0 0 1.5px var(--amber), 0 24px 50px -30px rgba(0,0,0,.25)" } : undefined}>
+                  {featured && <span className="absolute -top-2.5 left-6 rounded-full bg-amber px-3 py-1 text-[11px] font-extrabold text-onaccent">🔥 가장 인기</span>}
+                  <div className="text-[13px] font-extrabold text-blue-l">{p.name}</div>
+                  <div className="mt-1.5 flex items-end gap-1">
+                    <span className="font-display text-[30px] font-black tabular-nums leading-none text-ink">{p.price.toLocaleString()}</span>
+                    <span className="pb-1 text-[13px] font-bold text-muted2">원 / {p.duration_days}일</span>
+                  </div>
+                  <div className="mt-1 inline-flex w-fit rounded-full bg-amber/15 px-2.5 py-1 text-[12px] font-extrabold text-blue-l">투어·숙소 {p.discount_percent}% 할인</div>
+                  <ul className="mt-4 space-y-2">
+                    {p.benefits.split(",").map((b, bi) => (
+                      <li key={`${p.id}-${bi}`} className="flex gap-2 text-[12.5px] text-muted"><span className="text-grade-b">✓</span><span>{b.trim()}</span></li>
+                    ))}
+                  </ul>
+                  <Link href="/auth" className={`mt-5 flex items-center justify-center rounded-full px-5 py-3 text-[14px] font-extrabold ${featured ? "btn-glow bg-amber text-onaccent" : "border-[1.5px] border-line bg-card text-ink hover:border-ink"}`}>패스 구매하기</Link>
+                </div>
+              );
+            })}
+          </div>
+          <p className="mt-3 text-center text-[11.5px] text-muted2">샘플 가격 · 실제 결제(PortOne)는 백엔드 통합 후 활성화됩니다.</p>
+        </section>
+
+        {/* 경험 — 투어 */}
+        <section id="tours" className="scroll-mt-20 py-7">
+          <div className="mb-4">
+            <span className="klai-eyebrow">경험 · Local Tours</span>
+            <h2 className="mt-1.5 font-display text-[clamp(22px,3vw,28px)] font-black tracking-[-0.03em]">지금 뜨는 <span className="hl-mark">로컬 투어</span></h2>
+          </div>
+          <TourList tours={tours} creators={creatorsMap} />
+        </section>
+
+        {/* 경험 — 스테이 */}
+        <section className="py-7">
+          <div className="mb-4">
+            <span className="klai-eyebrow">경험 · Local Stays</span>
+            <h2 className="mt-1.5 font-display text-[clamp(22px,3vw,28px)] font-black tracking-[-0.03em]">하룻밤 더, <span className="hl-mark">로컬 스테이</span></h2>
+          </div>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {stays.map((s) => (
+              <div key={s.id} className="lift flex flex-col overflow-hidden rounded-[20px] border-[1.5px] border-line bg-card">
+                <div className="relative aspect-[16/10] overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={ftImage(s.image)} alt={s.title} loading="lazy" decoding="async" className="h-full w-full object-cover" />
+                  <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,transparent 50%,rgba(0,0,0,.5))" }} />
+                  {s.badge_label && <span className="absolute left-3 top-3 rounded-full bg-amber px-2.5 py-1 text-[11px] font-extrabold text-onaccent">{s.badge_label}</span>}
+                  <span className="absolute right-3 top-3 rounded-full bg-ink/80 px-2 py-1 text-[11px] font-extrabold text-white">★ {round1(s.rating)}</span>
+                  <span className="absolute bottom-3 left-3 rounded-full bg-card/90 px-2.5 py-1 text-[11px] font-extrabold text-ink">{s.stay_type}</span>
+                </div>
+                <div className="flex flex-1 flex-col p-5">
+                  <div className="text-[11px] font-extrabold tracking-wide text-blue-l">{s.region} · 호스트 {s.host_name}</div>
+                  <h3 className="mt-1.5 text-[17px] font-black leading-snug tracking-tight text-ink">{s.title}</h3>
+                  <p className="mt-1.5 line-clamp-2 text-[12.5px] leading-relaxed text-muted">{s.description}</p>
+                  <div className="mt-auto flex items-end justify-between pt-3.5">
+                    <div>
+                      <span className="font-display text-[20px] font-black tabular-nums text-ink">{s.price_per_night.toLocaleString()}</span>
+                      <span className="text-[12px] font-bold text-muted2">원 / 박</span>
+                    </div>
+                    <Link href="/auth" className="rounded-full border-[1.5px] border-line bg-card px-3.5 py-2 text-[12.5px] font-extrabold text-ink transition-colors hover:border-ink">예약 →</Link>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
-        </Reveal>
+          <p className="mt-4 text-center text-[11.5px] text-muted2">샘플·잠정 데이터 · 실제 예약·결제(PortOne)·외부 OTA 연동은 백엔드 통합 단계에서 활성화됩니다.</p>
+        </section>
 
-        {/* 뉴스레터 */}
-        <Reveal as="section" className="py-12">
-          <div className="relative overflow-hidden rounded-[28px] border border-line bg-card2/60 px-6 py-12 text-center sm:px-10">
-            <div className="pointer-events-none absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full opacity-50 blur-3xl" style={{ background: "radial-gradient(circle, var(--blue-l), transparent 70%)" }} />
-            <span className="klai-eyebrow relative">Flagtale Weekly</span>
-            <h2 className="relative mt-2 text-[1.7rem] font-extrabold tracking-tight sm:text-[2.1rem]">트렌드를 <span className="hl-mark">먼저</span> 읽으세요</h2>
-            <p className="relative mx-auto mt-2 max-w-md text-[14px] text-muted">매주 월요일, 전국에서 뜨고 지는 동네와 그 이유를 메일로.</p>
-            <div className="relative mx-auto mt-6 flex max-w-md flex-col gap-2 sm:flex-row">
-              <input type="email" placeholder="이메일 주소" aria-label="이메일 주소" className="h-12 flex-1 rounded-full border border-line bg-navy px-5 text-[14px] text-ink placeholder:text-muted2 focus:border-blue focus:outline-none" />
-              <Link href="/auth" className="btn-glow grid h-12 shrink-0 place-items-center rounded-full bg-amber px-7 text-[15px] font-extrabold text-onaccent">무료 구독</Link>
+        {/* 플래그테일랩(데이터 부문) 진입 */}
+        <section className="py-10">
+          <Link href="/lab" className="lift group relative flex flex-col items-start gap-4 overflow-hidden rounded-[28px] border-[1.5px] border-line bg-card2 px-6 py-9 sm:px-9 md:flex-row md:items-center md:justify-between">
+            <div className="pointer-events-none absolute -right-6 -top-8 select-none text-[150px] leading-none opacity-[0.06]" aria-hidden>📊</div>
+            <div className="relative">
+              <span className="klai-eyebrow">Flagtale Lab · 매력도 데이터</span>
+              <h2 className="mt-2 font-display text-[clamp(22px,3.2vw,30px)] font-black tracking-[-0.03em]">이 동네가 <span className="hl-mark">왜 뜨고 식는지</span> 데이터로 읽다</h2>
+              <p className="mt-2 max-w-[520px] text-[14px] text-muted">전국 행정동 매력도 점수·모멘텀·젠트리 단계·시그널. 검색·상권·인구·인식 실데이터 기반의 데이터 부문.</p>
             </div>
-            <p className="relative mt-3 text-[11px] text-muted2">회원가입 시 주간 리포트·진단 알림. 개인 식별 데이터는 집계로만 사용(§15).</p>
-          </div>
-        </Reveal>
+            <span className="relative shrink-0 whitespace-nowrap rounded-full bg-ink px-6 py-3.5 text-[14.5px] font-extrabold text-white transition-transform group-hover:scale-[1.03]">플래그테일랩 →</span>
+          </Link>
+        </section>
       </main>
       <SiteFooter />
     </div>

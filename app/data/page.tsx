@@ -25,7 +25,7 @@ export default function DataPage() {
     <PageShell>
       <div className="mb-6">
         <span className="klai-eyebrow">Data Sources</span>
-        <h1 className="mt-1 text-3xl font-black">데이터 출처 · 연동 상태</h1>
+        <h1 className="mt-1 font-display text-[clamp(28px,4vw,40px)] font-black tracking-[-0.03em]">데이터 출처 · 연동 상태</h1>
         <p className="mt-1.5 max-w-2xl text-[14px] leading-relaxed text-muted">
           각 지표가 <b className="text-ink">어떤 실제 소스</b>에서 오는지, 지금 <b className="text-ink">실연동됐는지</b>, 아니면
           어떤 <b className="text-ink">키가 없어 미연동</b>인지 투명하게 표시합니다. 한국 공공데이터 키는 사용자 본인 계정으로만 발급되어,
@@ -80,7 +80,7 @@ export default function DataPage() {
         <Stat label="실연동 소스" value={realCount} accent="blue" sub="경계(행정동)" />
         <Stat label="키 설정됨" value={keySetCount} accent="amber" sub="인제스트 시 실데이터 전환" />
         <Stat label="키 필요(미연동)" value={pendingCount} accent="warn" sub="키 발급 후 연동" />
-        <Stat label="기본 시계열" value={<span className="text-lg">인구 10년+</span>} sub="2015~2026" />
+        <Stat label="기본 시계열" value={<span className="text-lg">인구 10년</span>} sub="2016~2025" />
       </div>
 
       <Panel className="overflow-hidden p-0">
@@ -121,7 +121,7 @@ export default function DataPage() {
                       <div className="mt-1 text-[11px] text-muted2">{reason}</div>
                     </td>
                     <td className="whitespace-nowrap px-3 py-3">
-                      <a href={src.url} target="_blank" rel="noopener noreferrer" className="whitespace-nowrap text-[11.5px] text-blue-l hover:underline">
+                      <a href={src.url} target="_blank" rel="noopener noreferrer" aria-label={`${src.source} 키 발급처 (새 창)`} className="whitespace-nowrap text-[12.5px] text-blue-l hover:underline">
                         발급처 ↗
                       </a>
                     </td>

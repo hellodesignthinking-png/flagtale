@@ -7,7 +7,11 @@ export const dynamic = "force-dynamic";
 // 스펙 §13: GET /api/cron/weekly → Flagtale Weekly 발행 (보호된 cron, 매주 월요일 vercel.json crons)
 // 현재 ISO 주차 리포트를 데이터에서 '자동 생성'해 발행. Resend 키 있으면 발송, 없으면 목업.
 export async function GET(req: NextRequest) {
-  const secret = process.env.CRON_SECRET || "dev-cron-secret-change-me";
+  const secret = process.env.CRON_SECRET;
+  if (!secret) {
+    // 시크릿 미설정 시 차단(fail-closed) — 하드코딩 폴백 제거
+    return NextResponse.json({ error: "cron_not_configured" }, { status: 500 });
+  }
   const auth = req.headers.get("authorization");
   const qs = req.nextUrl.searchParams.get("secret");
   const ok = auth === `Bearer ${secret}` || qs === secret;

@@ -6,10 +6,11 @@ import type { LayerId } from "@/lib/types";
 // 전국(수천 동) 지도용 압축 페이로드. 레이어별로 동×전기간 색·라벨·경보만 반환.
 // scores.json 전체(11MB+)를 클라이언트로 보내지 않기 위함. 레이어별 모듈 캐시.
 const cache = new Map<string, unknown>();
+const CACHE = "public, max-age=600, s-maxage=86400, stale-while-revalidate=604800"; // 배포별 정적 → CDN 장기 캐시
 
 export function GET(req: NextRequest) {
   const layer = (req.nextUrl.searchParams.get("layer") || "klai") as LayerId;
-  if (cache.has(layer)) return NextResponse.json(cache.get(layer));
+  if (cache.has(layer)) return NextResponse.json(cache.get(layer), { headers: { "cache-control": CACHE } });
 
   const scores = loadScores();
   const periods = scores.periods;
@@ -39,5 +40,5 @@ export function GET(req: NextRequest) {
 
   const payload = { layer, periods, last: scores.last, byPlace };
   cache.set(layer, payload);
-  return NextResponse.json(payload);
+  return NextResponse.json(payload, { headers: { "cache-control": CACHE } });
 }

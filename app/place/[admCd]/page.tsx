@@ -1,7 +1,8 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getPeerAvg, getPlace, getRegionComparison, populationMeta } from "@/lib/data";
+import { getPeerAvg, getPlace, getRegionComparison, nationalSignalAverage, populationMeta } from "@/lib/data";
 import { NaverPanel } from "@/components/analysis/NaverPanel";
 import { PageShell } from "@/components/page-shell";
 import { Button, MomentumChip, Panel, Pill, ProvisionalBadge, SectionHead, Stat } from "@/components/ui";
@@ -53,14 +54,14 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-[13px] text-muted2">
-            <a href="/" className="hover:text-ink">
-              지도
-            </a>
+            <Link href="/map" className="hover:text-ink">
+              매력도 지도
+            </Link>
             <span>›</span>
             <span>{props.sigungu}</span>
           </div>
           <div className="mt-1 flex items-center gap-3">
-            <h1 className="text-3xl font-black">{props.name}</h1>
+            <h1 className="font-display text-[clamp(26px,4vw,38px)] font-black tracking-[-0.03em]">{props.name}</h1>
             <Pill tone="blue">{props.typology}</Pill>
             <ProvisionalBadge />
           </div>
@@ -103,7 +104,7 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
               </div>
               <CityCompare cmp={cmp} height={260} />
             </div>
-            <div className="rounded-xl border border-line bg-card2/40 p-4">
+            <div className="rounded-[20px] border-[1.5px] border-line bg-card2/40 p-4">
               <div className="mb-2 text-[11px] font-bold uppercase tracking-wider text-amber">연령 구조 격차 (현재)</div>
               <RatioCompare cmp={cmp} />
               <p className="mt-3 border-t border-line pt-2 text-[11px] leading-snug text-muted2">
@@ -150,12 +151,12 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
             title="신호 동조 분석 — 검색·기사·인구·임대료·매물"
             desc="함께 오를 때, 무엇이 먼저였나"
           />
-          <SignalAnalysis signals={signals} periods={periodLabels} authenticityGap={latest.authenticityGap} />
+          <SignalAnalysis signals={signals} periods={periodLabels} authenticityGap={latest.authenticityGap} avgSignals={nationalSignalAverage()} />
           {/* 네이버 실데이터(검색 관심도·기사량) — Suspense로 스트리밍, 페이지 렌더 막지 않음 */}
           <div className="mt-4">
             <Suspense
               fallback={
-                <div className="rounded-xl border border-line bg-card2/40 p-4 text-[12px] text-muted2">
+                <div className="rounded-[20px] border-[1.5px] border-line bg-card2/40 p-4 text-[12px] text-muted2">
                   네이버 실시간 관심도 불러오는 중…
                 </div>
               }
@@ -209,7 +210,7 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
 
         <div className="grid gap-5 lg:grid-cols-2">
           {/* 인구 */}
-          <div className="rounded-xl border border-line bg-card2/40 p-4">
+          <div className="rounded-[20px] border-[1.5px] border-line bg-card2/40 p-4">
             <div className="mb-2 flex items-center justify-between gap-2">
               <div className="text-[12px] font-bold text-ink">
                 {popReal ? `${props.sigungu} 인구 추세` : "인구 추세"} (총인구 · 청년/고령)
@@ -240,7 +241,7 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
           </div>
 
           {/* 공공예산 */}
-          <div className="rounded-xl border border-line bg-card2/40 p-4">
+          <div className="rounded-[20px] border-[1.5px] border-line bg-card2/40 p-4">
             <div className="mb-2 text-[12px] font-bold text-ink">공공예산 흐름 (입찰 공고 vs 수의계약)</div>
             <BudgetFlow annual={procAnnual} height={230} />
             <div className="mt-3 border-t border-line pt-3">
@@ -297,7 +298,7 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
             <div className="mb-2 text-[12px] font-bold text-muted">점수 기여요인 Top 3 (근사)</div>
             <div className="grid gap-2 sm:grid-cols-3">
               {diagnosis.topFactors.map((f, i) => (
-                <div key={i} className="rounded-lg border border-line bg-card2 px-3 py-2">
+                <div key={i} className="rounded-lg border-[1.5px] border-line bg-card2 px-3 py-2">
                   <div className="text-[12px] text-ink">{f.key}</div>
                   <div className={`text-sm font-bold ${f.impact >= 0 ? "text-grade-b" : "text-warn"}`}>
                     {f.impact >= 0 ? "+" : ""}
@@ -323,7 +324,7 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
               </div>
             ))}
             {(!diagnosis || diagnosis.risks.length === 0) && (
-              <div className="rounded-lg border border-line bg-card2 px-3 py-2 text-[12px] text-muted">
+              <div className="rounded-lg border-[1.5px] border-line bg-card2 px-3 py-2 text-[12px] text-muted">
                 현재 임계 경보 없음 — 정상 범위
               </div>
             )}
@@ -331,7 +332,7 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
           <div className="space-y-2">
             <div className="text-[12px] font-bold text-grade-b">전략 (Strategy)</div>
             {(diagnosis?.strategy ?? []).map((s, i) => (
-              <div key={i} className="rounded-lg border border-line bg-card2 px-3 py-2">
+              <div key={i} className="rounded-lg border-[1.5px] border-line bg-card2 px-3 py-2">
                 <div className="text-[13px] font-bold text-ink">{s.title}</div>
                 <div className="mt-0.5 text-[12px] text-muted blur-[4px]">{s.detail}</div>
               </div>
@@ -380,7 +381,7 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
 
 function SummaryCell({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-line bg-card2 px-3 py-2">
+    <div className="rounded-lg border-[1.5px] border-line bg-card2 px-3 py-2">
       <div className="text-[10px] text-muted2">{label}</div>
       <div className="text-[13px] font-semibold text-ink">{value}</div>
     </div>

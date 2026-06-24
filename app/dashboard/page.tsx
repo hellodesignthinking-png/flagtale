@@ -6,6 +6,12 @@ import { GradeBadge, MomentumChip, Panel, Pill, ProvisionalBadge, SectionHead, S
 import { GRADE_HEX } from "@/lib/constants";
 import { Sparkline } from "@/components/charts/Sparkline";
 import { DonutChart } from "@/components/charts/DonutChart";
+import { RegionPicker } from "@/components/dashboard/RegionPicker";
+import { DashboardGate } from "@/components/dashboard/DashboardGate";
+import { ApiAccess } from "@/components/dashboard/ApiAccess";
+import { getUser } from "@/lib/supabase/server";
+import { isSupabaseEnabled } from "@/lib/config";
+import { normalizePlan, canUse } from "@/lib/tier";
 
 export const metadata: Metadata = { title: "기관 대시보드 — 경보·모니터링" };
 
@@ -17,7 +23,17 @@ const TYPE_LABEL: Record<string, string> = {
   negative_narrative: "부정서사",
 };
 
-export default function DashboardPage({ searchParams }: { searchParams: { region?: string } }) {
+export default async function DashboardPage({ searchParams }: { searchParams: { region?: string } }) {
+  // 기관(org) 등급 게이트 — 키 연동 시에만. 데모(키없음) 모드는 통과.
+  let apiKey: string | null = null;
+  if (isSupabaseEnabled) {
+    const user = await getUser();
+    const plan = normalizePlan(user?.user_metadata?.ft_plan as string | undefined);
+    if (!canUse(plan, "dashboard")) return <DashboardGate plan={plan} />;
+    apiKey = (user?.user_metadata?.ft_apikey as string) ?? null;
+  }
+  const apiOrigin = process.env.NEXT_PUBLIC_SITE_URL || "https://flatalelocal.vercel.app";
+
   const region = searchParams.region ?? "";
   const places = listPlaces();
   const diags = loadDiagnoses();
@@ -67,30 +83,14 @@ export default function DashboardPage({ searchParams }: { searchParams: { region
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <span className="klai-eyebrow">Institution Dashboard</span>
-          <h1 className="display-hero mt-2 text-4xl">
+          <h1 className="mt-2 font-display text-[clamp(30px,4.4vw,42px)] font-black leading-[1.05] tracking-[-0.03em]">
             관할 동네, <span className="hl-mark">한눈에</span> 모니터링
           </h1>
           <p className="mt-2 text-[14px] text-muted">
             경보 인박스 · 랭킹 · 공공예산 · 정책 우선순위. <Pill tone="amber">B2G/B2B 구독</Pill>
           </p>
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          <Link
-            href="/dashboard"
-            className={`rounded-full px-3.5 py-1.5 text-[13px] font-bold ${!region ? "bg-amber text-onaccent" : "border border-line text-muted hover:bg-card2 hover:text-ink"}`}
-          >
-            전체
-          </Link>
-          {regions.map((r) => (
-            <Link
-              key={r}
-              href={`/dashboard?region=${encodeURIComponent(r)}`}
-              className={`rounded-full px-3.5 py-1.5 text-[13px] font-bold ${region === r ? "bg-amber text-onaccent" : "border border-line text-muted hover:bg-card2 hover:text-ink"}`}
-            >
-              {r}
-            </Link>
-          ))}
-        </div>
+        <RegionPicker regions={regions} active={region} />
       </div>
 
       {/* 요약 — 경보 유형 분포 도넛 + 카운트 */}
@@ -127,7 +127,7 @@ export default function DashboardPage({ searchParams }: { searchParams: { region
               <Link
                 key={i}
                 href={`/place/${a.admCd2}`}
-                className="flex items-start gap-3 rounded-lg border border-line bg-card2 px-3 py-2.5 hover:border-warn"
+                className="flex items-start gap-3 rounded-xl border-[1.5px] border-line bg-card2 px-3 py-2.5 transition-colors hover:border-warn"
               >
                 <span
                   className={`mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full ${
@@ -169,7 +169,7 @@ export default function DashboardPage({ searchParams }: { searchParams: { region
                 <Link
                   key={x.p.admCd2}
                   href={`/place/${x.p.admCd2}`}
-                  className="flex items-center gap-2.5 rounded-lg border border-line bg-card2 px-3 py-1.5 hover:border-blue"
+                  className="flex items-center gap-2.5 rounded-xl border-[1.5px] border-line bg-card2 px-3 py-1.5 transition-colors hover:border-blue"
                 >
                   <span className="w-4 text-center text-[12px] font-bold text-muted2">{i + 1}</span>
                   <GradeBadge grade={x.s.grade} size="sm" />
@@ -196,15 +196,15 @@ export default function DashboardPage({ searchParams }: { searchParams: { region
           <Panel>
             <SectionHead title="정책 도구" />
             <div className="space-y-2 text-[13px]">
-              <div className="flex items-center justify-between rounded-lg border border-line bg-card2 px-3 py-2.5">
+              <div className="flex items-center justify-between rounded-xl border-[1.5px] border-line bg-card2 px-3 py-2.5">
                 <span className="text-muted">What-if 시뮬레이션 (앵커·임대안정·청년주택)</span>
                 <Pill tone="muted">기관</Pill>
               </div>
-              <div className="flex items-center justify-between rounded-lg border border-line bg-card2 px-3 py-2.5">
+              <div className="flex items-center justify-between rounded-xl border-[1.5px] border-line bg-card2 px-3 py-2.5">
                 <span className="text-muted">CSV / API 키 발급</span>
                 <Pill tone="muted">기관</Pill>
               </div>
-              <div className="flex items-center justify-between rounded-lg border border-line bg-card2 px-3 py-2.5">
+              <div className="flex items-center justify-between rounded-xl border-[1.5px] border-line bg-card2 px-3 py-2.5">
                 <span className="text-muted">정책 ROI 추정 (DiD)</span>
                 <Pill tone="muted">기관</Pill>
               </div>
@@ -213,6 +213,10 @@ export default function DashboardPage({ searchParams }: { searchParams: { region
               상세 정밀 진단·개인식별 데이터는 권한 분리(스펙 §15). 공개 등급은 처방 중심으로 거칠게 표기.
             </p>
           </Panel>
+        </div>
+
+        <div className="mt-6">
+          <ApiAccess initialKey={apiKey} origin={apiOrigin} />
         </div>
       </div>
 
@@ -234,7 +238,7 @@ export default function DashboardPage({ searchParams }: { searchParams: { region
             <Link
               key={r.p.admCd2}
               href={`/place/${r.p.admCd2}`}
-              className="flex items-center gap-2.5 rounded-lg border border-line bg-card2 px-3 py-1.5 hover:border-amber"
+              className="flex items-center gap-2.5 rounded-xl border-[1.5px] border-line bg-card2 px-3 py-1.5 transition-colors hover:border-amber"
             >
               <span className="w-24 shrink-0 text-[13px] font-semibold text-ink">{r.p.name}</span>
               <span className="hidden w-16 shrink-0 text-[10px] text-muted2 sm:inline">{r.p.sigungu}</span>

@@ -7,9 +7,9 @@ import { MomentumBars, type BarItem } from "./MomentumBars";
 import { DongDetailModal } from "./DongDetailModal";
 import { CountUp } from "./CountUp";
 
-// 풀폭 3D 라이브맵 + 요약(스탯·모멘텀 그래프) + 상세 팝업을 묶는 클라이언트 섹션.
+// 3D 라이브맵 카드 + 모멘텀 Top + 상세 팝업을 묶는 클라이언트 섹션.
 // 3D 기둥 클릭 또는 모멘텀 막대 클릭 → 같은 상세 팝업.
-export function LiveMapSection({ points, total, rising, declining }: { points: Hero3DPoint[]; total: number; rising: number; declining: number }) {
+export function LiveMapSection({ points, total }: { points: Hero3DPoint[]; total: number }) {
   const [modal, setModal] = useState<Hero3DPoint | null>(null);
   const byCd = new Map(points.map((p) => [p.cd, p]));
   const barItems: BarItem[] = [
@@ -19,23 +19,28 @@ export function LiveMapSection({ points, total, rising, declining }: { points: H
 
   return (
     <>
-      <section className="relative z-10 h-[74vh] min-h-[560px] w-full border-b border-line">
+      {/* 풀블리드 3D 라이브맵 — 최대 폭, 박스/아이프레임 없이 edge-to-edge */}
+      <section
+        className="relative z-10 mt-3 h-[64vh] min-h-[480px] w-full overflow-hidden border-y-[1.5px]"
+        style={{ background: "linear-gradient(160deg,#0b1c2e,#0d2b5e 60%,#0a1626)", borderColor: "#0d2b5e" }}
+      >
         <LandingHero3DMapMount points={points} onPick={setModal} />
       </section>
 
-      <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6">
-        <section className="py-8">
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="grid grid-cols-2 content-center gap-3">
-              <Stat to={total} label="분석 행정동" />
-              <Stat to={13} label="실데이터 소스" />
-              <Stat to={rising} label="상승 동네" />
-              <Stat to={declining} label="위기 동네" warn />
+      {/* 모멘텀 Top — 컨테이너 */}
+      <section className="relative z-10 mx-auto max-w-6xl px-4 py-6 sm:px-6">
+        <div className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
+          <div className="grid grid-cols-2 content-center gap-3">
+            <Stat to={total} label="분석 행정동" />
+            <Stat to={13} label="실데이터 소스" />
+            <div className="col-span-2 rounded-[20px] border-[1.5px] border-amber bg-amber px-5 py-5 text-center">
+              <div className="font-display text-[28px] font-black leading-none tracking-tight text-onaccent">매주 월요일</div>
+              <div className="mt-1.5 text-[12px] font-bold" style={{ color: "#2b3d0a" }}>전국 매력도 리프레시</div>
             </div>
-            <MomentumBars items={barItems} onPick={(cd) => { const p = byCd.get(cd); if (p) setModal(p); }} />
           </div>
-        </section>
-      </div>
+          <MomentumBars items={barItems} title="🔥 이번 주 모멘텀 Top" onPick={(cd) => { const p = byCd.get(cd); if (p) setModal(p); }} />
+        </div>
+      </section>
 
       {modal && <DongDetailModal p={modal} onClose={() => setModal(null)} />}
     </>
@@ -44,9 +49,9 @@ export function LiveMapSection({ points, total, rising, declining }: { points: H
 
 function Stat({ to, label, warn }: { to: number; label: string; warn?: boolean }) {
   return (
-    <div className="rounded-2xl border border-line bg-card2/50 px-4 py-5 text-center">
-      <CountUp to={to} className={`text-[1.7rem] font-black tracking-tight ${warn ? "text-warn" : "text-blue-l"}`} />
-      <div className="mt-1 text-[12px] text-muted2">{label}</div>
+    <div className="rounded-[20px] border-[1.5px] border-line bg-card2 px-4 py-5 text-center">
+      <CountUp to={to} className={`font-display text-[28px] font-extrabold tabular-nums leading-none ${warn ? "text-warn" : "text-ink"}`} />
+      <div className="mt-1.5 text-[12px] font-semibold text-muted2">{label}</div>
     </div>
   );
 }

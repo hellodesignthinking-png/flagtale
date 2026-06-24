@@ -211,13 +211,13 @@ export default function LandingHero3DMap({ points, onPick }: { points: Hero3DPoi
     <div className="relative h-full w-full overflow-hidden bg-navy">
       <div ref={mapEl} className="h-full w-full" />
 
-      {/* 타이틀 (좌상단) */}
-      <div className="pointer-events-none absolute left-4 top-4 z-10 max-w-[60%] sm:left-6 sm:top-6">
-        <span className="klai-eyebrow !text-[#9be15d]">3D Live Map · 활성 · 위기</span>
-        <h2 className="mt-1 text-[1.5rem] font-extrabold leading-tight tracking-tight text-white drop-shadow sm:text-[2.1rem]">
-          지금 <span className="text-[#bef264]">움직이는</span> 동네만,<br className="hidden sm:block" /> 지도 위 3D로
+      {/* 타이틀 (좌상단) — 큰 h1은 히어로로 이동, 여기는 맵 컨텍스트만 */}
+      <div className="pointer-events-none absolute left-4 top-4 z-10 max-w-[58%] sm:left-6 sm:top-5">
+        <span className="klai-eyebrow !text-[#d9f21e]">3D Live Map</span>
+        <h2 className="mt-1.5 font-display text-[clamp(20px,3vw,28px)] font-extrabold leading-[1.15] tracking-tight text-white drop-shadow">
+          기둥 높이 = 매력도, <span className="text-[#d9f21e]">실시간으로</span>
         </h2>
-        <p className="mt-1 text-[12.5px] text-white/70">기둥 = KLAI · 🟢 상승 / 🔴 하락 · 드래그·휠로 탐색</p>
+        <p className="mt-1.5 text-[12.5px] text-white/70">🟢 상승 / 🔴 하락 · 드래그·휠로 탐색</p>
       </div>
 
       {/* 컨트롤 (우상단): 필터 + 라벨 + 자동회전 */}

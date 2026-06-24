@@ -2,23 +2,31 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { GameChip } from "@/components/flagtale/GameChip";
 import { cn } from "@/lib/utils";
 
 const NAV = [
-  { href: "/map", label: "지도" },
+  { href: "/", label: "발견·경험" },
+  { href: "/map-tale", label: "플래그맵" },
+  { href: "/hub", label: "허브" },
+  { href: "/lab", label: "플래그테일랩" },
   { href: "/reports", label: "리포트" },
-  { href: "/diagnose", label: "지번 진단" },
-  { href: "/brand", label: "브랜드 진단" },
-  { href: "/contribute", label: "현장 리포트" },
-  { href: "/dashboard", label: "대시보드" },
-  { href: "/data", label: "데이터 출처" },
-  { href: "/methodology", label: "방법론" },
-  { href: "/pricing", label: "가격" },
+  { href: "/diagnose", label: "진단" },
 ];
 
 export function SiteHeader() {
   const pathname = usePathname();
   const onMap = pathname === "/map";
+  const [email, setEmail] = useState<string | null>(null);
+  useEffect(() => {
+    const supabase = createClient();
+    if (!supabase) return;
+    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+    const { data } = supabase.auth.onAuthStateChange((_e, session) => setEmail(session?.user?.email ?? null));
+    return () => data.subscription.unsubscribe();
+  }, []);
 
   return (
     <header
@@ -31,13 +39,16 @@ export function SiteHeader() {
     >
       <div className="mx-auto flex h-full max-w-[1400px] items-center gap-6 px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2.5">
-          <span className="grid h-7 w-7 place-items-center rounded-md bg-gradient-to-br from-blue to-amber text-[13px] font-black text-white">
-            K
+          <span
+            className="grid h-8 w-8 place-items-center rounded-[10px] bg-amber font-display text-[15px] font-extrabold text-onaccent"
+            style={{ transform: "rotate(-4deg)" }}
+          >
+            F
           </span>
-          <span className="text-[15px] font-extrabold tracking-tight">
-            KLAI<span className="text-blue-l"> 매력도</span>
+          <span className="text-[16px] font-black tracking-tight">
+            Flag<span className="text-blue-l">tale</span>
           </span>
-          <span className="hidden text-[11px] text-muted2 sm:inline">· 동네 매력도 지도·진단</span>
+          <span className="hidden text-[11px] text-muted2 sm:inline">· 가장 로컬다운 이야기로 시작하는 여행</span>
         </Link>
 
         <nav className="ml-2 hidden items-center gap-1 md:flex">
@@ -59,17 +70,23 @@ export function SiteHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
-          <Link
-            href="/auth"
-            className="rounded-md px-3 py-1.5 text-[13.5px] font-medium text-muted hover:text-ink"
-          >
-            로그인
-          </Link>
+          <GameChip />
+          {email ? (
+            <Link href="/account" title={email} className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[13.5px] font-medium text-muted hover:text-ink">
+              <span className="grid h-6 w-6 place-items-center rounded-full bg-amber/25 text-[11px] font-extrabold text-blue-l">{(email[0] ?? "U").toUpperCase()}</span>
+              <span className="hidden sm:inline">내 계정</span>
+            </Link>
+          ) : (
+            <Link href="/auth" className="rounded-md px-3 py-1.5 text-[13.5px] font-medium text-muted hover:text-ink">로그인</Link>
+          )}
           <Link
             href="/diagnose"
-            className="btn-glow rounded-lg bg-amber px-3.5 py-1.5 text-[13.5px] font-bold text-onaccent hover:bg-[#65a30d]"
+            className={cn(
+              "rounded-full px-4 py-1.5 text-[13.5px] font-extrabold transition-transform hover:scale-[1.03]",
+              onMap ? "btn-glow bg-amber text-onaccent" : "bg-ink text-white"
+            )}
           >
-            지번 진단
+            지번 진단 →
           </Link>
         </div>
       </div>

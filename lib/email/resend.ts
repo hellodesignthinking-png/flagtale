@@ -10,7 +10,7 @@ export function getResend() {
 
 export async function sendWeeklyReport(report: Report, recipients: string[]) {
   const resend = getResend();
-  const from = process.env.RESEND_FROM ?? "KLAI <noreply@klai.local>";
+  const from = process.env.RESEND_FROM ?? "Flagtale Lab <noreply@flagtale.local>";
   const html = `
     <div style="font-family:Pretendard,system-ui,sans-serif;background:#0b1b30;color:#eaf1fa;padding:24px;border-radius:12px">
       <div style="color:#d4861e;font-weight:700;letter-spacing:.1em;font-size:12px">FLAGTALE WEEKLY</div>
@@ -25,7 +25,7 @@ export async function sendWeeklyReport(report: Report, recipients: string[]) {
   const { data, error } = await resend.emails.send({
     from,
     to: recipients,
-    subject: `[KLAI] ${report.title}`,
+    subject: `[Flagtale Lab] ${report.title}`,
     html,
   });
   if (error) return { ok: false, error: String(error) };

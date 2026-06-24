@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import { MapboxOverlay } from "@deck.gl/mapbox";
-import { GeoJsonLayer, PolygonLayer, ScatterplotLayer } from "@deck.gl/layers";
+import { GeoJsonLayer, PolygonLayer, ScatterplotLayer, TextLayer } from "@deck.gl/layers";
 import { AmbientLight, DirectionalLight, LightingEffect, type Layer } from "@deck.gl/core";
 import "maplibre-gl/dist/maplibre-gl.css";
 
@@ -40,6 +40,7 @@ export interface MapHighlights {
   decline?: { admCd2: string; name: string; sigungu?: string; klai: number; grade: string; momentum: number };
   hotspots?: { admCd2: string; name: string; sigungu?: string; lng: number; lat: number; momentum: number; klai: number; grade: string }[];
   count?: number;
+  localPois?: { name: string; lat: number; lng: number; color: [number, number, number]; kind: string; sub: string }[];
 }
 
 interface HoverInfo {
@@ -90,6 +91,7 @@ export function MapExplorer({ highlights }: { highlights: MapHighlights }) {
   const [is3D, setIs3D] = useState(true);
   const [zoom, setZoom] = useState(INITIAL_VIEW.zoom);
   const [neon, setNeon] = useState(false);
+  const [showLocal, setShowLocal] = useState(true); // Flagtale 로컬 콘텐츠 포인트 표시
   const [tourLabel, setTourLabel] = useState<string | null>(null);
   const tourRef = useRef({ cancel: false });
   const [detail, setDetail] = useState<DetailData | null>(null);
@@ -102,8 +104,14 @@ export function MapExplorer({ highlights }: { highlights: MapHighlights }) {
     data?: { jibun: string; road: string; pnu: string; bjdong: string; admName: string; admCd: string };
   } | null>(null);
   const detailTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reverseAbort = useRef<AbortController | null>(null);
+  const detailAbort = useRef<AbortController | null>(null);
+  const [mobileLayer, setMobileLayer] = useState(false); // 모바일 레이어/범례 시트
 
   const { layer, periodIndex, periods, selected, hovered, setPeriods, select, setHovered } = useMapStore();
+
+  // 모바일: 레이어 선택 시 시트 자동 닫기 (지도 바로 확인)
+  useEffect(() => { setMobileLayer(false); }, [layer]);
 
   // 줌이 깊어질수록 높이 스케일을 줄여 화면상 막대 높이를 ~일정하게 유지
   const elevationScale = useMemo(() => 1100 * Math.pow(2, INITIAL_VIEW.zoom - zoom), [zoom]);
@@ -218,14 +226,19 @@ export function MapExplorer({ highlights }: { highlights: MapHighlights }) {
       const { lng, lat } = e.lngLat;
       const x = e.point.x,
         y = e.point.y;
+      reverseAbort.current?.abort();
+      const ac = new AbortController();
+      reverseAbort.current = ac;
       setParcel({ x, y, loading: true });
       try {
-        const r = await fetch(`/api/reverse?lng=${lng.toFixed(6)}&lat=${lat.toFixed(6)}`);
+        const r = await fetch(`/api/reverse?lng=${lng.toFixed(6)}&lat=${lat.toFixed(6)}`, { signal: ac.signal });
+        if (ac.signal.aborted) return;
         if (!r.ok) return setParcel(null);
         const data = await r.json();
+        if (ac.signal.aborted) return;
         setParcel({ x, y, data });
       } catch {
-        setParcel(null);
+        if (!ac.signal.aborted) setParcel(null);
       }
     });
     map.on("movestart", () => setParcel(null)); // 이동/확대 시 팝업 정리
@@ -241,12 +254,17 @@ export function MapExplorer({ highlights }: { highlights: MapHighlights }) {
         }
         const b = map.getBounds();
         const bbox = `${b.getWest().toFixed(5)},${b.getSouth().toFixed(5)},${b.getEast().toFixed(5)},${b.getNorth().toFixed(5)}`;
+        detailAbort.current?.abort();
+        const ac = new AbortController();
+        detailAbort.current = ac;
         try {
-          const r = await fetch(`/api/detail?bbox=${bbox}`);
+          const r = await fetch(`/api/detail?bbox=${bbox}`, { signal: ac.signal });
+          if (ac.signal.aborted) return;
           const d = (await r.json()) as DetailData;
+          if (ac.signal.aborted) return;
           setDetail(d.tooWide ? null : d);
         } catch {
-          /* noop */
+          /* noop (abort 포함) */
         }
       }, 220);
     };
@@ -496,8 +514,59 @@ export function MapExplorer({ highlights }: { highlights: MapHighlights }) {
       );
     }
 
+    // ── Flagtale 로컬 콘텐츠(스팟·스테이·거점) 포인트 + 라벨 — 전국지도 위에 ──
+    const localPois = highlights.localPois;
+    if (showLocal && localPois?.length && !detailActive) {
+      const z = is3D ? 1400 : 0;
+      layers.push(
+        new ScatterplotLayer({
+          id: "flagtale-pois",
+          data: localPois,
+          pickable: true,
+          stroked: true,
+          filled: true,
+          radiusUnits: "pixels",
+          radiusMinPixels: 4.5,
+          radiusMaxPixels: 10,
+          getPosition: (d) => [(d as { lng: number }).lng, (d as { lat: number }).lat, z],
+          getRadius: 7,
+          getFillColor: (d) => {
+            const c = (d as { color: [number, number, number] }).color;
+            return [c[0], c[1], c[2], 245];
+          },
+          getLineColor: [255, 255, 255, 235],
+          lineWidthMinPixels: 1.4,
+          updateTriggers: { getPosition: [is3D] },
+          onHover: (info) => {
+            const o = info.object as { name: string; sub: string; color: number[] } | undefined;
+            if (o && info.x != null) setPoiHover({ x: info.x, y: info.y, name: o.name, label: o.sub, metric: -1, color: o.color });
+            else setPoiHover((p) => (p && p.metric === -1 ? null : p));
+          },
+        })
+      );
+      layers.push(
+        new TextLayer({
+          id: "flagtale-labels",
+          data: localPois,
+          pickable: false,
+          getPosition: (d) => [(d as { lng: number }).lng, (d as { lat: number }).lat, z],
+          getText: (d) => (d as { name: string }).name,
+          getSize: 11,
+          getColor: [255, 255, 255, 235],
+          getTextAnchor: "middle",
+          getAlignmentBaseline: "bottom",
+          getPixelOffset: [0, -11],
+          fontWeight: 700,
+          background: true,
+          getBackgroundColor: [13, 43, 94, 210],
+          backgroundPadding: [5, 2],
+          updateTriggers: { getPosition: [is3D] },
+        })
+      );
+    }
+
     overlay.setProps({ layers, effects: neon ? [] : [LIGHTING] });
-  }, [layer, periodIndex, selected, hovered, pulse, mapReady, alertActive, features, data, is3D, neon, elevationScale, detail, select, setHovered]);
+  }, [layer, periodIndex, selected, hovered, pulse, mapReady, alertActive, features, data, is3D, neon, elevationScale, detail, select, setHovered, showLocal, highlights.localPois]);
 
   // 3D 토글 → 지도 틸트 전환 (투어 중엔 투어가 카메라 제어)
   useEffect(() => {
@@ -637,10 +706,33 @@ export function MapExplorer({ highlights }: { highlights: MapHighlights }) {
         </div>
       )}
 
-      {/* 좌상단: 레이어 컨트롤 */}
+      {/* 좌상단: 레이어 컨트롤 (데스크톱) */}
       <div className="absolute left-3 top-3 z-10 hidden sm:block">
         <LayerControl />
       </div>
+
+      {/* 모바일: 레이어 FAB + 바텀시트(레이어+범례) */}
+      <button
+        onClick={() => setMobileLayer(true)}
+        className="klai-panel absolute left-3 top-3 z-10 flex items-center gap-1.5 px-3 py-2 text-[13px] font-extrabold text-ink shadow-lg sm:hidden"
+      >
+        🎨 레이어 · 범례
+      </button>
+      {mobileLayer && (
+        <div className="absolute inset-0 z-30 sm:hidden" onClick={() => setMobileLayer(false)}>
+          <div className="absolute inset-0 bg-black/45" />
+          <div className="ft-panel-in absolute inset-x-0 bottom-0 max-h-[82%] overflow-y-auto rounded-t-[20px] bg-card p-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-3 flex items-center justify-between">
+              <span className="font-display text-[15px] font-black text-ink">🎨 레이어 · 범례</span>
+              <button onClick={() => setMobileLayer(false)} className="grid h-8 w-8 place-items-center rounded-full bg-card2 text-[13px] text-ink hover:bg-line" aria-label="닫기">✕</button>
+            </div>
+            <div className="flex flex-col items-center gap-3">
+              <LayerControl />
+              <Legend layer={layer} />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 우상단: 검색 + 권역 프리셋 */}
       <div className="absolute right-3 top-3 z-10 flex flex-col items-end gap-2">
@@ -657,7 +749,7 @@ export function MapExplorer({ highlights }: { highlights: MapHighlights }) {
           ))}
         </div>
         {/* 2D / 3D · 네온 · 투어 */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <div className="klai-panel flex items-center gap-0.5 p-1">
             {([
               ["2D", false],
@@ -700,6 +792,16 @@ export function MapExplorer({ highlights }: { highlights: MapHighlights }) {
           >
             🔥 핫스팟
           </button>
+          {(highlights.localPois?.length ?? 0) > 0 && (
+            <button
+              onClick={() => setShowLocal((v) => !v)}
+              title="발견·플래그맵의 로컬 콘텐츠(스팟·스테이·거점) 표시"
+              className={`klai-panel px-3 py-1.5 text-[12px] font-bold transition-colors ${showLocal ? "text-blue-l" : "text-muted hover:text-ink"}`}
+              style={showLocal ? { boxShadow: "0 0 0 1px color-mix(in srgb, var(--blue-l) 50%, transparent)" } : undefined}
+            >
+              🚩 로컬 콘텐츠
+            </button>
+          )}
         </div>
       </div>
 
@@ -839,7 +941,7 @@ export function MapExplorer({ highlights }: { highlights: MapHighlights }) {
         <div className="pointer-events-none absolute inset-0 z-20 grid place-items-center p-4">
           <div className="klai-panel pointer-events-auto max-w-lg animate-fade-in p-6 sm:p-8">
             <div className="flex items-center justify-between">
-              <div className="klai-eyebrow">K-Local Attractiveness Index</div>
+              <div className="klai-eyebrow">플래그테일랩 · 매력도 지수(KLAI)</div>
               <ProvisionalBadge />
             </div>
             <h1 className="mt-3 text-2xl font-black leading-tight sm:text-3xl">
@@ -851,14 +953,14 @@ export function MapExplorer({ highlights }: { highlights: MapHighlights }) {
               색칠하고, <b className="text-ink">시간 재생</b>으로 변화를 보여준다. 인구 흐름·공공예산까지.
             </p>
             <div className="mt-4 grid grid-cols-3 gap-2">
-              <KpiMini label="상승 모멘텀" tone="blue" name={highlights.riser?.name} sub={highlights.riser?.sigungu} value={`+${highlights.riser?.momentum}`} />
-              <KpiMini label="젠트리 경보" tone="warn" name={highlights.gentri?.name} sub={highlights.gentri?.sigungu} value={`${highlights.gentri?.stage}단계`} />
-              <KpiMini label="소멸 진입" tone="amber" name={highlights.decline?.name} sub={highlights.decline?.sigungu} value={`${highlights.decline?.momentum}`} />
+              <KpiMini label="상승 모멘텀" tone="blue" name={highlights.riser?.name} sub={highlights.riser?.sigungu} value={highlights.riser ? `+${highlights.riser.momentum}` : undefined} />
+              <KpiMini label="젠트리 경보" tone="warn" name={highlights.gentri?.name} sub={highlights.gentri?.sigungu} value={highlights.gentri ? `${highlights.gentri.stage}단계` : undefined} />
+              <KpiMini label="소멸 진입" tone="amber" name={highlights.decline?.name} sub={highlights.decline?.sigungu} value={highlights.decline ? `${highlights.decline.momentum}` : undefined} />
             </div>
             <div className="mt-5 flex items-center gap-2">
               <button
                 onClick={() => setIntroOpen(false)}
-                className="rounded-lg bg-blue px-4 py-2 text-sm font-bold text-white hover:bg-[#65a30d]"
+                className="rounded-lg bg-blue px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90"
               >
                 지도 탐색 시작 →
               </button>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PageShell } from "@/components/page-shell";
 import { Button, Pill } from "@/components/ui";
+import { FREE_MODE } from "@/lib/tier";
 
 export const metadata: Metadata = { title: "가격" };
 
@@ -12,7 +13,7 @@ const TIERS = [
     desc: "시민·언론",
     icon: "🗺️",
     accent: "#4B9CD3",
-    features: ["지도 탐색 · 9개 레이어", "동 요약 (무료)", "Flagtale Weekly 웹 열람"],
+    features: ["지도 탐색 · 플래그맵 · 9개 레이어", "동 요약 · KLAI·등급·4축 레이더", "Flagtale Weekly 웹 열람"],
     cta: { label: "지도 탐색", href: "/" },
     highlight: false,
   },
@@ -34,7 +35,7 @@ const TIERS = [
     desc: "개인·소상공인",
     icon: "⭐",
     accent: "#1E7A8C",
-    features: ["무제한 진단", "주간 PDF 구독", "관심 동 알림"],
+    features: ["📊 시그널 분석 (선행/후행 패턴)", "🎯 레버리지 전략 처방", "🎨 행정동 choropleth 색칠", "무제한 진단 · 주간 PDF · 알림"],
     cta: { label: "구독 시작", href: "/auth" },
     highlight: false,
   },
@@ -45,7 +46,7 @@ const TIERS = [
     desc: "지자체·AMC·VC·프랜차이즈",
     icon: "🏛️",
     accent: "#1E5FA8",
-    features: ["대시보드 · 경보 인박스", "API · CSV · 애뉴얼", "What-if 정책 ROI"],
+    features: ["🏛️ 기관 대시보드 · 경보 인박스", "🔌 데이터 API (키 발급·검증)", "CSV · 애뉴얼 · What-if 정책 ROI"],
     cta: { label: "대시보드 보기", href: "/dashboard" },
     highlight: false,
   },
@@ -56,20 +57,27 @@ export default function PricingPage() {
     <PageShell>
       <div className="mb-8 text-center">
         <span className="klai-eyebrow">Pricing</span>
-        <h1 className="mt-1 text-3xl font-black sm:text-4xl">티어 · 과금</h1>
+        <h1 className="mt-1 font-display text-[clamp(28px,4.4vw,40px)] font-black tracking-[-0.03em]">티어 · 과금</h1>
         <p className="mx-auto mt-2 max-w-xl text-[14px] text-muted">
           공개 등급은 무료, 정밀 진단은 결제·기관 권한 뒤로 (데이터 윤리 · 스펙 §15). 결제는 PortOne v2 · 카카오페이/토스 (현재 목업).
         </p>
       </div>
 
+      {FREE_MODE && (
+        <div className="mx-auto mb-6 max-w-2xl rounded-[16px] border-[1.5px] border-amber bg-amber/10 px-5 py-4 text-center">
+          <div className="font-display text-[15px] font-black text-ink">🎉 베타 — 현재 <span className="hl-mark">전 기능 무료 공개</span></div>
+          <p className="mt-1 text-[12.5px] text-muted">시그널·전략·choropleth·대시보드·API까지 모두 무료로 열려 있습니다. 아래 등급은 추후 유료 전환 예정 로드맵입니다.</p>
+        </div>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {TIERS.map((t) => (
           <div
             key={t.name}
-            className="klai-panel relative flex flex-col overflow-hidden p-5"
+            className="klai-panel relative flex flex-col overflow-hidden rounded-[20px] border-[1.5px] border-line p-5"
             style={
               t.highlight
-                ? { borderColor: "var(--amber)", boxShadow: "0 0 0 1px var(--amber), 0 8px 30px -8px color-mix(in srgb, var(--amber) 45%, transparent)" }
+                ? { borderColor: "var(--amber)", boxShadow: "0 0 0 1.5px var(--amber), 0 10px 34px -8px color-mix(in srgb, var(--amber) 50%, transparent)" }
                 : undefined
             }
           >
@@ -86,7 +94,7 @@ export default function PricingPage() {
               </span>
               {t.highlight && <Pill tone="amber">인기</Pill>}
             </div>
-            <h2 className="mt-3 text-lg font-extrabold">{t.name}</h2>
+            <h2 className="mt-3 font-display text-lg font-black tracking-[-0.03em]">{t.name}</h2>
             <div className="mt-1 text-[12px] text-muted2">{t.desc}</div>
             <div className="mt-3 flex items-baseline gap-1">
               <span className="text-3xl font-black" style={{ color: t.highlight ? "var(--amber)" : "var(--ink)" }}>

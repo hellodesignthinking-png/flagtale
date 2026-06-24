@@ -50,32 +50,32 @@
 
 /* ── 라이트 에디토리얼 (콘텐츠 페이지) — 공간디자인페어 화이트 캔버스 ── */
 .theme-light {
-  /* ── careet 룩 (라이트/콘텐츠) — 화이트 + zinc + 라임 강조 ── */
+  /* ── careet 룩 v2 (Claude Design 고도화) — 화이트 + 잉크블랙 + 샤르트뢰즈 ── */
   --navy: #ffffff;
   --navy2: #fafafa;
   --card: #ffffff;
-  --card2: #f5f6f3;   /* 라임 기운 살짝 도는 뉴트럴 */
-  --line: #e6e7e2;
+  --card2: #f5f6f0;   /* 살짝 따뜻한 뉴트럴 카드 */
+  --line: #ececE6;    /* 1.5px 보더 */
   --blue: #3f6212;    /* 다크 프라이머리(lime-800, 흰 텍스트 가독) */
   --blue-l: #4d7c0f;  /* 링크·텍스트 강조(lime-700, 화이트 위 가독) */
-  --amber: #84cc16;   /* 강조 채움(lime-500) */
-  --amber-d: #65a30d; /* hover(lime-600) */
-  --on-accent: #1a2e05; /* 라임 위 텍스트(다크) */
-  --accent-bright: #a3e635; /* 비비드 라임(형광·배지) */
+  --amber: #d9f21e;   /* 강조 채움(careet 샤르트뢰즈) */
+  --amber-d: #c4f000; /* hover(진한 샤르트뢰즈) */
+  --on-accent: #1c2b02; /* 샤르트뢰즈 위 텍스트(다크 그린블랙) */
+  --accent-bright: #d9f21e; /* 형광펜·배지(악센트와 동일) */
   --green: #059669;   /* emerald 긍정 */
   --green-soft: #34d399;
-  --ink: #18181b;     /* zinc-900 */
-  --muted: #52525b;   /* zinc-600 */
-  --muted2: #a1a1aa;  /* zinc-400 */
+  --ink: #131316;     /* 잉크 블랙(다크 필 버튼 겸용) */
+  --muted: #57575f;
+  --muted2: #9a9aa3;
   --warn: #e11d48;    /* rose */
   /* 불투명도 수정자용 RGB 채널 (라이트) */
   --navy-rgb: 255 255 255;
   --navy2-rgb: 250 250 250;
-  --card2-rgb: 245 246 243;
-  --line-rgb: 230 231 226;
+  --card2-rgb: 245 246 240;
+  --line-rgb: 236 236 230;
   --blue-rgb: 63 98 18;
-  --amber-rgb: 132 204 22;
-  --accent-bright-rgb: 163 230 53;
+  --amber-rgb: 217 242 30;
+  --accent-bright-rgb: 217 242 30;
   --warn-rgb: 225 29 72;
 }
 
@@ -155,9 +155,9 @@ h3 {
     font-weight: 700;
     padding: 3px 10px;
     border-radius: 999px;
-    background: rgba(132, 204, 22, 0.16);
+    background: rgba(217, 242, 30, 0.18);
     color: var(--blue-l);
-    border: 1px solid rgba(132, 204, 22, 0.4);
+    border: 1px solid rgba(132, 204, 22, 0.42);
   }
   .klai-tag-sample {
     background: rgba(146, 168, 198, 0.14);
@@ -472,9 +472,9 @@ h3 {
 }
 /* 형광펜 강조(careet 시그니처) */
 .hl-mark {
-  background-image: linear-gradient(transparent 54%, color-mix(in srgb, var(--accent-bright) 65%, transparent) 0);
-  padding: 0 2px;
-  border-radius: 2px;
+  background-image: linear-gradient(transparent 50%, color-mix(in srgb, var(--accent-bright) 82%, transparent) 0);
+  padding: 0 5px;
+  border-radius: 3px;
 }
 /* 상태 배지(유행중·뜨는중·위기 등) */
 .status-pill {
@@ -507,6 +507,16 @@ h3 {
 .marquee-mask {
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
   mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+}
+
+/* 실시간 급상승 티커(careet 시그니처 다크 바) */
+.ticker-bar {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
+}
+.ticker-track {
+  animation: klai-marquee 26s linear infinite;
+  will-change: transform;
 }
 
 /* 스크롤 진입(페이드+업). JS가 .reveal-armed 부여 시에만 숨김 → JS/IO 실패해도 콘텐츠는 항상 보임(graceful). */
@@ -545,11 +555,24 @@ h3 {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .marquee-track {
+  .marquee-track,
+  .ticker-track {
     animation: none;
   }
   .reveal {
     opacity: 1;
     transform: none;
   }
+  .ft-panel-in {
+    animation: none;
+  }
+}
+
+/* 지도 상세 패널·모달 등장 */
+@keyframes ftPanelIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.ft-panel-in {
+  animation: ftPanelIn 0.2s cubic-bezier(0.2, 0.7, 0.3, 1);
 }

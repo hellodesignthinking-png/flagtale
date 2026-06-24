@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>KLAI 매력도 — 랜딩 디자인 코드 (편집용)</title>
+
+<!-- ════════════════════════════════════════════════════════════════
+  KLAI 매력도 · 랜딩페이지 디자인 코드 (자체 완결 · 편집용)
+  · 프레임워크/지도/데이터 의존성 없음 — 순수 HTML+CSS+목업
+  · 색·타이포·컴포넌트는 globals.css(theme-light)에서 그대로 추출
+  · 3D 지도는 실제 maplibre 대신 정적 SVG 목업으로 대체(디자인 표현용)
+  · 클로드 디자인/아티팩트에 붙여넣고 토큰·레이아웃·컴포넌트를 바로 수정하세요
+  ════════════════════════════════════════════════════════════════ -->
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&display=swap" rel="stylesheet" />
+
+<style>
+/* ─────────────────────────────────────────────────────────
+   1. 디자인 토큰 (ZeroSite × careet 라임 · LIGHT 테마)
+   ───────────────────────────────────────────────────────── */
+:root {
+  --navy: #ffffff;        /* 페이지 배경 */
+  --navy2: #fafafa;
+  --card: #ffffff;
+  --card2: #f5f6f3;       /* 라임 기운 도는 뉴트럴 카드 */
+  --line: #e6e7e2;        /* 보더 */
+  --blue: #3f6212;        /* 프라이머리(lime-800, 흰 텍스트) */
+  --blue-l: #4d7c0f;      /* 링크·텍스트 강조(lime-700, 화이트 위 가독) */
+  --amber: #84cc16;       /* 강조 채움(lime-500) — 라임은 '채움 전용' */
+  --amber-d: #65a30d;     /* hover(lime-600) */
+  --on-accent: #1a2e05;   /* 라임 채움 위 텍스트(다크) */
+  --accent-bright: #a3e635;/* 형광 라임(배지·형광펜) */
+  --green: #059669;       /* 긍정(emerald) */
+  --ink: #18181b;         /* 본문(zinc-900) */
+  --muted: #52525b;       /* 보조(zinc-600) */
+  --muted2: #a1a1aa;      /* 흐림(zinc-400) */
+  --warn: #e11d48;        /* 경고·하락(rose) */
+  /* 등급 스케일 (S→E) */
+  --gS: #0f6e5c; --gA: #1e7a8c; --gB: #3e9aa8; --gC: #e2a33a; --gD: #d2691e; --gE: #a23a2a;
+  --font: "Pretendard Variable", "Pretendard", system-ui, -apple-system, sans-serif;
+  --font-display: "Poppins", "Pretendard Variable", "Pretendard", system-ui, sans-serif;
+  --maxw: 1152px;
+}
+
+/* ─────────────────────────────────────────────────────────
+   2. 베이스 & 타이포
+   ───────────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--navy); color: var(--ink);
+  font-family: var(--font); font-size: 15px; line-height: 1.55; -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3 { font-weight: 800; letter-spacing: -0.02em; margin: 0; }
+a { color: inherit; text-decoration: none; }
+img { display: block; max-width: 100%; }
+.wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* 유틸리티 (globals.css에서 추출) */
+.klai-eyebrow { font-family: var(--font-display); font-size: 12px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--blue-l); font-weight: 800; }
+.hl-mark { background-image: linear-gradient(transparent 54%, color-mix(in srgb, var(--accent-bright) 65%, transparent) 0); padding: 0 2px; border-radius: 2px; }
+.cat-tag { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; color: var(--blue-l); }
+.klai-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: rgba(132,204,22,.16); color: var(--blue-l); border: 1px solid rgba(132,204,22,.4); }
+.status-pill { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 800; padding: 3px 10px; border-radius: 999px; line-height: 1.4; }
+.lift { transition: transform .28s cubic-bezier(.16,1,.3,1), box-shadow .28s, border-color .28s; }
+.lift:hover { transform: translateY(-4px); box-shadow: 0 28px 60px -34px rgba(0,0,0,.25), 0 0 0 1px color-mix(in srgb, var(--blue-l) 42%, transparent); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-radius: 999px; font-weight: 800; cursor: pointer; border: 1px solid transparent; transition: box-shadow .2s, filter .2s, background .2s; }
+.btn-fill { background: var(--amber); color: var(--on-accent); }
+.btn-fill:hover { box-shadow: 0 10px 28px -10px color-mix(in srgb, var(--amber) 70%, transparent); filter: brightness(1.04); background: var(--amber-d); }
+.btn-ghost { background: var(--card2); color: var(--ink); border-color: var(--line); }
+.btn-ghost:hover { border-color: color-mix(in srgb, var(--blue-l) 50%, transparent); }
+.chip { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; background: rgba(0,0,0,.05); padding: 2px 10px; font-size: 11.5px; font-weight: 700; color: var(--muted); }
+.card { background: color-mix(in srgb, var(--card2) 40%, transparent); border: 1px solid var(--line); border-radius: 16px; }
+
+/* 데코 배경(은은한 라임 글로우) */
+.deco { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.deco::before { content:""; position:absolute; top:-10%; left:50%; width:60vw; height:50vh; transform:translateX(-50%); background: radial-gradient(circle, color-mix(in srgb, var(--accent-bright) 14%, transparent), transparent 70%); }
+
+/* 마퀴 */
+@keyframes marquee { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+.marquee-mask { -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); overflow: hidden; }
+.marquee-track { display: inline-flex; gap: 10px; white-space: nowrap; animation: marquee 30s linear infinite; }
+
+main { position: relative; z-index: 1; }
+section { padding: 40px 0; }
+.sec-head { display: flex; align-items: end; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.sec-head h2 { font-size: clamp(22px, 3vw, 27px); }
+.grid3 { display: grid; gap: 16px; grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 820px){ .grid3 { grid-template-columns: 1fr; } }
+
+/* ─────────────────────────────────────────────────────────
+   3. 헤더
+   ───────────────────────────────────────────────────────── */
+header.nav { position: sticky; top: 0; z-index: 30; background: color-mix(in srgb, var(--navy) 86%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.nav-inner { display: flex; align-items: center; gap: 22px; height: 56px; }
+.logo { display: flex; align-items: center; gap: 8px; font-weight: 800; }
+.logo .mk { width: 30px; height: 30px; border-radius: 8px; background: var(--amber); color: var(--on-accent); display: grid; place-items: center; font-family: var(--font-display); }
+.logo small { color: var(--muted2); font-weight: 600; font-size: 12px; }
+.nav-links { display: flex; gap: 18px; font-size: 14px; font-weight: 700; color: var(--muted); margin-left: 6px; }
+.nav-links a:hover { color: var(--ink); }
+.nav-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+@media (max-width: 900px){ .nav-links { display: none; } }
+</style>
+</head>
+
+<body class="theme-light">
+<div class="deco"></div>
+
+<!-- ══ 헤더 ══ -->
+<header class="nav">
+  <div class="wrap nav-inner">
+    <div class="logo"><span class="mk">K</span> KLAI <span style="color:var(--blue-l)">매력도</span> <small>· 동네 매력도 지도·진단</small></div>
+    <nav class="nav-links"><a>지도</a><a>리포트</a><a>지번 진단</a><a>브랜드 진단</a><a>대시보드</a><a>데이터 출처</a><a>방법론</a><a>가격</a></nav>
+    <div class="nav-right"><a style="font-weight:700">로그인</a><a class="btn btn-fill" style="padding:8px 16px;font-size:14px">지번 진단</a></div>
+  </div>
+</header>
+
+<main>
+<!-- ══ 1) 3D 라이브맵 히어로 (정적 SVG 목업) ══ -->
+<!-- 실제 구현은 maplibre 다크맵 + deck.gl ColumnLayer. 여기선 디자인 표현용 정적 SVG. -->
+<section style="padding:0; position:relative;">
+  <div style="position:relative; height:72vh; min-height:540px; width:100%; background:linear-gradient(160deg,#0b1c2e,#0d2b5e 60%,#0a1626); overflow:hidden; border-bottom:1px solid var(--line);">
+
+    <!-- 3D 컬럼 씬 (아이소메트릭 목업) -->
+    <svg viewBox="0 0 960 430" preserveAspectRatio="xMidYMid slice" style="position:absolute; inset:0; width:100%; height:100%; opacity:.9">
+      <defs>
+        <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#13233b"/><stop offset="1" stop-color="#0a1626"/></linearGradient>
+      </defs>
+      <!-- 아이소 격자 지면 -->
+      <polygon points="480,120 880,300 480,420 80,300" fill="url(#ground)" stroke="rgba(255,255,255,.07)"/>
+      <g stroke="rgba(255,255,255,.06)">
+        <line x1="280" y1="210" x2="680" y2="390"/><line x1="680" y1="210" x2="280" y2="390"/>
+        <line x1="180" y1="255" x2="580" y2="120" transform="translate(0,90)"/>
+      </g>
+      <!-- 컬럼들(초록=상승 / 로즈=하락), 높이=KLAI -->
+      <!-- 상승 -->
+      <g>
+        <polygon points="440,250 452,256 452,180 440,174" fill="#15803d"/><polygon points="452,256 464,250 464,174 452,180" fill="#16a34a"/><polygon points="440,174 452,180 464,174 452,168" fill="#34d399"/>
+        <polygon points="520,280 532,286 532,150 520,144" fill="#15803d"/><polygon points="532,286 544,280 544,144 532,150" fill="#16a34a"/><polygon points="520,144 532,150 544,144 532,138" fill="#34d399"/>
+        <polygon points="600,300 612,306 612,210 600,204" fill="#15803d"/><polygon points="612,306 624,300 624,204 612,210" fill="#16a34a"/><polygon points="600,204 612,210 624,204 612,198" fill="#34d399"/>
+        <polygon points="360,290 372,296 372,232 360,226" fill="#15803d"/><polygon points="372,296 384,290 384,226 372,232" fill="#16a34a"/><polygon points="360,226 372,232 384,226 372,220" fill="#34d399"/>
+      </g>
+      <!-- 하락 -->
+      <g>
+        <polygon points="300,265 312,271 312,238 300,232" fill="#be123c"/><polygon points="312,271 324,265 324,232 312,238" fill="#f43f5e"/><polygon points="300,232 312,238 324,232 312,226" fill="#fb7185"/>
+        <polygon points="670,320 682,326 682,295 670,289" fill="#be123c"/><polygon points="682,326 694,320 694,289 682,295" fill="#f43f5e"/><polygon points="670,289 682,295 694,289 682,283" fill="#fb7185"/>
+      </g>
+    </svg>
+
+    <!-- 타이틀 오버레이 (좌상단) -->
+    <div style="position:absolute; left:28px; top:28px; max-width:60%;">
+      <span class="klai-eyebrow" style="color:#9be15d">3D Live Map · 활성 · 위기</span>
+      <h2 style="margin-top:6px; font-size:clamp(24px,4vw,34px); color:#fff; line-height:1.15; text-shadow:0 2px 12px rgba(0,0,0,.3)">지금 <span style="color:#bef264">움직이는</span> 동네만,<br>지도 위 3D로</h2>
+      <p style="margin-top:6px; color:rgba(255,255,255,.7); font-size:13px">기둥 = KLAI · 🟢 상승 / 🔴 하락 · 드래그·휠로 탐색</p>
+    </div>
+
+    <!-- 컨트롤 (우상단) -->
+    <div style="position:absolute; right:24px; top:24px; display:flex; flex-wrap:wrap; gap:6px; justify-content:end;">
+      <button class="btn btn-fill" style="padding:6px 12px;font-size:12px">전체</button>
+      <button class="btn" style="padding:6px 12px;font-size:12px;background:rgba(13,43,94,.8);color:rgba(255,255,255,.8)">📈 상승</button>
+      <button class="btn" style="padding:6px 12px;font-size:12px;background:rgba(13,43,94,.8);color:rgba(255,255,255,.8)">📉 하락</button>
+      <button class="btn btn-fill" style="padding:6px 12px;font-size:12px">🏷 라벨</button>
+      <button class="btn" style="padding:6px 12px;font-size:12px;background:rgba(13,43,94,.8);color:rgba(255,255,255,.8)">↻ 자동회전</button>
+      <a class="btn btn-fill" style="padding:6px 12px;font-size:12px">전체 지도 →</a>
+    </div>
+
+    <!-- 동네 상세 패널 (우측) — 레이더 포함 -->
+    <div style="position:absolute; right:24px; bottom:24px; width:min(92vw,300px); background:rgba(13,43,94,.95); border:1px solid rgba(255,255,255,.1); border-radius:18px; padding:16px; box-shadow:0 24px 50px -20px rgba(0,0,0,.5); color:#fff;">
+      <div style="display:flex; justify-content:space-between; align-items:start">
+        <div><div style="font-size:11px;color:rgba(255,255,255,.6);font-weight:600">파주시</div><div style="font-size:17px;font-weight:800">파평면</div></div>
+        <span style="display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:var(--gB);font-weight:900">B</span>
+      </div>
+      <div style="margin-top:8px;display:flex;align-items:end;gap:8px"><span class="tnum" style="font-size:32px;font-weight:900;line-height:1">69.2</span><span style="padding-bottom:4px;font-size:12px;font-weight:800;color:#86efac">▲ 모멘텀 +8</span></div>
+      <!-- 4축 레이더 (또래 평균 점선 겹침) -->
+      <div style="margin-top:6px">
+        <svg viewBox="0 0 172 172" style="width:140px;height:140px;display:block;margin:0 auto">
+          <g fill="none" stroke="rgba(255,255,255,.14)"><circle cx="86" cy="86" r="12.5"/><circle cx="86" cy="86" r="25"/><circle cx="86" cy="86" r="37.5"/><circle cx="86" cy="86" r="50"/>
+            <line x1="86" y1="86" x2="86" y2="36"/><line x1="86" y1="86" x2="136" y2="86"/><line x1="86" y1="86" x2="86" y2="136"/><line x1="86" y1="86" x2="36" y2="86"/></g>
+          <polygon points="86,60 110,86 86,113 56,86" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1.5" stroke-dasharray="3 3"/>
+          <polygon points="86,59 119,86 86,113 53,86" fill="rgba(155,225,93,.26)" stroke="#9be15d" stroke-width="2"/>
+          <g fill="#cdd8ec" font-size="10.5" font-weight="800" text-anchor="middle">
+            <text x="86" y="22">인구 54</text><text x="150" y="86">상권 67</text><text x="86" y="152">공간 53</text><text x="22" y="86">인식 65</text></g>
+        </svg>
+        <div style="text-align:center;font-size:10px;color:rgba(255,255,255,.55);margin-top:-4px">━ 이 동네 · ┄ 같은 지역 평균</div>
+      </div>
+      <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px">
+        <span class="chip" style="background:rgba(255,255,255,.1);color:rgba(255,255,255,.85)">젠트리 1단계</span>
+        <span class="chip" style="background:rgba(255,255,255,.1);color:rgba(255,255,255,.85)">시장 활발</span>
+        <span class="chip" style="background:rgba(155,225,93,.18);color:#bef264">🏪 상권 성장 ↑</span>
+      </div>
+      <a class="btn btn-fill" style="margin-top:12px;width:100%;padding:9px">이 동네 지번 진단 →</a>
+    </div>
+
+    <!-- 범례 (좌하단) -->
+    <div style="position:absolute; left:24px; bottom:24px; display:flex; gap:12px; align-items:center; background:rgba(13,43,94,.8); border-radius:999px; padding:6px 14px; font-size:11px; font-weight:800; color:rgba(255,255,255,.85)">
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#22c55e;vertical-align:-1px"></span> 상승</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#f43f5e;vertical-align:-1px"></span> 하락</span>
+      <span style="color:rgba(255,255,255,.55)">기둥 높이 = KLAI</span>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 2) 요약 스탯 + 모멘텀 그래프 ══ -->
+<section class="wrap">
+  <div style="display:grid;gap:16px;grid-template-columns:1fr 1fr">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-content:center">
+      <div class="card" style="padding:18px;text-align:center"><div class="tnum" style="font-size:27px;font-weight:900;color:var(--blue-l)">3,554</div><div style="font-size:12px;color:var(--muted2);margin-top:4px">분석 행정동</div></div>
+      <div class="card" style="padding:18px;text-align:center"><div class="tnum" style="font-size:27px;font-weight:900;color:var(--blue-l)">13</div><div style="font-size:12px;color:var(--muted2);margin-top:4px">실데이터 소스</div></div>
+      <div class="card" style="padding:18px;text-align:center"><div class="tnum" style="font-size:27px;font-weight:900;color:var(--blue-l)">1,546</div><div style="font-size:12px;color:var(--muted2);margin-top:4px">상승 동네</div></div>
+      <div class="card" style="padding:18px;text-align:center"><div class="tnum" style="font-size:27px;font-weight:900;color:var(--warn)">1,349</div><div style="font-size:12px;color:var(--muted2);margin-top:4px">위기 동네</div></div>
+    </div>
+    <!-- 모멘텀 가로 막대 그래프 -->
+    <div class="card" style="padding:16px;background:color-mix(in srgb,var(--card2) 50%,transparent)">
+      <div style="display:flex;justify-content:space-between;margin-bottom:12px"><span style="font-size:13px;font-weight:800">이번 주 모멘텀 Top</span><span style="font-size:11px;font-weight:700;color:var(--muted2)">막대 클릭 = 상세</span></div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <!-- 막대 1행: 이름 / 막대 / 값 -->
+        <div style="display:flex;align-items:center;gap:8px"><span style="width:64px;font-size:12px;font-weight:600;color:var(--muted)">파평면</span><div style="flex:1;height:10px;border-radius:999px;background:rgba(0,0,0,.06);overflow:hidden"><div style="height:100%;width:100%;border-radius:999px;background:#16a34a"></div></div><span class="tnum" style="width:36px;text-align:right;font-size:12px;font-weight:800;color:var(--blue-l)">+8</span></div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="width:64px;font-size:12px;font-weight:600;color:var(--muted)">비산1동</span><div style="flex:1;height:10px;border-radius:999px;background:rgba(0,0,0,.06);overflow:hidden"><div style="height:100%;width:92%;border-radius:999px;background:#16a34a"></div></div><span class="tnum" style="width:36px;text-align:right;font-size:12px;font-weight:800;color:var(--blue-l)">+7.4</span></div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="width:64px;font-size:12px;font-weight:600;color:var(--muted)">서원동</span><div style="flex:1;height:10px;border-radius:999px;background:rgba(0,0,0,.06);overflow:hidden"><div style="height:100%;width:88%;border-radius:999px;background:#16a34a"></div></div><span class="tnum" style="width:36px;text-align:right;font-size:12px;font-weight:800;color:var(--blue-l)">+7.1</span></div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="width:64px;font-size:12px;font-weight:600;color:var(--muted)">지좌동</span><div style="flex:1;height:10px;border-radius:999px;background:rgba(0,0,0,.06);overflow:hidden"><div style="height:100%;width:74%;border-radius:999px;background:#f43f5e"></div></div><span class="tnum" style="width:36px;text-align:right;font-size:12px;font-weight:800;color:var(--warn)">-8.8</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 3) 인트로 + 매거진 피처드 카드 ══ -->
+<section class="wrap">
+  <div class="sec-head">
+    <div><span class="klai-eyebrow">Local Trend Intelligence</span><h1 style="margin-top:6px;font-size:clamp(27px,4vw,32px)">지금 전국에서 <span class="hl-mark">뜨는 동네</span>를 읽다</h1></div>
+    <a class="btn btn-ghost" style="padding:8px 16px;font-size:13px">지도 전체 탐색 →</a>
+  </div>
+  <!-- 피처드: 큰 카드 1 + 사이드 2 -->
+  <div style="display:grid;gap:16px;grid-template-columns:1.55fr 1fr">
+    <!-- 큰 기사 카드 -->
+    <a class="lift card" style="display:flex;flex-direction:column;overflow:hidden;cursor:pointer">
+      <!-- 커버: 실제는 CARTO 지도 타일. 여기선 지도풍 그라데이션 + 이유 핀 목업 -->
+      <div style="position:relative;aspect-ratio:16/9;background:linear-gradient(135deg,#cfe3c8,#dfe7df)">
+        <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 48%,rgba(0,0,0,.5))"></div>
+        <span class="status-pill" style="position:absolute;left:12px;top:12px;background:var(--amber);color:var(--on-accent)">📈 유행중 +8</span>
+        <span style="position:absolute;right:12px;top:12px;display:grid;place-items:center;width:28px;height:28px;border-radius:999px;background:rgba(0,0,0,.25);color:#fff;font-size:12px">🔖</span>
+        <!-- 이유 콜아웃 핀 (중앙) -->
+        <span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:999px;background:var(--amber);box-shadow:0 0 0 3px #fff"></span>
+        <span style="position:absolute;left:50%;top:calc(50% - 26px);transform:translateX(-50%);white-space:nowrap;background:#fff;color:#0D2B5E;font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px;box-shadow:0 4px 10px rgba(0,0,0,.15)">🏪 상권 성장 ↑</span>
+        <span style="position:absolute;left:16px;bottom:12px;color:#fff;font-weight:900;font-size:48px;line-height:1" class="tnum">69.2 <span style="font-size:12px;opacity:.9">KLAI·B</span></span>
+      </div>
+      <div style="padding:16px;flex:1;display:flex;flex-direction:column">
+        <div class="cat-tag">파주시 · 농산어촌</div>
+        <h3 style="margin-top:4px;font-size:24px">파평면, 저평가 구간에서 뜨는 중</h3>
+        <p style="margin-top:8px;font-size:13.5px;color:var(--muted)">농산어촌, 최근 분기 모멘텀 +8. 검색·상권·인식이 함께 오르며 상위권으로 올라서는 중.</p>
+        <div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap"><span class="chip">모멘텀 +8</span><span class="chip">시장 활발</span><span class="chip">젠트리 1단계</span></div>
+        <div style="margin-top:auto;padding-top:12px;font-size:11.5px;color:var(--muted2)"><b style="color:var(--muted)">파평면</b> · 이번 주 · Flagtale Weekly</div>
+      </div>
+    </a>
+    <!-- 사이드 카드 2개 -->
+    <div style="display:grid;grid-template-rows:1fr 1fr;gap:16px">
+      <a class="lift card" style="display:flex;flex-direction:column;overflow:hidden;cursor:pointer">
+        <div style="position:relative;aspect-ratio:16/9;background:linear-gradient(135deg,#d7e6cf,#e6ece2)">
+          <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 48%,rgba(0,0,0,.5))"></div>
+          <span class="status-pill" style="position:absolute;left:12px;top:12px;background:var(--amber);color:var(--on-accent)">📈 유행중 +7.4</span>
+          <span style="position:absolute;left:16px;bottom:10px;color:#fff;font-weight:900;font-size:34px;line-height:1" class="tnum">71.6 <span style="font-size:11px;opacity:.9">KLAI·A</span></span>
+        </div>
+        <div style="padding:14px"><div class="cat-tag">안양시동안구</div><h3 style="margin-top:3px;font-size:17px">비산1동, 검색·인식이 먼저 움직였다</h3><div style="margin-top:8px;font-size:11.5px;color:var(--muted2)">비산1동 · 이번 주</div></div>
+      </a>
+      <a class="lift card" style="display:flex;flex-direction:column;overflow:hidden;cursor:pointer">
+        <div style="position:relative;aspect-ratio:16/9;background:linear-gradient(135deg,#d2e6da,#e3ece6)">
+          <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 48%,rgba(0,0,0,.5))"></div>
+          <span class="status-pill" style="position:absolute;left:12px;top:12px;background:var(--amber);color:var(--on-accent)">📈 유행중 +7.1</span>
+          <span style="position:absolute;left:16px;bottom:10px;color:#fff;font-weight:900;font-size:34px;line-height:1" class="tnum">76.2 <span style="font-size:11px;opacity:.9">KLAI·A</span></span>
+        </div>
+        <div style="padding:14px"><div class="cat-tag">관악구</div><h3 style="margin-top:3px;font-size:17px">서원동, 저평가 구간에서 뜨는 중</h3><div style="margin-top:8px;font-size:11.5px;color:var(--muted2)">서원동 · 이번 주</div></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 4) 전국 동네 피드 (탭 필터) ══ -->
+<section class="wrap">
+  <div class="sec-head"><h2>🗂 전국 동네 피드</h2><span style="font-size:12px;font-weight:700;color:var(--muted2)">카테고리로 골라보기</span></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
+    <button class="btn btn-fill" style="padding:8px 16px;font-size:13px">전체 <span style="background:rgba(0,0,0,.15);border-radius:999px;padding:0 6px;font-size:11px;margin-left:4px">36</span></button>
+    <button class="btn btn-ghost" style="padding:8px 16px;font-size:13px">📈 뜨는 <span class="chip" style="padding:0 6px;margin-left:4px">14</span></button>
+    <button class="btn btn-ghost" style="padding:8px 16px;font-size:13px">📉 식는 <span class="chip" style="padding:0 6px;margin-left:4px">22</span></button>
+    <button class="btn btn-ghost" style="padding:8px 16px;font-size:13px">⚡ 젠트리 <span class="chip" style="padding:0 6px;margin-left:4px">21</span></button>
+  </div>
+  <div class="grid3" id="feedGrid">
+    <!-- 카드 1 (하락) -->
+    <a class="lift card" style="display:flex;flex-direction:column;overflow:hidden;cursor:pointer">
+      <div style="position:relative;aspect-ratio:16/9;background:linear-gradient(135deg,#e6ddd0,#ece4dc)">
+        <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 48%,rgba(0,0,0,.5))"></div>
+        <span class="status-pill" style="position:absolute;left:12px;top:12px;background:rgba(20,30,50,.6);color:#fff">📉 식는중 -8.8</span>
+        <span style="position:absolute;left:50%;top:calc(50% - 26px);transform:translateX(-50%);white-space:nowrap;background:#fff;color:#0D2B5E;font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px;box-shadow:0 4px 10px rgba(0,0,0,.15)">🧊 거래절벽</span>
+        <span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:999px;background:var(--warn);box-shadow:0 0 0 3px #fff"></span>
+        <span style="position:absolute;left:16px;bottom:10px;color:#fff;font-weight:900;font-size:34px;line-height:1" class="tnum">15.6 <span style="font-size:11px;opacity:.9">KLAI·E</span></span>
+      </div>
+      <div style="padding:14px"><div class="cat-tag">김천시</div><h3 style="margin-top:3px;font-size:17px">지좌동, 거래절벽 — 위기 경보</h3><div style="margin-top:8px;font-size:11.5px;color:var(--muted2)">지좌동 · 이번 주</div></div>
+    </a>
+    <!-- 카드 2 (상승) -->
+    <a class="lift card" style="display:flex;flex-direction:column;overflow:hidden;cursor:pointer">
+      <div style="position:relative;aspect-ratio:16/9;background:linear-gradient(135deg,#d3e6c9,#e3ecdd)">
+        <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 48%,rgba(0,0,0,.5))"></div>
+        <span class="status-pill" style="position:absolute;left:12px;top:12px;background:var(--amber);color:var(--on-accent)">📈 유행중 +7.1</span>
+        <span style="position:absolute;left:50%;top:calc(50% - 26px);transform:translateX(-50%);white-space:nowrap;background:#fff;color:#0D2B5E;font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px;box-shadow:0 4px 10px rgba(0,0,0,.15)">🔍 검색·미디어 ↑</span>
+        <span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:999px;background:var(--amber);box-shadow:0 0 0 3px #fff"></span>
+        <span style="position:absolute;left:16px;bottom:10px;color:#fff;font-weight:900;font-size:34px;line-height:1" class="tnum">76.2 <span style="font-size:11px;opacity:.9">KLAI·A</span></span>
+      </div>
+      <div style="padding:14px"><div class="cat-tag">관악구</div><h3 style="margin-top:3px;font-size:17px">서원동, 검색·인식이 먼저 움직였다</h3><div style="margin-top:8px;font-size:11.5px;color:var(--muted2)">서원동 · 이번 주</div></div>
+    </a>
+    <!-- 카드 3 (상승) -->
+    <a class="lift card" style="display:flex;flex-direction:column;overflow:hidden;cursor:pointer">
+      <div style="position:relative;aspect-ratio:16/9;background:linear-gradient(135deg,#cfe3c8,#e0e9da)">
+        <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 48%,rgba(0,0,0,.5))"></div>
+        <span class="status-pill" style="position:absolute;left:12px;top:12px;background:var(--amber);color:var(--on-accent)">📈 유행중 +7</span>
+        <span style="position:absolute;left:50%;top:calc(50% - 26px);transform:translateX(-50%);white-space:nowrap;background:#fff;color:#0D2B5E;font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px;box-shadow:0 4px 10px rgba(0,0,0,.15)">🏪 상권 성장 ↑</span>
+        <span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:999px;background:var(--amber);box-shadow:0 0 0 3px #fff"></span>
+        <span style="position:absolute;left:16px;bottom:10px;color:#fff;font-weight:900;font-size:34px;line-height:1" class="tnum">72.2 <span style="font-size:11px;opacity:.9">KLAI·A</span></span>
+      </div>
+      <div style="padding:14px"><div class="cat-tag">금천구</div><h3 style="margin-top:3px;font-size:17px">시흥2동, 저평가 구간에서 뜨는 중</h3><div style="margin-top:8px;font-size:11.5px;color:var(--muted2)">시흥2동 · 이번 주</div></div>
+    </a>
+  </div>
+  <p style="text-align:center;margin-top:14px;font-size:12px;color:var(--muted2)">※ 실제 카드 커버는 CARTO 지도 타일(동 중심 2×2) — 여기선 지도풍 그라데이션 목업</p>
+</section>
+
+<!-- ══ 5) 뉴스·블로그로 뜨는 로컬 동네 (큐레이션 + 라이브) ══ -->
+<section class="wrap">
+  <div class="sec-head"><div><span class="klai-eyebrow">News · Blog · Social Buzz</span><h2 style="margin-top:6px">📰 지금 뜨는 <span class="hl-mark">로컬 동네</span></h2></div><span class="klai-tag">🟢 네이버 실시간 · 검색 급등順 · 클릭=상세</span></div>
+  <div class="grid3">
+    <!-- 로컬 카드: 카테고리 배지 + 라이브 지표 + 헤드라인 -->
+    <button class="lift card" style="display:flex;flex-direction:column;padding:20px;text-align:left;cursor:pointer">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span style="border-radius:999px;padding:4px 10px;font-size:11px;font-weight:800;background:var(--amber);color:var(--on-accent)">핫플·젠트리</span><span style="font-size:11.5px;font-weight:600;color:var(--muted2)">서울 성동구</span></div>
+      <h3 style="margin-top:10px;font-size:19px">성수동</h3>
+      <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;font-size:11.5px;font-weight:700"><span style="color:var(--muted)">검색 41</span><span style="color:var(--warn)">▼27 <span style="color:var(--muted2);font-weight:600">1년</span></span><span style="color:var(--muted2)">·</span><span style="color:var(--muted)">📰 72,753건</span><span class="chip" style="background:rgba(22,163,74,.15);color:var(--blue-l)">긍정</span></div>
+      <div style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;gap:6px;font-size:12px;color:var(--muted)"><span style="margin-top:5px;width:6px;height:6px;border-radius:999px;background:#16a34a;flex:none"></span><span>성수 “픽베이크” 에그타르트 팝업 후기</span></div>
+        <div style="display:flex;gap:6px;font-size:12px;color:var(--muted)"><span style="margin-top:5px;width:6px;height:6px;border-radius:999px;background:#94a3b8;flex:none"></span><span>성수동 돼지국밥 ‘하우’</span></div>
+      </div>
+      <div style="margin-top:auto;display:flex;justify-content:space-between;padding-top:16px;font-size:12px;font-weight:800"><span style="color:var(--blue-l)">멀티플랫폼 상세 →</span><span style="font-size:11px;color:var(--muted2)">네이버 실시간</span></div>
+    </button>
+    <button class="lift card" style="display:flex;flex-direction:column;padding:20px;text-align:left;cursor:pointer">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span style="border-radius:999px;padding:4px 10px;font-size:11px;font-weight:800;background:#16a34a;color:#fff">로컬크리에이터</span><span style="font-size:11.5px;font-weight:600;color:var(--muted2)">충남 공주</span></div>
+      <h3 style="margin-top:10px;font-size:19px">공주 제민천</h3>
+      <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;font-size:11.5px;font-weight:700"><span style="color:var(--muted)">검색 38</span><span style="color:var(--blue-l)">▲22 <span style="color:var(--muted2);font-weight:600">1년</span></span><span style="color:var(--muted2)">·</span><span style="color:var(--muted)">📰 5,025건</span><span class="chip" style="background:rgba(22,163,74,.15);color:var(--blue-l)">긍정</span></div>
+      <p style="margin-top:8px;font-size:13px;color:var(--muted)">원도심 하천 제민천을 따라 청년 가게·게스트하우스가 재생. 로컬 리노베이션의 모델.</p>
+      <div style="margin-top:auto;display:flex;justify-content:space-between;padding-top:16px;font-size:12px;font-weight:800"><span style="color:var(--blue-l)">멀티플랫폼 상세 →</span><span style="font-size:11px;color:var(--muted2)">네이버 실시간</span></div>
+    </button>
+    <button class="lift card" style="display:flex;flex-direction:column;padding:20px;text-align:left;cursor:pointer">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span style="border-radius:999px;padding:4px 10px;font-size:11px;font-weight:800;background:#1E5FA8;color:#fff">예술·메이커</span><span style="font-size:11.5px;font-weight:600;color:var(--muted2)">서울 영등포구</span></div>
+      <h3 style="margin-top:10px;font-size:19px">문래동</h3>
+      <p style="margin-top:8px;font-size:13px;color:var(--muted)">철공소 골목에 예술가 작업실이 들어선 문래창작촌. 산업유산 + 예술 + 로컬 바.</p>
+      <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:4px"><span class="chip">#문래창작촌</span><span class="chip">#철공소</span><span class="chip">#작업실</span></div>
+      <div style="margin-top:auto;display:flex;justify-content:space-between;padding-top:16px;font-size:12px;font-weight:800"><span style="color:var(--blue-l)">멀티플랫폼 상세 →</span></div>
+    </button>
+  </div>
+</section>
+
+<!-- ══ 6) 데이터 소스 마퀴 ══ -->
+<section class="wrap" style="padding:16px 24px">
+  <div class="marquee-mask"><div class="marquee-track">
+    <!-- 동일 항목 2벌(무한 루프) -->
+    <span class="chip">KOSIS 인구</span><span class="chip">네이버 검색·기사</span><span class="chip">소진공 상권</span><span class="chip">한국부동산원 임대</span><span class="chip">한국문화정보원</span><span class="chip">나라장터 예산</span><span class="chip">VWorld 지오코딩</span><span class="chip">서울 생활인구</span><span class="chip">카드 매출</span><span class="chip">건축HUB</span>
+    <span class="chip">KOSIS 인구</span><span class="chip">네이버 검색·기사</span><span class="chip">소진공 상권</span><span class="chip">한국부동산원 임대</span><span class="chip">한국문화정보원</span><span class="chip">나라장터 예산</span><span class="chip">VWorld 지오코딩</span><span class="chip">서울 생활인구</span><span class="chip">카드 매출</span><span class="chip">건축HUB</span>
+  </div></div>
+</section>
+
+<!-- ══ 7) 뉴스레터 CTA ══ -->
+<section class="wrap">
+  <div style="position:relative;overflow:hidden;border-radius:28px;border:1px solid var(--line);background:color-mix(in srgb,var(--card2) 60%,transparent);padding:48px 32px;text-align:center">
+    <div style="position:absolute;top:-96px;left:50%;width:288px;height:288px;transform:translateX(-50%);border-radius:999px;opacity:.5;filter:blur(48px);background:radial-gradient(circle,var(--blue-l),transparent 70%)"></div>
+    <span class="klai-eyebrow" style="position:relative">Flagtale Weekly</span>
+    <h2 style="position:relative;margin-top:8px;font-size:clamp(27px,4vw,34px)">트렌드를 <span class="hl-mark">먼저</span> 읽으세요</h2>
+    <p style="position:relative;margin:8px auto 0;max-width:420px;font-size:14px;color:var(--muted)">매주 월요일, 전국에서 뜨고 지는 동네와 그 이유를 메일로.</p>
+    <div style="position:relative;margin:24px auto 0;max-width:420px;display:flex;gap:8px">
+      <input placeholder="이메일 주소" style="height:48px;flex:1;border-radius:999px;border:1px solid var(--line);background:#fff;padding:0 20px;font-size:14px;font-family:var(--font)" />
+      <a class="btn btn-fill" style="height:48px;padding:0 28px;font-size:15px">무료 구독</a>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     디자인 시스템 부록 (색·타이포·컴포넌트 아토믹)
+     ══════════════════════════════════════════════════════════ -->
+<section class="wrap" style="border-top:1px solid var(--line);margin-top:24px">
+  <div class="sec-head"><div><span class="klai-eyebrow">Design System</span><h2 style="margin-top:6px">🎨 디자인 시스템 — 토큰 & 컴포넌트</h2></div></div>
+
+  <!-- 색 토큰 -->
+  <h3 style="font-size:15px;margin-bottom:10px;color:var(--muted)">색 (LIGHT 테마)</h3>
+  <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:28px">
+    <div><div style="width:84px;height:56px;border-radius:10px;border:1px solid var(--line);background:#84cc16"></div><div style="font-size:11px;margin-top:4px">--amber<br>#84cc16</div></div>
+    <div><div style="width:84px;height:56px;border-radius:10px;border:1px solid var(--line);background:#4d7c0f"></div><div style="font-size:11px;margin-top:4px">--blue-l<br>#4d7c0f</div></div>
+    <div><div style="width:84px;height:56px;border-radius:10px;border:1px solid var(--line);background:#a3e635"></div><div style="font-size:11px;margin-top:4px">accent-bright<br>#a3e635</div></div>
+    <div><div style="width:84px;height:56px;border-radius:10px;border:1px solid var(--line);background:#059669"></div><div style="font-size:11px;margin-top:4px">--green<br>#059669</div></div>
+    <div><div style="width:84px;height:56px;border-radius:10px;border:1px solid var(--line);background:#e11d48"></div><div style="font-size:11px;margin-top:4px">--warn<br>#e11d48</div></div>
+    <div><div style="width:84px;height:56px;border-radius:10px;border:1px solid var(--line);background:#18181b"></div><div style="font-size:11px;margin-top:4px">--ink<br>#18181b</div></div>
+    <div><div style="width:84px;height:56px;border-radius:10px;border:1px solid var(--line);background:#f5f6f3"></div><div style="font-size:11px;margin-top:4px">--card2<br>#f5f6f3</div></div>
+  </div>
+
+  <!-- 등급 스케일 -->
+  <h3 style="font-size:15px;margin-bottom:10px;color:var(--muted)">등급 스케일 (KLAI S→E)</h3>
+  <div style="display:flex;gap:8px;margin-bottom:28px">
+    <span style="display:grid;place-items:center;width:48px;height:48px;border-radius:10px;color:#fff;font-weight:900;background:#0f6e5c">S</span>
+    <span style="display:grid;place-items:center;width:48px;height:48px;border-radius:10px;color:#fff;font-weight:900;background:#1e7a8c">A</span>
+    <span style="display:grid;place-items:center;width:48px;height:48px;border-radius:10px;color:#fff;font-weight:900;background:#3e9aa8">B</span>
+    <span style="display:grid;place-items:center;width:48px;height:48px;border-radius:10px;color:#fff;font-weight:900;background:#e2a33a">C</span>
+    <span style="display:grid;place-items:center;width:48px;height:48px;border-radius:10px;color:#fff;font-weight:900;background:#d2691e">D</span>
+    <span style="display:grid;place-items:center;width:48px;height:48px;border-radius:10px;color:#fff;font-weight:900;background:#a23a2a">E</span>
+  </div>
+
+  <!-- 타이포 -->
+  <h3 style="font-size:15px;margin-bottom:10px;color:var(--muted)">타이포 — Pretendard(본문) · Poppins(디스플레이/숫자)</h3>
+  <div style="margin-bottom:28px">
+    <div style="font-size:34px;font-weight:800;letter-spacing:-.02em">디스플레이 34 · 800</div>
+    <div style="font-size:24px;font-weight:800">섹션 헤더 24 · 800</div>
+    <div style="font-size:17px;font-weight:800">카드 타이틀 17 · 800</div>
+    <div style="font-size:15px;color:var(--muted)">본문 15 · 400~600 (zinc-600)</div>
+    <div class="klai-eyebrow" style="margin-top:6px">EYEBROW 12 · 800 · TRACKING 0.28EM</div>
+    <div class="tnum" style="font-size:28px;font-weight:900;color:var(--blue-l)">69.2 <span style="font-size:13px">숫자 = Poppins tabular</span></div>
+  </div>
+
+  <!-- 컴포넌트 아토믹 -->
+  <h3 style="font-size:15px;margin-bottom:10px;color:var(--muted)">컴포넌트</h3>
+  <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px">
+    <button class="btn btn-fill" style="padding:10px 20px">채움 버튼(CTA)</button>
+    <button class="btn btn-ghost" style="padding:10px 20px">고스트 버튼</button>
+    <span class="status-pill" style="background:var(--amber);color:var(--on-accent)">📈 유행중 +8</span>
+    <span class="status-pill" style="background:rgba(20,30,50,.6);color:#fff">📉 식는중 -8</span>
+    <span class="klai-tag">에디토리얼 큐레이션</span>
+    <span class="chip">#해시태그</span>
+    <span class="cat-tag">CATEGORY · 카테고리</span>
+    <span><span class="hl-mark">형광펜 강조</span></span>
+  </div>
+
+  <!-- 레이더 (라이트) -->
+  <h3 style="font-size:15px;margin:18px 0 10px;color:var(--muted)">4축 레이더 (라이트 — 또래 평균 점선)</h3>
+  <svg viewBox="0 0 172 172" style="width:170px;height:170px">
+    <g fill="none" stroke="rgba(15,30,60,.12)"><circle cx="86" cy="86" r="12.5"/><circle cx="86" cy="86" r="25"/><circle cx="86" cy="86" r="37.5"/><circle cx="86" cy="86" r="50"/>
+      <line x1="86" y1="86" x2="86" y2="36"/><line x1="86" y1="86" x2="136" y2="86"/><line x1="86" y1="86" x2="86" y2="136"/><line x1="86" y1="86" x2="36" y2="86"/></g>
+    <polygon points="86,60 110,86 86,113 56,86" fill="none" stroke="rgba(100,116,139,.75)" stroke-width="1.5" stroke-dasharray="3 3"/>
+    <polygon points="86,59 119,86 86,113 53,86" fill="rgba(101,163,13,.18)" stroke="#65a30d" stroke-width="2"/>
+    <g fill="#5b6470" font-size="10.5" font-weight="800" text-anchor="middle"><text x="86" y="22">인구 54</text><text x="150" y="86">상권 67</text><text x="86" y="152">공간 53</text><text x="22" y="86">인식 65</text></g>
+  </svg>
+</section>
+</main>
+
+<!-- ══ 푸터 ══ -->
+<footer style="border-top:1px solid var(--line);margin-top:24px;background:var(--card2)">
+  <div class="wrap" style="padding:36px 24px;display:flex;flex-wrap:wrap;gap:24px;justify-content:space-between;font-size:13px;color:var(--muted)">
+    <div><div class="logo" style="margin-bottom:8px"><span class="mk">K</span> KLAI 매력도</div><p style="max-width:320px;color:var(--muted2)">동네 매력도를 점수로, 변화의 이유를 진단합니다. 샘플·잠정(Provisional) 데이터 — 정밀 진단은 결제 후.</p></div>
+    <div style="display:flex;gap:40px">
+      <div><div style="font-weight:800;color:var(--ink);margin-bottom:8px">탐색</div><div>매력도지도</div><div>리포트</div><div>데이터출처</div><div>방법론</div></div>
+      <div><div style="font-weight:800;color:var(--ink);margin-bottom:8px">진단</div><div>지번 진단</div><div>브랜드 진단</div><div>대시보드</div></div>
+    </div>
+  </div>
+</footer>
+
+<!-- 탭/필터는 디자인 표현용 — 실제 인터랙션은 React에서. 필요시 여기에 vanilla JS 추가 -->
+</body>
+</html>

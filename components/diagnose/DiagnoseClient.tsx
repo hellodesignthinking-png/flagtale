@@ -51,6 +51,7 @@ interface DiagnoseResult {
   series: PlaceScore[];
   diagnosis: Diagnosis | null;
   signals: SignalSeries | null;
+  avgSignals: SignalSeries | null;
   demographics: DemographicYear[];
   procurement: ProcurementPlace | null;
   peer: { d1: number; d2: number; d3: number; d4: number };
@@ -675,7 +676,7 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd, mode = "parcel
           {/* ★ 신호 동조 */}
           {result.signals && (
             <Section num="★" title="신호 동조 — 검색·기사·인구·임대료·매물" tone="blue">
-              <SignalAnalysis signals={result.signals} periods={result.periods} authenticityGap={result.latest.authenticityGap} />
+              <SignalAnalysis signals={result.signals} periods={result.periods} authenticityGap={result.latest.authenticityGap} avgSignals={result.avgSignals ?? undefined} />
             </Section>
           )}
 

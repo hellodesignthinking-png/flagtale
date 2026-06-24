@@ -33,7 +33,7 @@ export function parcelPdfHtml(b: PlaceBundle): string {
   const risks = (d?.risks ?? []).map((r) => `<li><b>⚠ ${r.title}</b> — ${r.detail}</li>`).join("");
   const strat = (d?.strategy ?? []).map((s) => `<li><b>→ ${s.title}</b> — ${s.detail}</li>`).join("");
   const body = `
-    <div class="eyebrow">KLAI 지번 진단 리포트</div>
+    <div class="eyebrow">Flagtale Lab 지번 진단 리포트</div>
     <h1>${b.props.name} <span class="badge">${b.props.typology}</span></h1>
     <div class="muted">${b.props.sido} ${b.props.sigungu} · ${b.props.admCd2} · 기준 ${b.latest.period}</div>
     <div class="row">
@@ -55,7 +55,7 @@ export function parcelPdfHtml(b: PlaceBundle): string {
 /** 리포트 PDF (요약형 — Weekly/Annual 표지 + 요약) */
 export function reportPdfHtml(report: Report): string {
   const body = `
-    <div class="eyebrow">${report.kind === "annual" ? "KLAI Annual" : "Flagtale Weekly"}</div>
+    <div class="eyebrow">${report.kind === "annual" ? "Flagtale Annual" : "Flagtale Weekly"}</div>
     <h1>${report.title}</h1>
     <div class="muted">발행 ${report.publishedAt} · ${report.period}</div>
     <h2>요약</h2>

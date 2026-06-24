@@ -1,10 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 type Mode = "signup" | "login";
+
+const NAVER_ERR: Record<string, string> = {
+  no_email: "네이버 계정 이메일 제공에 동의해야 로그인할 수 있어요.",
+  config: "네이버 로그인이 아직 설정되지 않았어요. (콘솔 연동 필요)",
+  disabled: "네이버 로그인이 아직 설정되지 않았어요. (콘솔 연동 필요)",
+};
 
 // Supabase Auth — 이메일+비밀번호 회원가입/로그인 + 매직링크 + 카카오. 키 없으면 데모(안내).
 export function AuthForm() {
@@ -19,6 +25,14 @@ export function AuthForm() {
   const [msg, setMsg] = useState<{ kind: "ok" | "err" | "info"; text: string } | null>(null);
 
   const demoNote = "데모 모드입니다. Supabase 키 연동 시 실제 회원가입·로그인이 활성화됩니다.";
+
+  useEffect(() => {
+    const e = new URLSearchParams(window.location.search).get("naver_error");
+    if (e) {
+      setMsg({ kind: "err", text: NAVER_ERR[e] || "네이버 로그인을 완료하지 못했어요. 다시 시도해 주세요." });
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, []);
 
   async function submit() {
     setMsg(null);
@@ -76,7 +90,7 @@ export function AuthForm() {
   return (
     <div className="klai-panel p-7">
       <span className="klai-eyebrow">{mode === "signup" ? "Sign up" : "Sign in"}</span>
-      <h1 className="mt-1 text-2xl font-black">{mode === "signup" ? "KLAI 회원가입" : "KLAI 로그인"}</h1>
+      <h1 className="mt-1 text-2xl font-black">{mode === "signup" ? "Flagtale 회원가입" : "Flagtale 로그인"}</h1>
       <p className="mt-1 text-[13px] text-muted">
         주간 리포트·진단 알림·기여 적립 ·{" "}
         <span className={enabled ? "text-grade-b" : "text-amber"}>{enabled ? "실연동 활성" : "데모 모드"}</span>
@@ -101,6 +115,7 @@ export function AuthForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="이메일"
+          aria-label="이메일"
           autoComplete="email"
           className="h-11 w-full rounded-lg border border-line bg-navy px-3.5 text-[14px] text-ink placeholder:text-muted2 focus:border-blue focus:outline-none"
         />
@@ -110,6 +125,7 @@ export function AuthForm() {
           onChange={(e) => setPw(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && submit()}
           placeholder={mode === "signup" ? "비밀번호 (6자 이상)" : "비밀번호"}
+          aria-label="비밀번호"
           autoComplete={mode === "signup" ? "new-password" : "current-password"}
           className="h-11 w-full rounded-lg border border-line bg-navy px-3.5 text-[14px] text-ink placeholder:text-muted2 focus:border-blue focus:outline-none"
         />
@@ -140,6 +156,12 @@ export function AuthForm() {
         >
           <span className="text-lg">💬</span> 카카오로 시작
         </button>
+        <button
+          onClick={() => { window.location.href = "/api/auth/naver"; }}
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#03c75a] font-bold text-white hover:brightness-95"
+        >
+          <span className="grid h-5 w-5 place-items-center rounded bg-white text-[12px] font-black text-[#03c75a]">N</span> 네이버로 시작
+        </button>
       </div>
 
       {msg && (
@@ -157,7 +179,7 @@ export function AuthForm() {
       )}
 
       <p className="mt-4 text-[11px] leading-relaxed text-muted2">
-        가입 시 KLAI 이용약관·개인정보처리방침에 동의하는 것으로 간주됩니다. 개인 식별 데이터는 집계로만 사용됩니다(스펙 §15).
+        가입 시 Flagtale 이용약관·개인정보처리방침에 동의하는 것으로 간주됩니다. 개인 식별 데이터는 집계로만 사용됩니다(스펙 §15).
       </p>
     </div>
   );

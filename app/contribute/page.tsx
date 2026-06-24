@@ -18,7 +18,7 @@ export default async function ContributePage() {
     <PageShell>
       <div className="mb-6">
         <span className="klai-eyebrow">Human Sensor Network</span>
-        <h1 className="mt-1 text-3xl font-black">현장 리포트 — 사람이 보강하는 데이터</h1>
+        <h1 className="mt-1 font-display text-[clamp(28px,4vw,38px)] font-black leading-[1.06] tracking-[-0.03em]">현장 리포트 — 사람이 보강하는 데이터</h1>
         <p className="mt-1.5 max-w-2xl text-[14px] leading-relaxed text-muted">
           데이터로 못 잡는 것 — <b className="text-ink">객층·회전율·분위기·뜨는 가게</b>를 현장의 belocal 크리에이터·상인이 입력합니다.
           이 <b className="text-ink">휴먼 센서망</b>이 KLAI의 D4 인식·내러티브를 <b className="text-ink">ground-truth로 보정</b>합니다.
@@ -29,7 +29,7 @@ export default async function ContributePage() {
       <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="기여 보상" value={<span className="text-base">리포트 무료</span>} sub="고급 상권 리포트" accent="blue" />
         <Stat label="검증 포인트" value={<span className="text-base">belocal P</span>} sub="검증이벤트 적립" accent="amber" />
-        <Stat label="기여자 배지" value={<span className="text-base">KLAI 기여자</span>} sub="프로필 배지" />
+        <Stat label="기여자 배지" value={<span className="text-base">Flagtale Lab 기여자</span>} sub="프로필 배지" />
         <Stat label="데이터 반영" value={<span className="text-base">D4·내러티브</span>} sub="현장 보정" accent="blue" />
       </div>
 
@@ -37,7 +37,7 @@ export default async function ContributePage() {
         {/* 입력 폼 */}
         <div>
           <div className="mb-2 flex items-center gap-2">
-            <h2 className="text-[15px] font-extrabold text-ink">현장 체크리스트</h2>
+            <h2 className="font-display text-[15px] font-black tracking-[-0.03em] text-ink">현장 체크리스트</h2>
             {user ? (
               <Pill tone="blue">{user.email ?? "로그인됨"}</Pill>
             ) : isSupabaseEnabled ? (
@@ -58,7 +58,7 @@ export default async function ContributePage() {
             {DEMO_REPORTS.map((r, i) => {
               const vb = vibeLabel(r.vibe);
               return (
-                <div key={i} className="rounded-lg border border-line bg-card2 px-3 py-2.5">
+                <div key={i} className="rounded-xl border-[1.5px] border-line bg-card2 px-3 py-2.5 transition-colors hover:border-ink">
                   <div className="flex items-center justify-between">
                     <Link href={`/diagnose?admCd=${r.admCd2}`} className="text-[13px] font-bold text-ink hover:text-amber">
                       {r.placeName}

@@ -2,13 +2,26 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://flatalelocal.vercel.app";
+const DESC =
+  "Flagtale — 로컬을 발견하고 경험하는 플랫폼. 전국 행정동 매력도(KLAI 지수)를 지도 위에 색·다이어그램으로 보여주고, 젠트리·소멸·내러티브를 진단해 리포트로 발행합니다.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "KLAI · 동네 매력도 지도와 진단",
-    template: "%s · KLAI",
+    default: "Flagtale · 로컬을 발견하고 경험하다",
+    template: "%s · Flagtale",
   },
-  description:
-    "K-로컬 매력도 지수(KLAI) — 행정동 단위 인구·상권·공간·인식 4축 매력도를 지도 위에 색·다이어그램으로 보여주고, 젠트리·소멸·성공·내러티브를 진단해 리포트로 발행하는 플랫폼.",
+  description: DESC,
+  openGraph: {
+    title: "Flagtale · 로컬을 발견하고 경험하다",
+    description: DESC,
+    siteName: "Flagtale",
+    locale: "ko_KR",
+    type: "website",
+    url: SITE_URL,
+  },
+  twitter: { card: "summary_large_image", title: "Flagtale", description: DESC },
 };
 
 export const viewport: Viewport = {

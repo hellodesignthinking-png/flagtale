@@ -12,7 +12,7 @@ interface AnnualBlocks {
   declineCount: number;
 }
 
-// KLAI Annual — 매력동네 랭킹 + 유형 분석 (스펙 §10.2). 클라이언트 인쇄 버튼 없음(§15).
+// Flagtale Annual — 매력동네 랭킹 + 유형 분석 (스펙 §10.2). 클라이언트 인쇄 버튼 없음(§15).
 export function AnnualTemplate({ report }: { report: Report }) {
   const b = report.blocks as unknown as AnnualBlocks;
   const top = b.ranking.slice(0, 30);
@@ -21,7 +21,7 @@ export function AnnualTemplate({ report }: { report: Report }) {
     <article className="space-y-8">
       <header className="klai-panel p-6 sm:p-8">
         <div className="flex items-center justify-between">
-          <span className="klai-eyebrow">KLAI Annual · 연간 권위 발표</span>
+          <span className="klai-eyebrow">Flagtale Annual · 연간 권위 발표</span>
           <ProvisionalBadge />
         </div>
         <h1 className="mt-3 text-3xl font-black sm:text-4xl">{report.title}</h1>

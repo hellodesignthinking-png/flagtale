@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { geocodeToPlace, getPlace, getPeerAvg, getRegionComparison, populationMeta } from "@/lib/data";
+import { geocodeToPlace, getPlace, getPeerAvg, getRegionComparison, nationalSignalAverage, populationMeta } from "@/lib/data";
 import { geocodeToDistrict, pointToDistrict } from "@/lib/geocode";
 import { naverInterest } from "@/lib/connectors/naver";
 import { anchorStores } from "@/lib/connectors/anchor";
@@ -117,6 +117,7 @@ export async function POST(req: NextRequest) {
     series: bundle.series,
     diagnosis: bundle.diagnosis,
     signals: bundle.signals,
+    avgSignals: nationalSignalAverage(), // 전국 평균 신호(비교 기준선)
     demographics: bundle.demographics, // 2016~2026 인구(실데이터)
     procurement: bundle.procurement, // 2016~2026 공공예산
     peer, // 유형 평균 (레이더 비교군)
