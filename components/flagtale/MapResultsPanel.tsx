@@ -7,7 +7,7 @@ import { openState, type NowT } from "@/lib/openNow";
 import { MapFilterBar } from "./MapFilterBar";
 import { SpotEditor } from "./SpotEditor";
 import { SpotKlaiPanel } from "./SpotKlaiPanel";
-import { checkIn, isCheckedToday, toggleRoute, inRoute, onGameChange } from "@/lib/game";
+import { checkIn, isCheckedToday, toggleRoute, inRoute, onGameChange, earnedBadgeIds, BADGES, getDevice, type Badge } from "@/lib/game";
 import { createClient } from "@/lib/supabase/client";
 
 export const SORTS = [
@@ -106,10 +106,18 @@ export function MapResultsPanel({
   const [copied, setCopied] = useState(false);
   const [, bumpGame] = useReducer((n: number) => n + 1, 0); // 게임 상태 변경 시 리렌더
   const [reward, setReward] = useState<number | null>(null); // 체크인 보상 토스트
+  const [badgeToast, setBadgeToast] = useState<Badge | null>(null); // 새 업적 토스트
   useEffect(() => onGameChange(() => bumpGame()), []);
   function doCheckIn(it: MapItem) {
-    const { reward: r } = checkIn(it.id);
-    if (r > 0) { setReward(r); setTimeout(() => setReward(null), 2400); }
+    const before = earnedBadgeIds();
+    const { reward: r } = checkIn(it.id, it.region);
+    if (r > 0) {
+      setReward(r); setTimeout(() => setReward(null), 2400);
+      if (it.region) { const dev = getDevice(); fetch("/api/territory", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ deviceId: dev.id, name: dev.name, region: it.region }) }).catch(() => {}); }
+    }
+    const newId = earnedBadgeIds().find((b) => !before.includes(b));
+    const b = newId ? BADGES.find((x) => x.id === newId) : null;
+    if (b) { setBadgeToast(b); setTimeout(() => setBadgeToast(null), 3400); }
   }
   const [gIdx, setGIdx] = useState(0);
   const [compareOpen, setCompareOpen] = useState(false);
@@ -372,6 +380,9 @@ export function MapResultsPanel({
             </div>
             {reward !== null && (
               <div className="ft-panel-in mt-1.5 rounded-[10px] bg-amber/15 py-1.5 text-center text-[12.5px] font-extrabold text-blue-l">🎉 +{reward} 코인 획득!</div>
+            )}
+            {badgeToast && (
+              <div className="ft-panel-in mt-1.5 rounded-[10px] bg-blue-l/10 py-1.5 text-center text-[12.5px] font-extrabold text-blue-l">{badgeToast.emoji} 업적 달성 · {badgeToast.name}!</div>
             )}
             <div className="mt-3 flex gap-0.5 overflow-x-auto border-b border-line">
               {([["info", "정보"], ["klai", "📊 매력도"], ["review", "리뷰"], ["chart", "시세"], ["region", "지역"], ["naver", "네이버"]] as const).map(([k, lbl]) => (

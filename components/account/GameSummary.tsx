@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { readGame, onGameChange, levelOf, levelTitle, levelProgress, flagCount, type GameState } from "@/lib/game";
+import { readGame, onGameChange, levelOf, levelTitle, levelProgress, flagCount, BADGES, earnedBadgeIds, territoryCount, topTerritories, type GameState } from "@/lib/game";
 
 // 내 로컬 활동 — 코인·깃발·연속·레벨 (localStorage 게임 상태). GameChip이 여기로 링크.
 export function GameSummary() {
@@ -9,6 +9,7 @@ export function GameSummary() {
   useEffect(() => { const s = () => setG(readGame()); s(); return onGameChange(s); }, []);
   if (!g) return null;
   const lv = levelOf(g.coins), prog = levelProgress(g.coins);
+  const earned = earnedBadgeIds(g);
   return (
     <div className="rounded-[20px] border-[1.5px] border-line bg-card p-5">
       <div className="flex items-center justify-between">
@@ -24,6 +25,43 @@ export function GameSummary() {
         <div className="mb-1 flex justify-between text-[11px] text-muted2"><span className="font-bold text-blue-l">Lv{lv}</span><span>{prog} / 100 → Lv{lv + 1}</span></div>
         <div className="h-2 overflow-hidden rounded-full bg-card2"><div className="h-full rounded-full" style={{ width: `${prog}%`, background: "var(--amber)" }} /></div>
       </div>
+
+      {/* 업적/뱃지 */}
+      <div className="mt-4">
+        <div className="mb-1.5 flex items-center justify-between">
+          <span className="text-[11px] font-extrabold text-muted2">🏅 업적</span>
+          <span className="text-[10.5px] font-bold text-muted2">{earned.length}/{BADGES.length}</span>
+        </div>
+        <div className="grid grid-cols-4 gap-1.5">
+          {BADGES.map((b) => {
+            const on = earned.includes(b.id);
+            return (
+              <div key={b.id} title={`${b.name} · ${b.desc}`} className={`flex flex-col items-center rounded-[12px] border p-2 text-center transition-colors ${on ? "border-amber/40 bg-amber/10" : "border-line bg-card2/40 opacity-45"}`}>
+                <span className="text-[18px] leading-none">{b.emoji}</span>
+                <span className="mt-1 text-[9px] font-bold leading-tight text-ink">{b.name}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 영토 — 점령한 동네 */}
+      {territoryCount(g) > 0 && (
+        <div className="mt-4">
+          <div className="mb-1.5 flex items-center justify-between">
+            <span className="text-[11px] font-extrabold text-muted2">🏰 점령한 동네</span>
+            <span className="text-[10.5px] font-bold text-muted2">{territoryCount(g)}곳</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {topTerritories(g, 8).map((t) => (
+              <span key={t.region} className="inline-flex items-center gap-1 rounded-full border border-line bg-card2/50 px-2.5 py-1 text-[11px] font-extrabold text-ink">
+                🚩 {t.region} <span className="text-blue-l">{t.n}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       {g.coins === 0 && <p className="mt-2.5 text-[11.5px] leading-relaxed text-muted2">플래그맵에서 매장·축제를 <b className="text-ink">체크인</b>하면 코인·깃발이 쌓이고 레벨이 올라요. 루트도 만들어 보세요.</p>}
     </div>
   );

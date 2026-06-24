@@ -295,6 +295,11 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
     render();
   }
 
+  function zoomBy(d: number) {
+    const map = mapRef.current;
+    if (!map) return;
+    try { map.setZoom(Math.round(map.getZoom()) + d, true); } catch { /* noop */ }
+  }
   function toggleType() {
     const naver = naverRef.current, map = mapRef.current;
     if (!naver || !map) return;
@@ -328,8 +333,7 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
           const map = new naver.maps.Map(mapEl.current, {
             center: new naver.maps.LatLng((Math.min(...lats) + Math.max(...lats)) / 2, (Math.min(...lngs) + Math.max(...lngs)) / 2),
             zoom: 7, scaleControl: false, mapDataControl: false, logoControl: true,
-            zoomControl: typeof window !== "undefined" && window.innerWidth >= 768, // 모바일은 핀치 줌(하단 시트 겹침 방지)
-            zoomControlOptions: { position: naver.maps.Position.BOTTOM_RIGHT },
+            zoomControl: false, // 네이버 기본 컨트롤 끄고 커스텀 +/− 사용(레이아웃 정렬)
           });
           mapRef.current = map;
           const kick = () => { try { naver.maps.Event.trigger(map, "resize"); } catch { /* noop */ } };
@@ -474,6 +478,14 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
               <span className="text-[9px] font-extrabold leading-none">{c.label}</span>
             </button>
           ))}
+        </div>
+      )}
+      {/* 커스텀 줌 +/− (우측 하단, 데스크톱) — 네이버 기본 컨트롤 대체로 레이아웃 정렬 */}
+      {engine === "naver" && (
+        <div className="absolute bottom-3 right-2 z-[5] hidden flex-col overflow-hidden rounded-[12px] border-[1.5px] border-line bg-card shadow-lg md:flex">
+          <button onClick={() => zoomBy(1)} aria-label="확대" className="grid h-9 w-9 place-items-center text-[19px] font-bold leading-none text-ink transition-colors hover:bg-card2">+</button>
+          <div className="h-px bg-line" />
+          <button onClick={() => zoomBy(-1)} aria-label="축소" className="grid h-9 w-9 place-items-center text-[19px] font-bold leading-none text-ink transition-colors hover:bg-card2">−</button>
         </div>
       )}
       {engine === "naver" && routeIds.length > 0 && (
