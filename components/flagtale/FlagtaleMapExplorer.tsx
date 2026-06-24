@@ -7,8 +7,8 @@ import Supercluster from "supercluster";
 import { DEFAULT_MAP_STYLE, FALLBACK_MAP_STYLE } from "@/lib/constants";
 import { MAP_CATS, type MapItem } from "@/lib/flagtale-types";
 import { MapResultsPanel, sortItems } from "./MapResultsPanel";
+import { markerPillHtml, clusterBadgeHtml, markerTier } from "./mapMarkers";
 
-const LABEL_ZOOM = 8.6;
 // 위성 지도 타입(ESRI World Imagery 래스터)
 const SAT_STYLE = {
   version: 8 as const,
@@ -16,27 +16,12 @@ const SAT_STYLE = {
   layers: [{ id: "sat", type: "raster" as const, source: "sat" }],
 };
 
-function leafPill(it: MapItem, selected: boolean, showName: boolean) {
-  const outer = document.createElement("button");
-  outer.type = "button";
-  outer.setAttribute("aria-label", it.name);
-  outer.style.cssText = "background:none;border:none;padding:0;cursor:pointer;";
-  const named = showName || selected;
-  const pill = document.createElement("div");
-  pill.style.cssText = `display:flex;align-items:center;gap:5px;white-space:nowrap;border-radius:999px;transition:transform .12s;background:${selected ? it.color : "#fff"};border:${selected ? "2.5px solid #fff" : `2px solid ${it.color}`};padding:${named ? "3px 9px 3px 6px" : "4px"};box-shadow:${selected ? `0 0 0 4px ${it.color}55,0 4px 12px rgba(0,0,0,.45)` : "0 2px 9px rgba(0,0,0,.38)"};`;
-  pill.innerHTML = `<span style="font-size:13px;line-height:1">${it.emoji}</span>${named ? `<span style="font-size:11px;font-weight:800;max-width:120px;overflow:hidden;text-overflow:ellipsis;color:${selected ? "#fff" : "#131316"}">${it.name}</span>` : ""}`;
-  outer.appendChild(pill);
-  outer.onmouseenter = () => { if (!selected) pill.style.transform = "scale(1.08)"; };
-  outer.onmouseleave = () => { pill.style.transform = "scale(1)"; };
-  return outer;
-}
-
-function clusterBadge(count: number) {
-  const el = document.createElement("button");
-  el.type = "button";
-  const size = count < 10 ? 38 : count < 30 ? 46 : 54;
-  el.style.cssText = `display:grid;place-items:center;width:${size}px;height:${size}px;border-radius:50%;background:#131316;border:3px solid #fff;color:#fff;font-family:Pretendard,system-ui;font-weight:900;font-size:${count < 30 ? 14 : 15}px;box-shadow:0 4px 14px rgba(0,0,0,.5);cursor:pointer;`;
-  el.textContent = String(count);
+// 마커 엘리먼트 = mapMarkers.ts HTML(문자열) 재사용. self-transform이 있어 MapLibre anchor는 top-left(이중 변환 방지).
+function markerEl(html: string, onClick: (e: MouseEvent) => void): HTMLDivElement {
+  const el = document.createElement("div");
+  el.innerHTML = html;
+  el.style.cursor = "pointer";
+  el.onclick = onClick;
   return el;
 }
 
@@ -70,24 +55,22 @@ export default function FlagtaleMapExplorer({ items, title }: { items: MapItem[]
     markersRef.current = [];
     const z = Math.round(map.getZoom());
     const b = map.getBounds();
-    const showName = map.getZoom() >= LABEL_ZOOM;
+    const tier = markerTier(map.getZoom());
     const clusters = index.getClusters([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()], z);
     for (const c of clusters) {
       const [lng, lat] = c.geometry.coordinates;
       if ((c.properties as any).cluster) {
         const count = (c.properties as any).point_count as number;
-        const el = clusterBadge(count);
-        el.onclick = (e) => {
+        const el = markerEl(clusterBadgeHtml(count), (e) => {
           e.stopPropagation();
           const ez = index.getClusterExpansionZoom((c.properties as any).cluster_id);
           map.flyTo({ center: [lng, lat], zoom: Math.min(ez, 16), duration: 500 });
-        };
-        markersRef.current.push(new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).addTo(map));
+        });
+        markersRef.current.push(new maplibregl.Marker({ element: el, anchor: "top-left" }).setLngLat([lng, lat]).addTo(map));
       } else {
         const it = (c.properties as any).item as MapItem;
-        const el = leafPill(it, it.id === selRef.current, showName);
-        el.onclick = (e) => { e.stopPropagation(); selectItem(it.id); };
-        markersRef.current.push(new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).addTo(map));
+        const el = markerEl(markerPillHtml(it, it.id === selRef.current, tier), (e) => { e.stopPropagation(); selectItem(it.id); });
+        markersRef.current.push(new maplibregl.Marker({ element: el, anchor: "top-left" }).setLngLat([lng, lat]).addTo(map));
       }
     }
   }

@@ -4,15 +4,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Supercluster from "supercluster";
 import { MAP_CATS, ftImage, type MapItem } from "@/lib/flagtale-types";
-import { narrativeForPlace, narrativeJumpList, reasonsFor, STAGE_META, AUTH_META, type AreaNarrative } from "@/lib/narratives";
+import { renderToStaticMarkup } from "react-dom/server";
+import { narrativeForPlace, narrativeJumpList, STAGE_META, type AreaNarrative } from "@/lib/narratives";
+import { AreaNarrativeCard } from "./AreaNarrativeCard";
 import { HotspotPanel, type HotspotJump } from "./HotspotPanel";
 
 // 핫지역 큐레이션 내러티브 인포윈도우 HTML(폴리곤 클릭·핫지역 점프 공용).
+// 지도 InfoWindow 카드 = AreaNarrativeCard(JSX) 단일 소스를 HTML로 렌더(중복 제거). solid=지도 위 가독성.
 function narrativeCardHTML(narr: AreaNarrative, admCd: string): string {
-  const sm = STAGE_META[narr.stage];
-  const top = reasonsFor(narr.name).slice(0, 2);
-  const why = top.length ? `<div style="margin-top:7px;padding-top:7px;border-top:1px solid #eef0f4"><div style="font-size:9.5px;font-weight:800;color:#D4861E;margin-bottom:2px">💡 왜 떴나</div>${top.map((r) => `<div style="font-size:10.5px;color:#16223a;line-height:1.4">· ${r}</div>`).join("")}</div>` : "";
-  return `<div style="max-width:240px;background:#fff;border-radius:12px;padding:11px 13px;font-family:Pretendard,system-ui,sans-serif;box-shadow:0 6px 22px rgba(0,0,0,.28);border:1.5px solid ${sm.color}55"><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap"><span style="background:${sm.color};color:#fff;border-radius:999px;padding:2px 8px;font-size:10.5px;font-weight:800">${sm.emoji} ${sm.label}</span><span style="font-size:12px;font-weight:800;color:#0d2b5e">${narr.name}</span></div><div style="margin-top:7px;font-size:13px;font-weight:800;line-height:1.35;color:#16223a">“${narr.theme}”</div><div style="margin-top:6px;font-size:10.5px;color:#5b6b86;line-height:1.4">${AUTH_META[narr.authenticity].label} · ${narr.authNote}</div>${why}<a href="/place/${admCd}" style="display:inline-block;margin-top:8px;background:#0d2b5e;color:#fff;border-radius:999px;padding:5px 11px;font-size:11px;font-weight:800;text-decoration:none">이 동네 진단 →</a></div>`;
+  return renderToStaticMarkup(<AreaNarrativeCard n={narr} compact solid href={`/place/${admCd}`} />);
 }
 import { MapResultsPanel, sortItems } from "./MapResultsPanel";
 import { markerPillHtml, clusterBadgeHtml, markerTier } from "./mapMarkers";
@@ -133,6 +133,8 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
 
   const [community, setCommunity] = useState<MapItem[]>([]);
   const items = useMemo(() => (community.length ? [...propItems, ...community] : propItems), [propItems, community]);
+  const itemsRef = useRef<MapItem[]>(items);
+  itemsRef.current = items; // 렌더마다 최신 동기화 — idle/?sel/popstate의 stale-closure 방지(늦게 로드되는 커뮤니티 스팟 선택)
   useEffect(() => { fetch("/api/spots").then((r) => (r.ok ? r.json() : null)).then((d) => { if (Array.isArray(d?.spots) && d.spots.length) setCommunity(d.spots as MapItem[]); }).catch(() => { /* noop */ }); }, []);
   const cats = useMemo(() => {
     const c: Record<string, number> = {};
@@ -340,7 +342,7 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
     setSelId(id);
     setRecent((r) => { const n = [id, ...r.filter((x) => x !== id)].slice(0, 12); try { localStorage.setItem("ft-recent", JSON.stringify(n)); } catch { /* noop */ } return n; });
     setUrlSel(id);
-    const it = items.find((x) => x.id === id);
+    const it = itemsRef.current.find((x) => x.id === id);
     const naver = naverRef.current;
     if (it && mapRef.current && naver) mapRef.current.morph(new naver.maps.LatLng(it.lat, it.lng), Math.max(mapRef.current.getZoom(), 14));
     render();
@@ -540,19 +542,19 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routeIds, items, engine]);
 
-  // 공유 딥링크 ?sel= → 해당 콘텐츠 선택
+  // 공유 딥링크 ?sel= → 해당 콘텐츠 선택. community(스팟)는 비동기 로드 → deps에 넣어 로드 후 재시도.
   useEffect(() => {
     if (engine !== "naver") return;
     try {
       const id = new URLSearchParams(window.location.search).get("sel");
-      if (id && items.some((i) => i.id === id)) setTimeout(() => selectItem(id), 250);
+      if (id && id !== selRef.current && itemsRef.current.some((i) => i.id === id)) setTimeout(() => selectItem(id), 250);
     } catch { /* noop */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [engine]);
+  }, [engine, community]);
 
   // 브라우저 뒤로/앞으로 → URL ?sel 동기화
   useEffect(() => {
-    const onPop = () => { try { const id = new URLSearchParams(window.location.search).get("sel"); if (id && items.some((i) => i.id === id)) selectItem(id); else { selRef.current = null; setSelId(null); render(); } } catch { /* noop */ } };
+    const onPop = () => { try { const id = new URLSearchParams(window.location.search).get("sel"); if (id && itemsRef.current.some((i) => i.id === id)) selectItem(id); else { selRef.current = null; setSelId(null); render(); } } catch { /* noop */ } };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
     // eslint-disable-next-line react-hooks/exhaustive-deps

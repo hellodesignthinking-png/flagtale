@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { type AreaNarrative, STAGE_META, AUTH_META, reasonsFor } from "@/lib/narratives";
 
-// 핫지역 큐레이션 내러티브 카드 — 쇼케이스/지도패널/동 리포트에서 같은 '이야기'를 일관되게 렌더.
-// compact=지도 패널용(궤적 생략). href=동 리포트 딥링크.
-export function AreaNarrativeCard({ n, compact, href }: { n: AreaNarrative; compact?: boolean; href?: string }) {
+// 핫지역 큐레이션 내러티브 카드 — 쇼케이스/지도패널/동 리포트/지도 InfoWindow에서 같은 '이야기'를 일관되게 렌더.
+// compact=지도 패널용(궤적 생략). href=동 리포트 딥링크. solid=지도 위 팝업용(불투명 배경·그림자·폭제한).
+export function AreaNarrativeCard({ n, compact, href, solid }: { n: AreaNarrative; compact?: boolean; href?: string; solid?: boolean }) {
   const sm = STAGE_META[n.stage];
   const am = AUTH_META[n.authenticity];
   const reasons = reasonsFor(n.name);
   return (
-    <div className="rounded-[16px] border-[1.5px] p-3.5" style={{ borderColor: `${sm.color}44`, background: `${sm.color}0c` }}>
+    <div className="rounded-[16px] border-[1.5px] p-3.5" style={{ borderColor: `${sm.color}55`, background: solid ? "var(--card)" : `${sm.color}0c`, ...(solid ? { boxShadow: "0 6px 22px rgba(0,0,0,.28)", maxWidth: 256 } : {}) }}>
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="rounded-full px-2.5 py-1 text-[11px] font-extrabold text-white" style={{ background: sm.color }}>{sm.emoji} {sm.label}</span>
         <span className="rounded-full border px-2 py-0.5 text-[10.5px] font-bold" style={{ color: am.color, borderColor: am.color }}>{am.label}</span>
