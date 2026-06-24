@@ -119,7 +119,8 @@ if (res.code != null) return alert("결제 실패: " + res.message);
 1. [serpapi.com/dashboard](https://serpapi.com/dashboard)에서 **API key** 발급 → `.env.local`(+ Vercel 환경변수)에 `SERPAPI_KEY=...` (⚠️ 키는 코드/커밋에 절대 넣지 말 것)
 2. `SERPAPI_KEY=... node scripts/ingest-serpapi.mjs` (또는 `npm run ingest:serp`) → 해외 검색 포착용 **로마자 질의**로 수집 → `data/google-interest.json` 비파괴 갱신
 3. 지역 추가: `scripts/ingest-serpapi.mjs`의 `REGIONS`(내러티브명→로마자 질의)에 추가
-> ⚠️ 구글 트렌드는 **상대값(0~100)·검색 관심**이며 실제 방문객 수가 아님. SerpApi는 search당 과금이라 **페이지뷰가 아닌 ingest 시점에만** 호출(인스타와 동일 패턴).
+> ⚠️ 구글 트렌드는 **상대값(0~100)·검색 관심**이며 실제 방문객 수가 아님. **페이지뷰가 아닌 ingest 시점에만** 호출(인스타와 동일 패턴).
+> 💸 **무료 사용법**: SerpApi **무료 플랜(월 100~250 검색, $0)** 으로 20~50개 지역을 월 1회 수집하면 무료 범위 안. (구글 트렌드 직접 스크래핑은 구글이 서버 IP를 차단[HTTP 429]하므로 불가 — 검증함. 대안: Apify 무료 티어, Google Programmable Search 100/일 무료 — 모두 계정·키 필요. Trends 국가별 관심은 SerpApi 무료 티어가 가장 단순.)
 
 ## 6. 기타
 
