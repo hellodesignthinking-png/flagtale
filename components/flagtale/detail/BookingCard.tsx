@@ -33,6 +33,8 @@ export function BookingCard({
   const subtotal = price * qty;
   const fee = Math.round(subtotal * 0.1);
   const total = subtotal + fee;
+  // 스테이는 1박 단가 × 박수(인원 무관) — 날짜를 둘 다 골라야 총액 계산. 투어는 인원 기준이라 항상 계산.
+  const ready = kind !== "stay" || (!!date && !!checkout);
 
   return (
     <div className="rounded-[20px] border-[1.5px] border-line bg-card p-5 shadow-xl">
@@ -75,11 +77,16 @@ export function BookingCard({
       <Link href="/auth" className="btn-glow mt-3.5 flex items-center justify-center rounded-full bg-amber px-5 py-3.5 text-[15px] font-extrabold text-onaccent">예약 요청하기 →</Link>
       <p className="mt-2 text-center text-[11px] text-muted2">로그인 후 예약 요청 · 지금은 결제되지 않습니다</p>
 
-      <div className="mt-3.5 space-y-1.5 border-t border-line pt-3.5 text-[12.5px] text-muted">
-        <div className="flex justify-between"><span className="underline decoration-line underline-offset-2">{price.toLocaleString()}원 × {qty}{unit}</span><span className="tabular-nums text-ink">{subtotal.toLocaleString()}원</span></div>
-        <div className="flex justify-between"><span className="underline decoration-line underline-offset-2">서비스 수수료</span><span className="tabular-nums text-ink">{fee.toLocaleString()}원</span></div>
-        <div className="mt-1 flex justify-between border-t border-line pt-2 text-[14px] font-extrabold text-ink"><span>합계</span><span className="tabular-nums">{total.toLocaleString()}원</span></div>
-      </div>
+      {ready ? (
+        <div className="mt-3.5 space-y-1.5 border-t border-line pt-3.5 text-[12.5px] text-muted">
+          <div className="flex justify-between"><span className="underline decoration-line underline-offset-2">{price.toLocaleString()}원 × {qty}{unit}</span><span className="tabular-nums text-ink">{subtotal.toLocaleString()}원</span></div>
+          <div className="flex justify-between"><span className="underline decoration-line underline-offset-2">서비스 수수료</span><span className="tabular-nums text-ink">{fee.toLocaleString()}원</span></div>
+          <div className="mt-1 flex justify-between border-t border-line pt-2 text-[14px] font-extrabold text-ink"><span>합계</span><span className="tabular-nums">{total.toLocaleString()}원</span></div>
+          {kind === "stay" && <p className="pt-0.5 text-[10.5px] leading-relaxed text-muted2">1박 요금 기준 · 인원과 무관 (최대 {maxPeople}명)</p>}
+        </div>
+      ) : (
+        <p className="mt-3.5 border-t border-line pt-3.5 text-center text-[12px] leading-relaxed text-muted2">체크인·체크아웃을 선택하면 총액이 계산돼요</p>
+      )}
     </div>
   );
 }

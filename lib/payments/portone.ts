@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { normalizePlan } from "@/lib/tier";
 
 /**
  * PortOne v2 결제 — 서버 검증 필수 (스펙 §11·§15: 클라이언트 신뢰 금지).
@@ -74,5 +75,42 @@ export async function grantEntitlement(params: {
     return { ok: true, mock: false, credits, plan, ...params };
   } catch (e) {
     return { ok: false, error: String(e), ...params };
+  }
+}
+
+type EntMethod = "plan" | "owned" | "credit" | "none" | "mock";
+
+/** 진단 PDF 권한 조회(차감 없음) — 구독(Pro/기관)=무제한, 기보유 동=재다운, 그 외 크레딧≥1. */
+export async function diagnoseEntitlement(userId: string, admCd2: string): Promise<{ allowed: boolean; method: EntMethod; credits: number }> {
+  const admin = createAdminClient();
+  if (!admin) return { allowed: true, method: "mock", credits: 0 }; // service-role 없으면 통과(목업)
+  try {
+    const { data } = await admin.auth.admin.getUserById(userId);
+    const m = (data.user?.user_metadata ?? {}) as Record<string, unknown>;
+    const credits = Number(m.ft_credits) || 0;
+    const plan = normalizePlan(typeof m.ft_plan === "string" ? m.ft_plan : null);
+    if (plan === "pro" || plan === "org") return { allowed: true, method: "plan", credits };
+    const purchases = Array.isArray(m.ft_purchases) ? (m.ft_purchases as Array<{ admCd2?: string }>) : [];
+    if (purchases.some((p) => p?.admCd2 === admCd2)) return { allowed: true, method: "owned", credits };
+    return credits >= 1 ? { allowed: true, method: "credit", credits } : { allowed: false, method: "none", credits };
+  } catch {
+    return { allowed: false, method: "none", credits: 0 };
+  }
+}
+
+/** 진단 PDF 1건 크레딧 차감 + 구매기록 (렌더 성공 후 호출 — 실패 시 과금 방지). */
+export async function chargeDiagnoseCredit(userId: string, admCd2: string): Promise<void> {
+  const admin = createAdminClient();
+  if (!admin) return;
+  try {
+    const { data } = await admin.auth.admin.getUserById(userId);
+    const m = (data.user?.user_metadata ?? {}) as Record<string, unknown>;
+    const credits = Number(m.ft_credits) || 0;
+    if (credits < 1) return;
+    const purchases = Array.isArray(m.ft_purchases) ? (m.ft_purchases as unknown[]) : [];
+    const rec = { admCd2, credits: -1, at: new Date().toISOString(), via: "credit" };
+    await admin.auth.admin.updateUserById(userId, { user_metadata: { ...m, ft_credits: credits - 1, ft_purchases: [...purchases, rec].slice(-50) } });
+  } catch {
+    /* noop */
   }
 }
