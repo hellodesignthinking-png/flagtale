@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { href: "/", label: "발견·경험" },
   { href: "/map-tale", label: "플래그맵" },
+  { href: "/host", label: "호스트 등록" },
   { href: "/hub", label: "허브" },
   { href: "/lab", label: "플래그테일랩" },
   { href: "/reports", label: "리포트" },
