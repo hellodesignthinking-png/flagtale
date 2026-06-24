@@ -101,6 +101,16 @@ if (res.code != null) return alert("결제 실패: " + res.message);
 
 ---
 
+## 5.5 인스타그램 버즈 — Apify (구현됨, 시드 데이터 포함)
+
+핫지역 인스타그램 해시태그 게시물 수를 **Apify**(`apify/instagram-scraper`)로 수집해 `data/instagram.json`에 저장 → 동 리포트(/place)의 핫지역에 **"📸 인스타그램 #태그 · N만 게시물"** 카드로 노출(태그 링크 + `Apify 수집·잠정` 배지). 13개 핫지역은 **이미 시드**돼 있음(성수동 226만·문래동 2,699만 등).
+
+**갱신/확장**:
+1. [apify.com](https://apify.com) 가입 → Settings → Integrations → **API token** → `.env.local`에 `APIFY_TOKEN=...`
+2. `node scripts/ingest-instagram.mjs` (또는 `npm run ingest:ig`) → 핫지역 태그를 run-sync로 재수집 → `data/instagram.json` 비파괴 갱신
+3. 지역 추가: `scripts/ingest-instagram.mjs`의 `TAGS`(내러티브명→해시태그)에 추가
+> ⚠️ 인스타 해시태그 카운트는 집계 특성상 과대/편차가 있어 **"잠정" 라벨 + 태그 링크(검증 가능)**로 노출. 정밀 버즈는 기간 필터·관련태그(`related`)·게시물 샘플로 고도화 가능.
+
 ## 6. 기타
 
 - **주간 리포트 이메일**: `RESEND_API_KEY` + `RESEND_FROM` (+ `WEEKLY_RECIPIENTS` 또는 Supabase 구독자) → `/api/cron/weekly`(헤더 `CRON_SECRET`)

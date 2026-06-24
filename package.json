@@ -12,7 +12,8 @@
     "verify": "tsc --noEmit && next build",
     "seed": "node seed/generate.mjs",
     "ingest": "node scripts/ingest.mjs",
-    "check-apis": "node scripts/test-apis.mjs"
+    "check-apis": "node scripts/test-apis.mjs",
+    "ingest:ig": "node scripts/ingest-instagram.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
@@ -36,7 +37,6 @@
     "@types/supercluster": "^7.1.3",
     "autoprefixer": "^10.4.20",
     "d3-delaunay": "^6.0.4",
-    "playwright-core": "^1.49.1",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.14",
     "typescript": "^5.6.3"

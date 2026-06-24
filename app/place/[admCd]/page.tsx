@@ -21,6 +21,7 @@ import { CompositionDiagram } from "@/components/charts/CompositionDiagram";
 import { MethodologyFlow } from "@/components/diagram/MethodologyFlow";
 import { GRADE_LABEL, MARKET_LABEL, NARRATIVE_LABEL, TRAJECTORY_LABEL } from "@/lib/constants";
 import { narrativeForPlace } from "@/lib/narratives";
+import { instagramFor, igCountLabel } from "@/lib/connectors/instagram";
 import { AreaNarrativeCard } from "@/components/flagtale/AreaNarrativeCard";
 import { formatKRW, signed } from "@/lib/utils";
 
@@ -51,6 +52,7 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
   const cumBudgetEok = Math.round(procAnnual.reduce((s, a) => s + a.total, 0) / 10000);
   const popReal = populationMeta(); // 있으면 인구·세대수 = KOSIS 실데이터(시군구 단위)
   const area = narrativeForPlace(props.admCd2); // 핫지역이면 큐레이션 '실제 이야기'
+  const ig = instagramFor(area?.name); // 핫지역이면 인스타 해시태그 버즈(Apify 수집)
 
   return (
     <PageShell>
@@ -102,6 +104,12 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
           </div>
           <p className="mb-3 text-[12px] leading-relaxed text-muted2">위 ‘내러티브 단계’(샘플 산출)를 실제 핫지역 흐름으로 검증한 큐레이션입니다.</p>
           <AreaNarrativeCard n={area} />
+          {ig && (
+            <a href={ig.url} target="_blank" rel="noopener noreferrer" className="mt-3 flex items-center justify-between gap-2 rounded-[14px] border border-line bg-card2/40 px-3.5 py-2.5 transition-colors hover:border-ink">
+              <span className="text-[12.5px] font-bold text-ink">📸 인스타그램 <span className="text-blue-l">#{ig.tag}</span> · 약 {igCountLabel(ig.postsCount)} 게시물</span>
+              <span className="shrink-0 rounded-full bg-card px-2 py-0.5 text-[10px] font-bold text-muted2">Apify 수집·잠정 →</span>
+            </a>
+          )}
         </div>
       )}
 
