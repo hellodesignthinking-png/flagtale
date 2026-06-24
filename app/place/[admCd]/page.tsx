@@ -22,6 +22,8 @@ import { MethodologyFlow } from "@/components/diagram/MethodologyFlow";
 import { GRADE_LABEL, MARKET_LABEL, NARRATIVE_LABEL, TRAJECTORY_LABEL } from "@/lib/constants";
 import { narrativeForPlace } from "@/lib/narratives";
 import { instagramFor, igCountLabel } from "@/lib/connectors/instagram";
+import { supplyFor, supplyBoost, supplyBreakdown } from "@/lib/supply";
+import { gradeOf } from "@/lib/scoring";
 import { AreaNarrativeCard } from "@/components/flagtale/AreaNarrativeCard";
 import { formatKRW, signed } from "@/lib/utils";
 
@@ -53,6 +55,11 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
   const popReal = populationMeta(); // 있으면 인구·세대수 = KOSIS 실데이터(시군구 단위)
   const area = narrativeForPlace(props.admCd2); // 핫지역이면 큐레이션 '실제 이야기'
   const ig = instagramFor(area?.name); // 핫지역이면 인스타 해시태그 버즈(Apify 수집)
+  // 동네 공급 밀도 — 등록된 플래그테일 공간·프로그램이 많을수록 매력도↑(네트워크 효과).
+  const supply = supplyFor(props.admCd2);
+  const boost = supplyBoost(props.admCd2);
+  const klaiUp = boost ? Math.min(100, Math.round((latest.klai + boost) * 10) / 10) : latest.klai;
+  const gradeUp = boost ? gradeOf(klaiUp) : latest.grade;
 
   return (
     <PageShell>
@@ -75,12 +82,12 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
             {props.sido} {props.sigungu} · 행정코드 {props.admCd2}
           </p>
         </div>
-        <KlaiGauge klai={latest.klai} grade={latest.grade} momentum={latest.momentum} size={148} />
+        <KlaiGauge klai={klaiUp} grade={gradeUp} momentum={latest.momentum} size={148} />
       </div>
 
       {/* 점수 요약 스탯 */}
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat label="등급 의미" value={latest.grade} sub={GRADE_LABEL[latest.grade]} />
+        <Stat label="등급 의미" value={gradeUp} sub={GRADE_LABEL[gradeUp]} />
         <Stat label="모멘텀" value={<MomentumChip m={latest.momentum} />} accent="amber" />
         <Stat
           label="시장 활성도"
@@ -93,6 +100,28 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
           sub={latest.negativeNarrative ? "부정 서사 확산" : undefined}
           accent={latest.negativeNarrative ? "warn" : "blue"}
         />
+      </div>
+
+      {/* 🏪 동네 공급 밀도 — 등록된 플래그테일 공간·프로그램이 많을수록 매력도↑(네트워크 효과) */}
+      <div className="mb-6 rounded-[20px] border-[1.5px] border-line bg-card2/40 p-4 sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-display text-[16px] font-black tracking-tight text-ink">🏪 동네 공급 밀도 <span className="text-[12px] font-bold text-blue-l">플래그테일 등록</span></h2>
+          {boost > 0 && <span className="rounded-full bg-amber px-2.5 py-1 text-[12px] font-extrabold text-onaccent">매력도 +{boost}</span>}
+        </div>
+        {supply && supply.count > 0 ? (
+          <>
+            <p className="mt-2 text-[12.5px] leading-relaxed text-muted">
+              등록 <b className="text-ink">{supply.count}곳</b> · {supplyBreakdown(supply)} · 관심(리뷰) <b className="text-ink">{supply.reviews.toLocaleString()}</b> → 매력도 <b className="text-ink">{latest.klai}</b> + <b className="text-ink">{boost}</b> = <b className="text-ink">{klaiUp}</b>
+            </p>
+            <div className="mt-2.5 flex flex-wrap gap-1.5">
+              {supply.items.slice(0, 10).map((it, i) => (
+                <span key={i} className="rounded-full border border-line bg-card px-2.5 py-1 text-[11px] font-bold text-ink">{it.kind} {it.name}{it.rating ? ` ★${it.rating}` : ""}</span>
+              ))}
+            </div>
+          </>
+        ) : (
+          <p className="mt-2 text-[12.5px] leading-relaxed text-muted">아직 등록된 공간·프로그램이 없어요. <b className="text-ink">매장·스테이·투어가 등록될수록 이 동네의 매력도가 올라갑니다</b> (등록 1곳당 약 +1.5). 동네에 콘텐츠가 쌓일수록 지역 매력도가 함께 성장하는 구조예요.</p>
+        )}
       </div>
 
       {/* 🎭 이 동네의 실제 이야기 — 핫지역 큐레이션(쇼케이스와 동일 데이터로 일관) */}

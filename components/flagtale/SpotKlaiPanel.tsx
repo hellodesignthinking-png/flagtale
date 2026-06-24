@@ -25,6 +25,8 @@ type Bundle = {
   peerAvg?: PeerAvg;
   periods?: string[];
   avgSignals?: SignalSeries;
+  supplyBoost?: number;
+  supply?: { count: number } | null;
 };
 const TRAJ: Record<string, string> = { rising: "📈 상승", stable: "→ 안정", declining: "📉 쇠퇴", gentrifying: "⚡ 젠트리화" };
 const MARKET: Record<string, string> = { active: "🟢 활발", stable: "🟡 안정", shrinking: "🔴 위축(거래절벽)" };
@@ -84,6 +86,14 @@ export function SpotKlaiPanel({ item }: { item: MapItem }) {
         <div className="rounded-[12px] border border-line p-2.5"><div className="text-[10px] font-bold text-muted2">추세</div><div className="mt-0.5 text-[14px] font-black text-ink">{dg ? (TRAJ[dg.trajectory] ?? dg.trajectory) : "—"}</div></div>
         <div className="rounded-[12px] border border-line p-2.5"><div className="text-[10px] font-bold text-muted2">시장 활성도</div><div className="mt-0.5 text-[13px] font-black text-ink">{MARKET[s.marketVitality] ?? s.marketVitality}</div></div>
       </div>
+
+      {/* 🏪 동네 공급 밀도 — 등록 콘텐츠가 매력도에 가산(네트워크 효과) */}
+      {(data.supplyBoost ?? 0) > 0 && (
+        <div className="flex items-center justify-between gap-2 rounded-[12px] border border-line bg-card2/40 p-2.5">
+          <span className="text-[11.5px] font-bold text-ink">🏪 플래그테일 등록 <b className="text-blue-l">{data.supply?.count}곳</b></span>
+          <span className="rounded-full bg-amber px-2 py-0.5 text-[10.5px] font-extrabold text-onaccent">매력도 +{data.supplyBoost}</span>
+        </div>
+      )}
 
       {/* 🎭 핫지역 실제 이야기 — 쇼케이스(/methodology)와 동일 데이터로 일관, 공개 */}
       {area && (
