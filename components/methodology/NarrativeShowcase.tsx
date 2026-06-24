@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { AREA_NARRATIVES, STAGE_META, AUTH_META, narrativePrimaryAdmCd, type LifeStage } from "@/lib/narratives";
+import { AREA_NARRATIVES, STAGE_META, AUTH_META, narrativePrimaryAdmCd, reasonsFor, type LifeStage } from "@/lib/narratives";
 
 const STAGE_ORDER: LifeStage[] = ["formation", "spread", "peak", "gentri", "decline"];
 
@@ -47,6 +47,7 @@ export function NarrativeShowcase() {
           const m = STAGE_META[a.stage];
           const auth = AUTH_META[a.authenticity];
           const admCd = narrativePrimaryAdmCd(a.name);
+          const reasons = reasonsFor(a.name);
           return (
             <div key={a.name} className="flex flex-col rounded-[20px] border-[1.5px] border-line bg-card p-4" style={{ borderLeftWidth: 5, borderLeftColor: m.color }}>
               <div className="flex flex-wrap items-center gap-2">
@@ -64,6 +65,16 @@ export function NarrativeShowcase() {
                   <span key={k} className="rounded-full bg-card2 px-2.5 py-0.5 text-[11px] font-bold text-muted">#{k}</span>
                 ))}
               </div>
+              {reasons.length > 0 && (
+                <div className="mt-3 rounded-[12px] bg-card2/60 p-3">
+                  <div className="mb-1.5 text-[11px] font-extrabold text-amber">💡 왜 떴나</div>
+                  <ul className="space-y-1">
+                    {reasons.map((r, i) => (
+                      <li key={i} className="flex gap-1.5 text-[12px] leading-relaxed text-ink"><span className="shrink-0 font-bold text-muted2">{i + 1}</span>{r}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               <div className="mt-3 grid gap-1.5 border-t border-line pt-2.5 text-[11.5px] sm:grid-cols-2">
                 <div><span className="font-bold text-muted2">앵커 </span><span className="text-muted">{a.anchor}</span></div>

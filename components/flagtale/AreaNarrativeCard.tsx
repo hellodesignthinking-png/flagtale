@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { type AreaNarrative, STAGE_META, AUTH_META } from "@/lib/narratives";
+import { type AreaNarrative, STAGE_META, AUTH_META, reasonsFor } from "@/lib/narratives";
 
 // 핫지역 큐레이션 내러티브 카드 — 쇼케이스/지도패널/동 리포트에서 같은 '이야기'를 일관되게 렌더.
 // compact=지도 패널용(궤적 생략). href=동 리포트 딥링크.
 export function AreaNarrativeCard({ n, compact, href }: { n: AreaNarrative; compact?: boolean; href?: string }) {
   const sm = STAGE_META[n.stage];
   const am = AUTH_META[n.authenticity];
+  const reasons = reasonsFor(n.name);
   return (
     <div className="rounded-[16px] border-[1.5px] p-3.5" style={{ borderColor: `${sm.color}44`, background: `${sm.color}0c` }}>
       <div className="flex flex-wrap items-center gap-1.5">
@@ -23,6 +24,16 @@ export function AreaNarrativeCard({ n, compact, href }: { n: AreaNarrative; comp
           <span key={k} className="rounded-full bg-card2 px-2 py-0.5 text-[10.5px] font-bold text-blue-l">#{k}</span>
         ))}
       </div>
+      {reasons.length > 0 && (
+        <div className="mt-2.5 rounded-[10px] bg-card2/50 p-2.5">
+          <div className="mb-1 text-[10.5px] font-extrabold text-amber">💡 왜 떴나</div>
+          <ul className="space-y-0.5">
+            {(compact ? reasons.slice(0, 2) : reasons).map((r, i) => (
+              <li key={i} className="flex gap-1.5 text-[11.5px] leading-relaxed text-ink"><span className="shrink-0 text-muted2">·</span>{r}</li>
+            ))}
+          </ul>
+        </div>
+      )}
       <div className="mt-2.5 space-y-1 border-t border-line/60 pt-2.5 text-[11.5px] leading-relaxed">
         <div><b className="text-ink">앵커</b> <span className="text-muted">{n.anchor}</span></div>
         <div><b className="text-ink">진정성</b> <span className="text-muted">{n.authNote}</span></div>

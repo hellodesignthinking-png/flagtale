@@ -4,13 +4,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Supercluster from "supercluster";
 import { MAP_CATS, ftImage, type MapItem } from "@/lib/flagtale-types";
-import { narrativeForPlace, STAGE_META, AUTH_META, type AreaNarrative } from "@/lib/narratives";
+import { narrativeForPlace, narrativeJumpList, reasonsFor, STAGE_META, AUTH_META, type AreaNarrative } from "@/lib/narratives";
 import { HotspotPanel, type HotspotJump } from "./HotspotPanel";
 
 // 핫지역 큐레이션 내러티브 인포윈도우 HTML(폴리곤 클릭·핫지역 점프 공용).
 function narrativeCardHTML(narr: AreaNarrative, admCd: string): string {
   const sm = STAGE_META[narr.stage];
-  return `<div style="max-width:236px;background:#fff;border-radius:12px;padding:11px 13px;font-family:Pretendard,system-ui,sans-serif;box-shadow:0 6px 22px rgba(0,0,0,.28);border:1.5px solid ${sm.color}55"><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap"><span style="background:${sm.color};color:#fff;border-radius:999px;padding:2px 8px;font-size:10.5px;font-weight:800">${sm.emoji} ${sm.label}</span><span style="font-size:12px;font-weight:800;color:#0d2b5e">${narr.name}</span></div><div style="margin-top:7px;font-size:13px;font-weight:800;line-height:1.35;color:#16223a">“${narr.theme}”</div><div style="margin-top:6px;font-size:10.5px;color:#5b6b86;line-height:1.4">${AUTH_META[narr.authenticity].label} · ${narr.authNote}</div><a href="/place/${admCd}" style="display:inline-block;margin-top:8px;background:#0d2b5e;color:#fff;border-radius:999px;padding:5px 11px;font-size:11px;font-weight:800;text-decoration:none">이 동네 진단 →</a></div>`;
+  const top = reasonsFor(narr.name).slice(0, 2);
+  const why = top.length ? `<div style="margin-top:7px;padding-top:7px;border-top:1px solid #eef0f4"><div style="font-size:9.5px;font-weight:800;color:#D4861E;margin-bottom:2px">💡 왜 떴나</div>${top.map((r) => `<div style="font-size:10.5px;color:#16223a;line-height:1.4">· ${r}</div>`).join("")}</div>` : "";
+  return `<div style="max-width:240px;background:#fff;border-radius:12px;padding:11px 13px;font-family:Pretendard,system-ui,sans-serif;box-shadow:0 6px 22px rgba(0,0,0,.28);border:1.5px solid ${sm.color}55"><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap"><span style="background:${sm.color};color:#fff;border-radius:999px;padding:2px 8px;font-size:10.5px;font-weight:800">${sm.emoji} ${sm.label}</span><span style="font-size:12px;font-weight:800;color:#0d2b5e">${narr.name}</span></div><div style="margin-top:7px;font-size:13px;font-weight:800;line-height:1.35;color:#16223a">“${narr.theme}”</div><div style="margin-top:6px;font-size:10.5px;color:#5b6b86;line-height:1.4">${AUTH_META[narr.authenticity].label} · ${narr.authNote}</div>${why}<a href="/place/${admCd}" style="display:inline-block;margin-top:8px;background:#0d2b5e;color:#fff;border-radius:999px;padding:5px 11px;font-size:11px;font-weight:800;text-decoration:none">이 동네 진단 →</a></div>`;
 }
 import { MapResultsPanel, sortItems } from "./MapResultsPanel";
 import { markerPillHtml, clusterBadgeHtml, markerTier } from "./mapMarkers";
@@ -99,6 +101,7 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
   const panoRef = useRef<any>(null);
   const heatRef = useRef<any[]>([]);
   const heatOnRef = useRef(false);
+  const hotMarkersRef = useRef<any[]>([]); // 🔥 핫지역 마커
   const choroGeoRef = useRef<any>(null);
   const choroColorsRef = useRef<Record<string, Record<string, { color: string; label: string }>>>({});
   const choroSiguRef = useRef<Record<string, Record<string, string>>>({}); // 레이어→시군구→평균색(저줌 블록)
@@ -473,6 +476,27 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
     if (engine === "naver" && heatOnRef.current) renderChoro();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [choroLayer, choroSimple]);
+
+  // 🔥 핫지역 토글 → 지도에 단계색 마커(48). 클릭 시 날아가기.
+  useEffect(() => {
+    const map = mapRef.current, naver = naverRef.current;
+    if (!map || !naver || engine !== "naver") return;
+    hotMarkersRef.current.forEach((m) => { try { m.setMap(null); } catch { /* noop */ } });
+    hotMarkersRef.current = [];
+    if (!hotspots) return;
+    for (const it of narrativeJumpList()) {
+      const sm = STAGE_META[it.stage];
+      const mk = new naver.maps.Marker({
+        position: new naver.maps.LatLng(it.coord[0], it.coord[1]),
+        map, zIndex: 6, title: it.name,
+        icon: { content: `<div style="transform:translate(-50%,-50%);width:28px;height:28px;display:grid;place-items:center;background:#fff;border:2.5px solid ${sm.color};border-radius:50%;box-shadow:0 2px 9px rgba(0,0,0,.33);font-size:14px;cursor:pointer">${sm.emoji}</div>`, anchor: new naver.maps.Point(0, 0) },
+      });
+      naver.maps.Event.addListener(mk, "click", () => flyToHotspot(it));
+      hotMarkersRef.current.push(mk);
+    }
+    return () => { hotMarkersRef.current.forEach((m) => { try { m.setMap(null); } catch { /* noop */ } }); hotMarkersRef.current = []; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hotspots, engine]);
 
   // 루트빌더 — 게임 루트 동기화
   useEffect(() => { const s = () => setRouteIds(readGame().route); s(); return onGameChange(s); }, []);
