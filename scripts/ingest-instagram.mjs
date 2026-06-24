@@ -31,6 +31,7 @@ const TAGS = {
   "인천 송도": "송도", 속초: "속초여행", 춘천: "춘천여행", 여수: "여수밤바다", 송리단길: "송리단길",
   용리단길: "용리단길", "제주 한림": "협재", "세종 나성동": "나성동", "을지로 (힙지로)": "을지로",
   "통영 동피랑": "동피랑", "창원 진해": "진해군항제", "충주 관아골": "충주여행",
+  "제주 (산지천)": "탑동", "인천 배다리": "동인천",
 };
 const names = Object.keys(TAGS);
 const directUrls = names.map((n) => `https://www.instagram.com/explore/tags/${encodeURIComponent(TAGS[n])}/`);

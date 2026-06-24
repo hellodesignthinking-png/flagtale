@@ -39,17 +39,24 @@ export function GET(req: NextRequest) {
     const narrColor = narr ? hexRgb(STAGE_META[narr.stage].color) : null;
     const narrLabel = narr ? `${STAGE_META[narr.stage].emoji} ${STAGE_META[narr.stage].short} · ${narr.name}` : null;
     const narrAlert = narr ? (narr.stage === "gentri" || narr.stage === "decline" ? 1 : 0) : null;
-    // 공급(등록 콘텐츠)+수요(인스타 검색량) 가산 — 종합(klai)엔 점수 보정, 활력(vitality) 레이어엔 단독 표시.
+    // 공급(등록 콘텐츠)+수요(인스타 검색량) 가산 — 종합(klai)엔 점수 보정, 활력(vitality)엔 단독 표시.
     let boost = 0;
     if (layer === "klai" || layer === "vitality") {
       const nb = narrativeForPlace(cd);
       boost = Math.round((supplyBoost(cd) + buzzBoost(nb ? instagramFor(nb.name)?.postsCount : null)) * 10) / 10;
     }
+    const N = periods.length;
     for (let t = 0; t < periods.length; t++) {
       const s0 = series[t] ?? series[series.length - 1];
       let s = s0;
-      if (layer === "klai" && boost) s = { ...s0, klai: Math.min(100, Math.round((s0.klai + boost) * 10) / 10), grade: gradeOf(s0.klai + boost) };
-      else if (layer === "vitality") s = { ...s0, vitalityBoost: boost } as typeof s0;
+      if (boost) {
+        // 네트워크 효과는 시간에 따라 누적 → 과거일수록 약하게(완만한 가속 램프). 최신=full.
+        const pb = N > 1 ? Math.round(boost * (0.1 + 0.9 * Math.pow(t / (N - 1), 1.4)) * 10) / 10 : boost;
+        if (layer === "klai") s = { ...s0, klai: Math.min(100, Math.round((s0.klai + pb) * 10) / 10), grade: gradeOf(s0.klai + pb) };
+        else if (layer === "vitality") s = { ...s0, vitalityBoost: pb } as typeof s0;
+      } else if (layer === "vitality") {
+        s = { ...s0, vitalityBoost: 0 } as typeof s0;
+      }
       c.push(narrColor ?? colorForLayer(layer, s));
       l.push(narrLabel ?? displayForLayer(layer, s));
       e.push(Math.round(elevationForLayer(layer, s)));

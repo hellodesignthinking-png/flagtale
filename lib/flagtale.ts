@@ -37,11 +37,15 @@ export function buildMapItems(): MapItem[] {
   }
   const jitter: Record<string, number> = {};
   for (const t of loadTours()) {
-    const ctr = REGION_CENTROID[t.region];
-    if (!ctr) continue;
-    const n = (jitter[t.region] = (jitter[t.region] ?? 0) + 1);
-    const off = (n - 1) * 0.035;
-    out.push({ id: `tour-${t.id}`, kind: "tour", cat: "tour", catLabel: "투어", name: t.title, lat: ctr[1] + off, lng: ctr[0] + off, region: t.region, emoji: "🎫", color: "#D4861E", sub: `${t.region} · ${t.duration}`, detail: t.description, rating: t.rating, reviewCount: t.like_count || undefined, price: t.price, image: t.image, hours: t.schedule, tags: [t.region, t.duration, `정원 ${t.max_seats}명`] });
+    let lat = t.lat, lng = t.lng; // 실좌표 우선 → 정확한 동 매핑(없으면 region 중심+jitter)
+    if (lat == null || lng == null) {
+      const ctr = REGION_CENTROID[t.region];
+      if (!ctr) continue;
+      const n = (jitter[t.region] = (jitter[t.region] ?? 0) + 1);
+      const off = (n - 1) * 0.035;
+      lat = ctr[1] + off; lng = ctr[0] + off;
+    }
+    out.push({ id: `tour-${t.id}`, kind: "tour", cat: "tour", catLabel: "투어", name: t.title, lat, lng, region: t.region, emoji: "🎫", color: "#D4861E", sub: `${t.region} · ${t.duration}`, detail: t.description, rating: t.rating, reviewCount: t.like_count || undefined, price: t.price, image: t.image, hours: t.schedule, tags: [t.region, t.duration, `정원 ${t.max_seats}명`] });
   }
   for (const f of loadFestivals()) {
     out.push({ id: `fest-${f.id}`, kind: "festival", cat: "festival", catLabel: "축제", name: f.name, lat: f.lat, lng: f.lng, region: `${f.sido} ${f.region}`, emoji: "🎉", color: "#e11d48", sub: `${f.region} · ${f.month}`, detail: f.blurb, period: f.month, tags: [f.sido, f.region, f.month] });

@@ -17,7 +17,6 @@ function build(): Map<string, Supply> {
   if (_byAdm) return _byAdm;
   const feats = loadDistricts().features.map((f) => ({ cd: f.properties.admCd2, lat: f.properties.centroidLat, lng: f.properties.centroidLng }));
   const m = new Map<string, Supply>();
-  const tours: { lat: number; lng: number; name: string; rating?: number; reviewCount?: number }[] = [];
   const addTo = (cd: string, kind: string, it: { name: string; rating?: number; reviewCount?: number }) => {
     const s = m.get(cd) ?? { count: 0, kinds: {}, reviews: 0, items: [] };
     s.count++;
@@ -26,10 +25,9 @@ function build(): Map<string, Supply> {
     if (s.items.length < 16) s.items.push({ name: it.name, kind: KIND_LABEL[kind] ?? kind, rating: it.rating });
     m.set(cd, s);
   };
+  // 투어 포함 모든 등록 콘텐츠는 실좌표 기반(tours.json에 lat/lng 부여) → 최근접 행정동에 정확히 매핑.
   for (const it of buildMapItems()) {
     if (!it.lat || !it.lng) continue;
-    // 투어는 실좌표가 없고 시(예:"서울") 중심좌표라 → 별도로 모아 지역 허브에 가산(아래).
-    if (it.kind === "tour") { tours.push({ lat: it.lat, lng: it.lng, name: it.name, rating: it.rating, reviewCount: it.reviewCount }); continue; }
     let best = "";
     let bd = Infinity;
     for (const f of feats) {
@@ -37,17 +35,6 @@ function build(): Map<string, Supply> {
       if (d < bd) { bd = d; best = f.cd; }
     }
     if (best) addTo(best, it.kind, it);
-  }
-  // 투어 = 지역단위 프로그램. 권역 좌표 → 가장 가까운 '콘텐츠 보유 동(지역 허브)'에 가산해 허브를 강화(빈 동 오귀속 방지).
-  const hubs = [...m.keys()].map((cd) => { const f = feats.find((x) => x.cd === cd)!; return { cd, lat: f.lat, lng: f.lng }; });
-  for (const t of tours) {
-    let best = "";
-    let bd = Infinity;
-    for (const h of hubs) {
-      const d = (h.lat - t.lat) ** 2 + (h.lng - t.lng) ** 2;
-      if (d < bd) { bd = d; best = h.cd; }
-    }
-    if (best) addTo(best, "tour", t); // 콘텐츠 동이 전혀 없으면 드롭(blanket 금지)
   }
   return (_byAdm = m);
 }

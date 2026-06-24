@@ -17,6 +17,7 @@ export interface Creator {
 }
 export interface Tour {
   id: number; title: string; description: string; creator_id: number; region: string;
+  lat?: number; lng?: number; // 실좌표(있으면 정확한 동 매핑, 없으면 region 중심+jitter)
   price: number; max_seats: number; booked_seats: number; schedule: string; duration: string;
   rating: number; like_count: number; image: string;
 }
