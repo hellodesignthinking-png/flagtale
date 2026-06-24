@@ -4,7 +4,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Supercluster from "supercluster";
 import { MAP_CATS, ftImage, type MapItem } from "@/lib/flagtale-types";
-import { narrativeForPlace, STAGE_META, AUTH_META } from "@/lib/narratives";
+import { narrativeForPlace, STAGE_META, AUTH_META, type AreaNarrative } from "@/lib/narratives";
+import { HotspotPanel, type HotspotJump } from "./HotspotPanel";
+
+// 핫지역 큐레이션 내러티브 인포윈도우 HTML(폴리곤 클릭·핫지역 점프 공용).
+function narrativeCardHTML(narr: AreaNarrative, admCd: string): string {
+  const sm = STAGE_META[narr.stage];
+  return `<div style="max-width:236px;background:#fff;border-radius:12px;padding:11px 13px;font-family:Pretendard,system-ui,sans-serif;box-shadow:0 6px 22px rgba(0,0,0,.28);border:1.5px solid ${sm.color}55"><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap"><span style="background:${sm.color};color:#fff;border-radius:999px;padding:2px 8px;font-size:10.5px;font-weight:800">${sm.emoji} ${sm.label}</span><span style="font-size:12px;font-weight:800;color:#0d2b5e">${narr.name}</span></div><div style="margin-top:7px;font-size:13px;font-weight:800;line-height:1.35;color:#16223a">“${narr.theme}”</div><div style="margin-top:6px;font-size:10.5px;color:#5b6b86;line-height:1.4">${AUTH_META[narr.authenticity].label} · ${narr.authNote}</div><a href="/place/${admCd}" style="display:inline-block;margin-top:8px;background:#0d2b5e;color:#fff;border-radius:999px;padding:5px 11px;font-size:11px;font-weight:800;text-decoration:none">이 동네 진단 →</a></div>`;
+}
 import { MapResultsPanel, sortItems } from "./MapResultsPanel";
 import { markerPillHtml, clusterBadgeHtml, markerTier } from "./mapMarkers";
 import { openState, nowParts, type NowT } from "@/lib/openNow";
@@ -79,6 +86,7 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
   const [choroLayer, setChoroLayer] = useState<LayerId>("klai");
   const [choroSimple, setChoroSimple] = useState(false); // 3단계(상/중/하) 단순화
   const choroSimpleRef = useRef(false);
+  const [hotspots, setHotspots] = useState(false); // 🔥 검증된 핫지역 디스커버리
   const { plan } = usePlan();
   const canChoro = canUse(plan, "choropleth"); // choropleth = Pro 이상
   const [upsell, setUpsell] = useState(false);
@@ -305,8 +313,7 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
             if (!choroIWRef.current) choroIWRef.current = new naver.maps.InfoWindow({ borderWidth: 0, backgroundColor: "transparent", disableAnchor: true, pixelOffset: new naver.maps.Point(0, -2) });
             const narr = narrativeForPlace(f.properties.admCd2); // 핫지역이면 실제 이야기 카드
             if (narr) {
-              const sm = STAGE_META[narr.stage];
-              choroIWRef.current.setContent(`<div style="max-width:236px;background:#fff;border-radius:12px;padding:11px 13px;font-family:Pretendard,system-ui,sans-serif;box-shadow:0 6px 22px rgba(0,0,0,.28);border:1.5px solid ${sm.color}55"><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap"><span style="background:${sm.color};color:#fff;border-radius:999px;padding:2px 8px;font-size:10.5px;font-weight:800">${sm.emoji} ${sm.label}</span><span style="font-size:12px;font-weight:800;color:#0d2b5e">${narr.name}</span></div><div style="margin-top:7px;font-size:13px;font-weight:800;line-height:1.35;color:#16223a">“${narr.theme}”</div><div style="margin-top:6px;font-size:10.5px;color:#5b6b86;line-height:1.4">${AUTH_META[narr.authenticity].label} · ${narr.authNote}</div><a href="/place/${f.properties.admCd2}" style="display:inline-block;margin-top:8px;background:#0d2b5e;color:#fff;border-radius:999px;padding:5px 11px;font-size:11px;font-weight:800;text-decoration:none">이 동네 진단 →</a></div>`);
+              choroIWRef.current.setContent(narrativeCardHTML(narr, f.properties.admCd2));
             } else {
               choroIWRef.current.setContent(`<div style="background:#0d2b5e;color:#fff;border-radius:10px;padding:6px 11px;font:800 12px Pretendard,system-ui,sans-serif;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.4)"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${meta.color};margin-right:6px"></span>${f.properties.name} · ${meta.label}</div>`);
             }
@@ -339,6 +346,19 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
     const map = mapRef.current;
     if (!map) return;
     try { map.setZoom(Math.round(map.getZoom()) + d, true); } catch { /* noop */ }
+  }
+  // 핫지역으로 날아가 실제 이야기 인포윈도우를 띄움(디스커버리).
+  function flyToHotspot(it: HotspotJump) {
+    const map = mapRef.current, naver = naverRef.current;
+    if (!map || !naver) return;
+    setHotspots(false);
+    const ll = new naver.maps.LatLng(it.coord[0], it.coord[1]);
+    try { map.setCenter(ll); map.setZoom(14, true); } catch { /* noop */ }
+    const narr = narrativeForPlace(it.admCd2);
+    if (!narr) return;
+    if (!choroIWRef.current) choroIWRef.current = new naver.maps.InfoWindow({ borderWidth: 0, backgroundColor: "transparent", disableAnchor: true, pixelOffset: new naver.maps.Point(0, -2) });
+    choroIWRef.current.setContent(narrativeCardHTML(narr, it.admCd2));
+    setTimeout(() => { try { choroIWRef.current.open(map, ll); } catch { /* noop */ } }, 450);
   }
   function toggleType() {
     const naver = naverRef.current, map = mapRef.current;
@@ -524,6 +544,7 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
             { icon: mapType === "normal" ? "🛰" : "🗺", label: mapType === "normal" ? "위성" : "일반", on: mapType === "sat", locked: false, onClick: toggleType },
             { icon: "📍", label: "현위치", on: false, locked: false, onClick: locate },
             { icon: "🎨", label: "매력도", on: heat, locked: !canChoro, onClick: () => { if (canChoro) setHeat((h) => !h); else { setUpsell(true); setTimeout(() => setUpsell(false), 4500); } } },
+            { icon: "🔥", label: "핫지역", on: hotspots, locked: false, onClick: () => setHotspots((v) => !v) },
           ].map((c) => (
             <button key={c.label} onClick={c.onClick} title={c.locked ? "매력도 색칠(choropleth)은 Pro 전용" : c.label} className={`relative grid w-[46px] place-items-center gap-0.5 rounded-[13px] border-[1.5px] px-1 py-1.5 shadow-lg transition-colors ${c.on ? "border-ink bg-ink text-white" : "border-line bg-card text-ink hover:border-ink"}`}>
               {c.locked && <span className="absolute -right-1.5 -top-1.5 grid h-4 w-4 place-items-center rounded-full bg-amber text-[8px] shadow">🔒</span>}
@@ -540,6 +561,9 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
           <div className="h-px bg-line" />
           <button onClick={() => zoomBy(-1)} aria-label="축소" className="grid h-9 w-9 place-items-center text-[19px] font-bold leading-none text-ink transition-colors hover:bg-card2">−</button>
         </div>
+      )}
+      {engine === "naver" && hotspots && (
+        <HotspotPanel onJump={flyToHotspot} onClose={() => setHotspots(false)} />
       )}
       {engine === "naver" && routeIds.length > 0 && (
         <div className="absolute left-1/2 top-[60px] z-[15] flex -translate-x-1/2 items-center gap-2 rounded-full border-[1.5px] border-line bg-card px-3.5 py-1.5 text-[12px] font-extrabold text-ink shadow-lg">

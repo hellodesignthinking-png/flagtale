@@ -215,3 +215,34 @@ export function narrativePrimaryAdmCd(name: string): string | null {
 
 /** 큐레이션과 연결된 모든 행정동 코드 Set (지도 강조용). */
 export const NARRATIVE_ADMCD_SET = new Set(Object.values(NARRATIVE_ADMCD).flat());
+
+// 핫지역 대표 좌표(대표 행정동 centroid) — 지도 '날아가기'(디스커버리)용.
+export const NARRATIVE_COORD: Record<string, [number, number]> = {
+  "인천 개항로": [37.477, 126.6122],
+  "공주 제민천": [36.4504, 127.1231],
+  "목포 (괜찮아마을)": [34.7942, 126.3834],
+  "충주 관아골": [36.972, 127.9324],
+  문래동: [37.5168, 126.8925],
+  "양양 (죽도·인구)": [37.9423, 128.7428],
+  망원동: [37.5545, 126.9024],
+  "부산 영도": [35.082, 129.0474],
+  "수원 행궁동": [37.2796, 127.0157],
+  연희동: [37.5717, 126.9309],
+  "을지로 (힙지로)": [37.5661, 126.9961],
+  익선동: [37.5771, 126.9896],
+  성수동: [37.5417, 127.0413],
+  연남동: [37.5635, 126.9226],
+  한남동: [37.5396, 127.0056],
+  가로수길: [37.5254, 127.022],
+};
+
+/** 지도 디스커버리용 핫지역 목록 — 라이프사이클 순(형성→쇠퇴), 좌표·대표코드 포함. */
+export function narrativeJumpList(): { name: string; stage: LifeStage; theme: string; coord: [number, number]; admCd2: string }[] {
+  return AREA_NARRATIVES.filter((a) => NARRATIVE_COORD[a.name] && NARRATIVE_ADMCD[a.name]).map((a) => ({
+    name: a.name,
+    stage: a.stage,
+    theme: a.theme,
+    coord: NARRATIVE_COORD[a.name],
+    admCd2: NARRATIVE_ADMCD[a.name][0],
+  }));
+}
