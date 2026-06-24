@@ -4,6 +4,9 @@
 // 연구자 톤: 전국 변화·검색·인구를 종합해 "어떤 동네가 왜 뜨고/지는지"를 서술.
 import "server-only";
 import { loadScores, loadDistricts, loadSignals, loadDemographics } from "@/lib/data";
+import { supplyBoost, authenticityGap } from "@/lib/supply";
+import { narrativeForPlace } from "@/lib/narratives";
+import { instagramFor, buzzBoost } from "@/lib/connectors/instagram";
 import type { Grade, MarketVitality, NarrativeStage, PlaceScore, Report } from "@/lib/types";
 
 // 클릭 시 펼쳐지는 상세 — 점수 프로필 + 논리적 설명
@@ -35,6 +38,17 @@ export interface WeeklyRiser {
   detail: MoverDetail;
 }
 
+// 진정성 갭 무버 — 검색 수요 vs 등록 공급 괴리(과열/미발견)
+export interface GapMover {
+  admCd2: string;
+  name: string;
+  sigungu: string;
+  demandN: number; // 0~1 검색 수요
+  supplyN: number; // 0~1 등록 공급
+  gap: number; // demandN - supplyN
+  reason: string;
+}
+
 // 전국 동향 분석 — 무슨 이벤트, 왜 성장/쇠락하는지 논리적 설명
 export interface WeeklyAnalysis {
   events: { title: string; detail: string }[]; // 이주의 전국 이슈
@@ -62,6 +76,8 @@ export interface WeeklyBlocks {
   cliffs: { admCd2: string; name: string; sigungu: string; klai: number; reason: string }[];
   narrativesHot: string[];
   narrativesCold: string[];
+  gapHype: GapMover[]; // 과열·거품(수요≫공급)
+  gapHidden: GapMover[]; // 미발견 강세(공급≫수요)
   spotlight: { admCd2: string; name: string; sigungu: string; klai: number; grade: Grade; momentum: number; writeup: string; lng: number; lat: number };
   analysis: WeeklyAnalysis;
   methodologyNote: string;
@@ -304,6 +320,21 @@ export function computeWeekly(year: number, week: number): Report {
     reason: (r.p.popChangeRate || 0) < -0.5 ? "거래 위축 + 인구 유출 동반" : "거래량 둔화·공실 확대 — 가격 하락 선행 신호",
   }));
 
+  // 진정성 갭 — 검색 수요 vs 등록 공급 괴리. 과열(수요≫공급)·미발견(공급≫수요) 상위 동.
+  const gapAll = rows.map((r) => {
+    const nb = narrativeForPlace(r.admCd2);
+    const g = authenticityGap(supplyBoost(r.admCd2), buzzBoost(nb ? instagramFor(nb.name)?.postsCount : null));
+    return { r, g };
+  });
+  const gapHype: GapMover[] = gapAll.filter((x) => x.g.verdict === "hype").sort((a, b) => b.g.gap - a.g.gap).slice(0, 6).map(({ r, g }) => ({
+    admCd2: r.admCd2, name: r.name, sigungu: r.sigungu, demandN: g.demandN, supplyN: g.supplyN, gap: g.gap,
+    reason: `검색 수요(${Math.round(g.demandN * 100)})가 등록 공급(${Math.round(g.supplyN * 100)})을 앞섬 — 서사 과열·거품 주의`,
+  }));
+  const gapHidden: GapMover[] = gapAll.filter((x) => x.g.verdict === "hidden").sort((a, b) => a.g.gap - b.g.gap).slice(0, 6).map(({ r, g }) => ({
+    admCd2: r.admCd2, name: r.name, sigungu: r.sigungu, demandN: g.demandN, supplyN: g.supplyN, gap: g.gap,
+    reason: `등록 공급(${Math.round(g.supplyN * 100)})이 검색 수요(${Math.round(g.demandN * 100)})보다 큼 — 저평가·노출 여력`,
+  }));
+
   // 스포트라이트 — 이번 주 risers 1위(서술형)
   const sp = risers[0] ?? { admCd2: rows[0].admCd2, name: rows[0].name, sigungu: rows[0].sigungu, klai: rows[0].p.klai, grade: rows[0].p.grade, momentum: rows[0].p.momentum, reason: "", lng: rows[0].lng, lat: rows[0].lat };
   const writeup =
@@ -343,6 +374,8 @@ export function computeWeekly(year: number, week: number): Report {
       cliffs,
       narrativesHot,
       narrativesCold,
+      gapHype,
+      gapHidden,
       spotlight: { admCd2: sp.admCd2, name: sp.name, sigungu: sp.sigungu, klai: sp.klai, grade: sp.grade, momentum: sp.momentum, writeup, lng: sp.lng, lat: sp.lat },
       analysis: buildAnalysis(national, rows),
       methodologyNote: "KLAI 4축(인구·상권·공간·인식) 합성 + 모멘텀(축별 변화율 z-합). 검색·기사=네이버/BIG KINDS, 인구=KOSIS, 상권=소진공. 표본·잠정(Provisional) — 실데이터 확대 시 정밀화.",

@@ -111,6 +111,16 @@ export function colorForLayer(
       alpha = v > 0 ? 150 + Math.round(t * 95) : 110;
       break;
     }
+    case "authgap": {
+      // 진정성 갭(발산) — 과열(검색≫등록, gap>0)=빨강 · 미발견(등록≫검색, gap<0)=초록. 신호 없으면 베이스.
+      const r = s as unknown as Record<string, number>;
+      if (!r.authSignal) { rgb = [44, 58, 86]; alpha = 90; break; }
+      const g = r.authGap;
+      if (g >= 0) { const t = Math.min(g / 0.8, 1); rgb = mix([88, 98, 112], [214, 68, 52], 0.25 + t * 0.75); }
+      else { const t = Math.min(-g / 0.8, 1); rgb = mix([88, 98, 112], [36, 168, 108], 0.25 + t * 0.75); }
+      alpha = 215;
+      break;
+    }
     default:
       rgb = SLATE;
   }
@@ -154,6 +164,8 @@ export function elevationForLayer(layer: LayerId, s: PlaceScore): number {
       return clamp01((s.budgetInflow / 110) * 100);
     case "vitality":
       return clamp01((((s as unknown as Record<string, number>).vitalityBoost ?? 0) / 12) * 100);
+    case "authgap":
+      return clamp01((Math.abs((s as unknown as Record<string, number>).authGap ?? 0) / 0.8) * 100);
     default:
       return clamp01(s.klai);
   }
@@ -202,6 +214,13 @@ export function displayForLayer(layer: LayerId, s: PlaceScore): string {
     case "vitality": {
       const v = (s as unknown as Record<string, number>).vitalityBoost ?? 0;
       return v > 0 ? `활력 +${v} · 등록·검색 밀도` : "플래그테일 등록 없음";
+    }
+    case "authgap": {
+      const r = s as unknown as Record<string, number>;
+      if (!r.authSignal) return "신호 없음";
+      if (r.authGap >= 0.3) return `과열·거품 +${r.authGap}`;
+      if (r.authGap <= -0.3) return `미발견 강세 ${r.authGap}`;
+      return `균형 (갭 ${r.authGap > 0 ? "+" : ""}${r.authGap})`;
     }
     default:
       return `${s.klai}`;

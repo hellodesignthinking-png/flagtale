@@ -49,6 +49,12 @@ export function Legend({ layer }: { layer: LayerId }) {
         { color: "#9a7a3e", label: "공급·검색" },
         { color: "#F09628", label: "활력 높음" },
       ];
+    if (layer === "authgap")
+      return [
+        { color: "#D64434", label: "과열·거품 (검색≫등록)" },
+        { color: "#5b6470", label: "균형 / 무신호" },
+        { color: "#24A86C", label: "미발견 (등록≫검색)" },
+      ];
     if (layer === "gentri")
       return [
         { color: "#2e456b", label: "정상" },

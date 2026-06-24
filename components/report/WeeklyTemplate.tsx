@@ -172,6 +172,46 @@ export function WeeklyTemplate({ report }: { report: Report }) {
         </div>
       </Block>
 
+      {/* 3.5 진정성 갭 — 과열 / 미발견 (검색 수요 vs 등록 공급) */}
+      {(b.gapHype?.length || b.gapHidden?.length) ? (
+        <section className="grid gap-4 md:grid-cols-2">
+          <Block title="🎭 과열·거품 주의 (검색 ≫ 등록)" accent="warn">
+            {b.gapHype?.length ? (
+              <ul className="space-y-1.5">
+                {b.gapHype.map((g) => (
+                  <li key={g.admCd2} className="rounded-lg border border-warn/30 bg-warn/10 px-3 py-2">
+                    <div className="flex items-center justify-between">
+                      <Link href={`/place/${g.admCd2}`} className="text-[13px] font-bold text-ink hover:text-amber">
+                        {g.name} <span className="text-[11px] font-normal text-muted2">{g.sigungu}</span>
+                      </Link>
+                      <span className="text-[12px] font-semibold text-warn">🔴 갭 +{g.gap}</span>
+                    </div>
+                    <div className="mt-0.5 text-[11.5px] text-muted">{g.reason}</div>
+                  </li>
+                ))}
+              </ul>
+            ) : <Empty />}
+          </Block>
+          <Block title="🎭 미발견 강세 (등록 ≫ 검색)">
+            {b.gapHidden?.length ? (
+              <ul className="space-y-1.5">
+                {b.gapHidden.map((g) => (
+                  <li key={g.admCd2} className="rounded-lg border border-line bg-card2 px-3 py-2">
+                    <div className="flex items-center justify-between">
+                      <Link href={`/place/${g.admCd2}`} className="text-[13px] font-bold text-ink hover:text-amber">
+                        {g.name} <span className="text-[11px] font-normal text-muted2">{g.sigungu}</span>
+                      </Link>
+                      <span className="text-[12px] font-semibold text-grade-b">🟢 갭 {g.gap}</span>
+                    </div>
+                    <div className="mt-0.5 text-[11.5px] text-muted">{g.reason}</div>
+                  </li>
+                ))}
+              </ul>
+            ) : <Empty />}
+          </Block>
+        </section>
+      ) : null}
+
       {/* 4. 스포트라이트 — 서술형 */}
       <Block title="④ 이주의 심층 스포트라이트" accent="amber">
         <div className="flex flex-wrap items-center gap-4">

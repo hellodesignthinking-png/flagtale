@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { loadDistricts, loadScores } from "@/lib/data";
 import { colorForLayer, displayForLayer, elevationForLayer, isPulseAlert, gradeOf } from "@/lib/scoring";
 import { narrativeForPlace, STAGE_META } from "@/lib/narratives";
-import { supplyBoost } from "@/lib/supply";
+import { supplyBoost, authenticityGap } from "@/lib/supply";
 import { instagramFor, buzzBoost } from "@/lib/connectors/instagram";
 import type { LayerId } from "@/lib/types";
 
@@ -41,9 +41,15 @@ export function GET(req: NextRequest) {
     const narrAlert = narr ? (narr.stage === "gentri" || narr.stage === "decline" ? 1 : 0) : null;
     // 공급(등록 콘텐츠)+수요(인스타 검색량) 가산 — 종합(klai)엔 점수 보정, 활력(vitality)엔 단독 표시.
     let boost = 0;
+    let authG: { gap: number; signal: number } | null = null;
     if (layer === "klai" || layer === "vitality") {
       const nb = narrativeForPlace(cd);
       boost = Math.round((supplyBoost(cd) + buzzBoost(nb ? instagramFor(nb.name)?.postsCount : null)) * 10) / 10;
+    } else if (layer === "authgap") {
+      // 진정성 갭(발산) — 검색 수요 vs 등록 공급. 현재 상태 진단이라 기간 불변.
+      const nb = narrativeForPlace(cd);
+      const g = authenticityGap(supplyBoost(cd), buzzBoost(nb ? instagramFor(nb.name)?.postsCount : null));
+      authG = { gap: g.gap, signal: g.verdict === "none" ? 0 : 1 };
     }
     const N = periods.length;
     for (let t = 0; t < periods.length; t++) {
@@ -56,6 +62,8 @@ export function GET(req: NextRequest) {
         else if (layer === "vitality") s = { ...s0, vitalityBoost: pb } as typeof s0;
       } else if (layer === "vitality") {
         s = { ...s0, vitalityBoost: 0 } as typeof s0;
+      } else if (layer === "authgap") {
+        s = { ...s0, authGap: authG!.gap, authSignal: authG!.signal } as typeof s0;
       }
       c.push(narrColor ?? colorForLayer(layer, s));
       l.push(narrLabel ?? displayForLayer(layer, s));
