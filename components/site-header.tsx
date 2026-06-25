@@ -74,6 +74,7 @@ export function SiteHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
+          <Link href="/search" aria-label="검색" className="grid h-9 w-9 place-items-center rounded-lg text-ink transition-colors hover:bg-card2/70"><span className="text-[16px] leading-none">🔍</span></Link>
           <GameChip />
           {email ? (
             <Link href="/account" title={email} className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[13.5px] font-medium text-muted hover:text-ink">

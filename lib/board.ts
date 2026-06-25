@@ -67,6 +67,34 @@ export function toggleLike(id: string): boolean {
   return !liked;
 }
 
+// 댓글 — 글 id별 localStorage 저장
+export interface Comment {
+  id: string;
+  author: string;
+  content: string;
+  createdAt: number;
+}
+const CMT_KEY = "ft_board_comments_v1";
+export function getComments(postId: string): Comment[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const all = JSON.parse(localStorage.getItem(CMT_KEY) || "{}");
+    return Array.isArray(all[postId]) ? all[postId] : [];
+  } catch {
+    return [];
+  }
+}
+export function addComment(postId: string, c: Comment): void {
+  if (typeof window === "undefined") return;
+  try {
+    const all = JSON.parse(localStorage.getItem(CMT_KEY) || "{}");
+    all[postId] = [...(Array.isArray(all[postId]) ? all[postId] : []), c];
+    localStorage.setItem(CMT_KEY, JSON.stringify(all));
+  } catch {
+    /* noop */
+  }
+}
+
 export function timeAgo(ts: number, now: number): string {
   const d = Math.max(0, now - ts);
   const min = Math.floor(d / 60000);

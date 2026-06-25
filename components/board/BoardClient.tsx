@@ -2,16 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { POST_CATS, getMyPosts, addPost, deletePost, newPostId, getLiked, toggleLike, timeAgo, type Post, type PostCategory } from "@/lib/board";
+import { POST_CATS, getMyPosts, addPost, deletePost, newPostId, getLiked, toggleLike, timeAgo, getComments, addComment, type Post, type PostCategory, type Comment } from "@/lib/board";
 
 const catMeta = (c: string) => POST_CATS.find((x) => x.key === c) ?? { key: c as PostCategory, emoji: "📝", color: "#888888" };
 
-export function BoardClient({ seed }: { seed: Post[] }) {
+export function BoardClient({ seed, initialRegion }: { seed: Post[]; initialRegion?: string }) {
   const [mine, setMine] = useState<Post[]>([]);
   const [liked, setLiked] = useState<Set<string>>(new Set());
   const [now, setNow] = useState(0);
   const [cat, setCat] = useState<string>("전체");
-  const [region, setRegion] = useState<string>("전체");
+  const [region, setRegion] = useState<string>(initialRegion && initialRegion !== "전체" ? initialRegion : "전체");
   const [writing, setWriting] = useState(false);
   const [form, setForm] = useState<{ category: PostCategory; region: string; title: string; content: string; author: string }>({ category: "제보", region: "", title: "", content: "", author: "" });
   const [toast, setToast] = useState<string | null>(null);
@@ -24,7 +24,7 @@ export function BoardClient({ seed }: { seed: Post[] }) {
 
   const all = useMemo(() => [...mine, ...seed].sort((a, b) => b.createdAt - a.createdAt), [mine, seed]);
   const regions = useMemo(() => [...new Set(all.map((p) => p.region))].sort(), [all]);
-  const list = all.filter((p) => (cat === "전체" || p.category === cat) && (region === "전체" || p.region === region));
+  const list = all.filter((p) => (cat === "전체" || p.category === cat) && (region === "전체" || p.region === region || p.region.includes(region) || region.includes(p.region)));
 
   const submit = () => {
     if (!form.title.trim() || !form.content.trim() || !form.region.trim()) return;
@@ -91,27 +91,7 @@ export function BoardClient({ seed }: { seed: Post[] }) {
         {list.length === 0 ? (
           <div className="rounded-[18px] border-[1.5px] border-dashed border-line bg-card2 px-6 py-12 text-center text-[13px] text-muted2">조건에 맞는 글이 없어요. 첫 글을 남겨보세요!</div>
         ) : (
-          list.map((p) => {
-            const m = catMeta(p.category);
-            const isLiked = liked.has(p.id);
-            return (
-              <article key={p.id} className="rounded-[16px] border-[1.5px] border-line bg-card p-4">
-                <div className="mb-1.5 flex flex-wrap items-center gap-2">
-                  <span className="rounded-full px-2 py-0.5 text-[10.5px] font-extrabold" style={{ background: `${m.color}1f`, color: m.color }}>{m.emoji} {p.category}</span>
-                  <Link href="/map-tale" className="text-[11.5px] font-bold text-blue-l hover:underline">📍 {p.region}</Link>
-                  <span className="text-[11px] text-muted2">· {p.author} · {now ? timeAgo(p.createdAt, now) : ""}</span>
-                  {p.mine && <button onClick={() => remove(p.id)} className="ml-auto text-[11px] font-bold text-muted2 hover:text-warn">삭제</button>}
-                </div>
-                <h3 className="text-[15.5px] font-black tracking-tight text-ink">{p.title}</h3>
-                <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed text-muted">{p.content}</p>
-                <div className="mt-2.5 flex items-center gap-2">
-                  <button onClick={() => like(p.id)} className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-bold transition-colors ${isLiked ? "border-[#e11d48] bg-[#e11d48]/10 text-[#e11d48]" : "border-line text-muted2 hover:border-ink hover:text-ink"}`}>
-                    {isLiked ? "♥" : "♡"} {p.likes + (isLiked ? 1 : 0)}
-                  </button>
-                </div>
-              </article>
-            );
-          })
+          list.map((p) => <PostCard key={p.id} post={p} liked={liked.has(p.id)} onLike={() => like(p.id)} onRemove={() => remove(p.id)} now={now} />)
         )}
       </div>
 
@@ -123,3 +103,54 @@ export function BoardClient({ seed }: { seed: Post[] }) {
 }
 
 const inp = "w-full rounded-xl border-[1.5px] border-line bg-card2 px-3.5 py-2.5 text-[14px] text-ink outline-none transition-colors focus:border-amber";
+
+function PostCard({ post, liked, onLike, onRemove, now }: { post: Post; liked: boolean; onLike: () => void; onRemove: () => void; now: number }) {
+  const m = catMeta(post.category);
+  const [open, setOpen] = useState(false);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [cmt, setCmt] = useState("");
+  const [cmtAuthor, setCmtAuthor] = useState("");
+  useEffect(() => { setComments(getComments(post.id)); }, [post.id, open]);
+  const submit = () => {
+    if (!cmt.trim()) return;
+    addComment(post.id, { id: `c_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`, author: cmtAuthor.trim() || "익명", content: cmt.trim(), createdAt: Date.now() });
+    setComments(getComments(post.id));
+    setCmt("");
+  };
+  return (
+    <article className="rounded-[16px] border-[1.5px] border-line bg-card p-4">
+      <div className="mb-1.5 flex flex-wrap items-center gap-2">
+        <span className="rounded-full px-2 py-0.5 text-[10.5px] font-extrabold" style={{ background: `${m.color}1f`, color: m.color }}>{m.emoji} {post.category}</span>
+        <Link href={`/board?region=${encodeURIComponent(post.region)}`} className="text-[11.5px] font-bold text-blue-l hover:underline">📍 {post.region}</Link>
+        <span className="text-[11px] text-muted2">· {post.author} · {now ? timeAgo(post.createdAt, now) : ""}</span>
+        {post.mine && <button onClick={onRemove} className="ml-auto text-[11px] font-bold text-muted2 hover:text-warn">삭제</button>}
+      </div>
+      <h3 className="text-[15.5px] font-black tracking-tight text-ink">{post.title}</h3>
+      <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed text-muted">{post.content}</p>
+      <div className="mt-2.5 flex items-center gap-2">
+        <button onClick={onLike} className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-bold transition-colors ${liked ? "border-[#e11d48] bg-[#e11d48]/10 text-[#e11d48]" : "border-line text-muted2 hover:border-ink hover:text-ink"}`}>{liked ? "♥" : "♡"} {post.likes + (liked ? 1 : 0)}</button>
+        <button onClick={() => setOpen((o) => !o)} className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-bold transition-colors ${open ? "border-ink text-ink" : "border-line text-muted2 hover:border-ink hover:text-ink"}`}>💬 댓글 {comments.length}</button>
+      </div>
+      {open && (
+        <div className="mt-3 border-t border-line pt-3">
+          {comments.length > 0 && (
+            <div className="mb-2.5 space-y-2">
+              {comments.map((c) => (
+                <div key={c.id} className="rounded-[10px] bg-card2 px-3 py-2">
+                  <div className="text-[11px] font-bold text-muted2">{c.author} · {now ? timeAgo(c.createdAt, now) : ""}</div>
+                  <p className="mt-0.5 whitespace-pre-line text-[12.5px] text-ink">{c.content}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex gap-1.5">
+            <input value={cmtAuthor} onChange={(e) => setCmtAuthor(e.target.value)} placeholder="닉네임" className="w-[72px] shrink-0 rounded-[9px] border border-line bg-card2 px-2.5 py-1.5 text-[12px] text-ink outline-none focus:border-amber" />
+            <input value={cmt} onChange={(e) => setCmt(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") submit(); }} placeholder="댓글 달기…" className="min-w-0 flex-1 rounded-[9px] border border-line bg-card2 px-2.5 py-1.5 text-[12px] text-ink outline-none focus:border-amber" />
+            <button onClick={submit} disabled={!cmt.trim()} className="shrink-0 rounded-[9px] bg-ink px-3 text-[12px] font-extrabold text-white disabled:opacity-40">등록</button>
+          </div>
+          <p className="mt-1.5 text-[10px] text-muted2">댓글은 이 기기에 저장(데모)</p>
+        </div>
+      )}
+    </article>
+  );
+}

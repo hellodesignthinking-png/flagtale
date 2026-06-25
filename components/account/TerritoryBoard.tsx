@@ -71,7 +71,7 @@ export function TerritoryBoard() {
               </div>
             </div>
           )}
-          {mine.length === 0 && hot.length === 0 && <p className="mt-3 text-center text-[11.5px] leading-relaxed text-muted2">아직 점유 기록이 없어요. 플래그맵에서 체크인하면 동네 점유 경쟁이 시작됩니다.</p>}
+          {mine.length === 0 && hot.length === 0 && <p className="mt-3 text-center text-[11.5px] leading-relaxed text-muted2">아직 점령한 동네가 없어요. 체크인할 때마다 그 동네 깃발이 내 것이 돼요 — 플래그맵에서 <b className="text-ink">첫 깃발</b>을 꽂아보세요!</p>}
         </>
       )}
     </div>

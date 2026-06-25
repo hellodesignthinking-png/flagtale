@@ -62,7 +62,13 @@ export function GameSummary() {
         </div>
       )}
 
-      {g.coins === 0 && <p className="mt-2.5 text-[11.5px] leading-relaxed text-muted2">플래그맵에서 매장·축제를 <b className="text-ink">체크인</b>하면 코인·깃발이 쌓이고 레벨이 올라요. 루트도 만들어 보세요.</p>}
+      {g.coins === 0 && (
+        <div className="mt-3 rounded-[14px] border border-dashed border-line bg-card2/60 px-4 py-4 text-center">
+          <div className="text-[26px]">🚩</div>
+          <p className="mx-auto mt-1.5 max-w-xs text-[12.5px] leading-relaxed text-muted">아직 첫 깃발 전이에요! <b className="text-ink">플래그맵에서 매장·축제를 체크인</b>하면 코인·깃발이 쌓이고, 동네를 점령하며 레벨이 올라갑니다.</p>
+          <a href="/map-tale" className="btn-glow mt-3 inline-flex rounded-full bg-amber px-4 py-2 text-[12.5px] font-extrabold text-onaccent">🗺 첫 체크인 하러 가기 →</a>
+        </div>
+      )}
     </div>
   );
 }

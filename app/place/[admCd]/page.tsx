@@ -68,6 +68,7 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
   const gap = authenticityGap(sBoost, bBoost); // 진정성 갭: 검색 수요 vs 등록 공급 괴리
   // 이 동네(시군구/시도) 로컬 크리에이터 — 지역 기반
   const dongCreators = loadCreators().filter((cr) => props.sigungu.includes(cr.region) || props.sido.includes(cr.region)).slice(0, 3);
+  const boardRegion = area?.name ?? props.sigungu.replace(/(시|군|구)$/, ""); // 게시판 딥링크 지역(핫지역명 우선)
 
   // 일반 사용자용 한 줄 요약(연구 톤↓) — 등급·흐름·뜨는 이유를 평이하게
   const trendWord = latest.momentum > 1.5 ? "상승세" : latest.momentum < -1.5 ? "하락세" : "안정적";
@@ -161,7 +162,7 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
         <div className="mb-5 rounded-[20px] border-[1.5px] border-line bg-card2/40 p-4 sm:p-5">
           <div className="mb-3 flex items-center justify-between gap-2">
             <h2 className="font-display text-[16px] font-black tracking-tight text-ink">🎨 이 동네 로컬 크리에이터</h2>
-            <span className="text-[11.5px] font-bold text-muted2">{props.sigungu} 일대</span>
+            <Link href={`/board?region=${encodeURIComponent(boardRegion)}`} className="text-[11.5px] font-bold text-blue-l hover:underline">💬 동네 게시판 →</Link>
           </div>
           <div className="grid gap-2.5 sm:grid-cols-3">
             {dongCreators.map((cr) => (
