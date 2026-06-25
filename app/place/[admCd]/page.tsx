@@ -249,14 +249,9 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
         </Panel>
       </div>
 
-      {/* 신호 동조 분석 — 검색·기사·인구·임대료·매물 */}
+      {/* 신호 동조 분석 — 검색·기사·인구·임대료·매물 · 접이식 */}
       {signals && (
-        <Panel className="mt-5">
-          <SectionHead
-            no="신호"
-            title="신호 동조 분석 — 검색·기사·인구·임대료·매물"
-            desc="함께 오를 때, 무엇이 먼저였나"
-          />
+        <Collapsible title="📡 신호 동조 분석" sub="검색·기사·인구·임대료·매물 — 무엇이 먼저였나">
           <SignalAnalysis signals={signals} periods={periodLabels} authenticityGap={latest.authenticityGap} avgSignals={nationalSignalAverage()} />
           {/* 네이버 실데이터(검색 관심도·기사량) — Suspense로 스트리밍, 페이지 렌더 막지 않음 */}
           <div className="mt-4">
@@ -271,7 +266,7 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
               <NaverPanel query={props.name.replace(/(\d+가)?\d+동$/, "동")} />
             </Suspense>
           </div>
-        </Panel>
+        </Collapsible>
       )}
 
       {/* 지역 흐름 — 인구 + 공공예산 (장기 이력) · 접이식 */}

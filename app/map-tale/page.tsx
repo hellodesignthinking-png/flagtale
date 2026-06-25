@@ -14,7 +14,7 @@ export default function MapTalePage() {
       {/* 이중 지도 역할 안내 — 이건 '콘텐츠' 지도, 매력도 '데이터' 지도는 /map */}
       <Link
         href="/map"
-        className="fixed left-1/2 top-[60px] z-30 -translate-x-1/2 whitespace-nowrap rounded-full border-[1.5px] border-line bg-card/95 px-3.5 py-1.5 text-[12px] font-extrabold text-ink shadow-lg backdrop-blur transition-colors hover:border-ink"
+        className="fixed left-1/2 top-[60px] z-30 hidden -translate-x-1/2 whitespace-nowrap rounded-full border-[1.5px] border-line bg-card/95 px-3.5 py-1.5 text-[12px] font-extrabold text-ink shadow-lg backdrop-blur transition-colors hover:border-ink sm:inline-flex"
       >
         🚩 콘텐츠 플래그맵 · <span className="font-bold text-muted2">매력도 데이터 지도 →</span>
       </Link>

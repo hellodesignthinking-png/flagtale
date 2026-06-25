@@ -5,11 +5,12 @@
 import fs from "node:fs";
 import path from "node:path";
 
-// .env.local(git 무시됨)에서 키 로드 — 키를 셸 기록/명령에 노출하지 않아도 됨.
+// .env.local(git 무시됨)에서 키 로드 — 파일 내 '마지막' 값이 이김(중복 줄 대비). 키를 셸 기록에 노출 안 함.
 try {
+  const seen = new Set();
   for (const line of fs.readFileSync(path.join(process.cwd(), ".env.local"), "utf-8").split("\n")) {
     const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
-    if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
+    if (m && (!process.env[m[1]] || seen.has(m[1]))) { process.env[m[1]] = m[2].replace(/^["']|["']$/g, ""); seen.add(m[1]); }
   }
 } catch { /* .env.local 없음 — 인라인 env 사용 */ }
 
