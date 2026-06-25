@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { loadCreators, loadTours, ftImage, round1 } from "@/lib/flagtale";
-import { specialtyTags, REGION_CENTROID } from "@/lib/flagtale-types";
+import { loadCreators, loadTours, loadSpots, ftImage, round1 } from "@/lib/flagtale";
+import { specialtyTags, REGION_CENTROID, SPOT_CAT } from "@/lib/flagtale-types";
 import { PageShell } from "@/components/page-shell";
 import { NaverMiniMap } from "@/components/flagtale/NaverMiniMap";
 
@@ -31,6 +31,7 @@ export default function CreatorDetailPage({ params }: { params: { id: string } }
   const ft = tours.find((t) => t.lat && t.lng);
   const mLat = ft?.lat ?? ctr?.[1];
   const mLng = ft?.lng ?? ctr?.[0];
+  const regionSpots = loadSpots().filter((s) => s.region === c.region).slice(0, 4); // 같은 지역 매장·공간
 
   return (
     <PageShell>
@@ -94,6 +95,35 @@ export default function CreatorDetailPage({ params }: { params: { id: string } }
                 </div>
               </Link>
             ))}
+          </div>
+        </section>
+      )}
+
+      {/* 이 지역 매장·공간 */}
+      {regionSpots.length > 0 && (
+        <section className="mt-7">
+          <h2 className="mb-3 font-display text-[20px] font-black tracking-[-0.03em] text-ink">{c.region}의 매장·공간</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {regionSpots.map((s) => {
+              const sm = SPOT_CAT[s.category] ?? { emoji: "📍", label: s.category, color: "#888888" };
+              return (
+                <Link key={s.id} href={`/spot/${s.id}`} className="lift overflow-hidden rounded-[16px] border-[1.5px] border-line bg-card">
+                  <div className="relative h-28 w-full overflow-hidden">
+                    {s.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={ftImage(s.image)} alt={s.name} loading="lazy" className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="grid h-full w-full place-items-center text-[28px]" style={{ background: `${sm.color}14` }}>{sm.emoji}</div>
+                    )}
+                  </div>
+                  <div className="p-3">
+                    <div className="text-[10.5px] font-extrabold" style={{ color: sm.color }}>{sm.label}</div>
+                    <h3 className="mt-0.5 line-clamp-1 text-[14px] font-black text-ink">{s.name}</h3>
+                    {s.rating ? <div className="mt-1 text-[11.5px] font-bold text-muted2">★ {round1(s.rating)}</div> : null}
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </section>
       )}

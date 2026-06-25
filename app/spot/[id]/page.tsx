@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { loadSpots } from "@/lib/flagtale";
+import { loadSpots, loadCreators } from "@/lib/flagtale";
 import { ftImage, round1, SPOT_CAT } from "@/lib/flagtale-types";
+import { pointToDistrict } from "@/lib/geocode";
 import { Crumb, DetailSection } from "@/components/flagtale/detail/parts";
 import { NaverMiniMap } from "@/components/flagtale/NaverMiniMap";
 
@@ -26,6 +27,8 @@ export default function SpotDetailPage({ params }: { params: { id: string } }) {
   if (!spot) notFound();
   const m = SPOT_CAT[spot.category] ?? { emoji: "📍", label: spot.category, color: "#888888" };
   const others = loadSpots().filter((s) => s.id !== spot.id && s.region === spot.region).slice(0, 4);
+  const district = pointToDistrict(spot.lng, spot.lat); // 좌표→행정동 (동네 매력도 연결)
+  const regionCreators = loadCreators().filter((c) => c.region === spot.region).slice(0, 3); // 같은 지역 크리에이터
 
   return (
     <main className="mx-auto max-w-[1120px] px-4 py-6 sm:px-6">
@@ -88,10 +91,30 @@ export default function SpotDetailPage({ params }: { params: { id: string } }) {
             <div className="mt-3 flex flex-col gap-2">
               {spot.naver_url && <a href={spot.naver_url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 rounded-full bg-[#03c75a] px-4 py-2.5 text-[13px] font-extrabold text-white transition-opacity hover:opacity-90">N 네이버에서 보기 →</a>}
               <Link href="/map-tale" className="flex items-center justify-center gap-1.5 rounded-full border-[1.5px] border-line bg-card px-4 py-2.5 text-[13px] font-extrabold text-ink transition-colors hover:border-ink">🗺 플래그맵에서 보기 →</Link>
+              {district && <Link href={`/place/${district.admCd2}`} className="flex items-center justify-center gap-1.5 rounded-full border-[1.5px] border-line bg-card px-4 py-2.5 text-[13px] font-extrabold text-blue-l transition-colors hover:border-ink">🧭 이 동네 매력도 ({district.name}) →</Link>}
+              <Link href="/host" className="flex items-center justify-center gap-1.5 rounded-full border-[1.5px] border-amber bg-amber/10 px-4 py-2.5 text-[13px] font-extrabold text-ink transition-colors hover:opacity-90">🏪 이 매장 운영자세요? 등록·수정 →</Link>
             </div>
           </div>
         </aside>
       </div>
+
+      {regionCreators.length > 0 && (
+        <section className="mt-10">
+          <h2 className="mb-3 font-display text-[20px] font-black tracking-[-0.03em] text-ink">{spot.region}의 로컬 크리에이터</h2>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {regionCreators.map((c) => (
+              <Link key={c.id} href={`/creator/${c.id}`} className="lift flex items-center gap-3 rounded-[16px] border-[1.5px] border-line bg-card p-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={ftImage(c.image)} alt={c.name} className="h-12 w-12 shrink-0 rounded-full object-cover" />
+                <div className="min-w-0">
+                  <div className="truncate text-[14px] font-black text-ink">{c.nickname}</div>
+                  <div className="truncate text-[11.5px] text-muted">{c.name} · {c.region}</div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {others.length > 0 && (
         <section className="mt-12">
