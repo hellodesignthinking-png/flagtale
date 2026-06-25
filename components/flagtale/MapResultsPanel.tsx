@@ -414,6 +414,9 @@ export function MapResultsPanel({
                   <InfoRow k="📞 전화" v={sel.phone} />
                   <InfoRow k="📌 주소" v={sel.address} />
                 </div>
+                {(sel.kind === "tour" || sel.kind === "stay" || sel.kind === "spot") && (
+                  <Link href={`/${sel.kind}/${sel.id.replace(/^[a-z]+-/, "")}`} className="mt-3 flex items-center justify-center gap-1.5 rounded-full border-[1.5px] border-line bg-card px-4 py-2.5 text-[13px] font-extrabold text-ink transition-colors hover:border-ink">🔎 상세 페이지 →</Link>
+                )}
                 {sel.tags && sel.tags.length > 0 && <div className="mt-3 flex flex-wrap gap-1">{sel.tags.map((t) => <span key={t} className="rounded-full bg-card2 px-2 py-0.5 text-[10.5px] font-bold text-muted2">#{t}</span>)}</div>}
                 {nearby.length > 0 && (
                   <div className="mt-4">
