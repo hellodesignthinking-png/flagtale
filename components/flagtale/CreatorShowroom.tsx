@@ -14,7 +14,6 @@ const SNS: { key: keyof Creator; label: string; icon: string }[] = [
 export function CreatorShowroom({ creators }: { creators: Creator[] }) {
   const [q, setQ] = useState("");
   const [region, setRegion] = useState("전체");
-  const [open, setOpen] = useState<Creator | null>(null);
 
   const filtered = useMemo(
     () =>
@@ -63,7 +62,7 @@ export function CreatorShowroom({ creators }: { creators: Creator[] }) {
       {filtered.length ? (
         <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((c) => (
-            <CreatorCard key={c.id} c={c} onOpen={() => setOpen(c)} />
+            <CreatorCard key={c.id} c={c} />
           ))}
         </div>
       ) : (
@@ -73,14 +72,13 @@ export function CreatorShowroom({ creators }: { creators: Creator[] }) {
         </div>
       )}
 
-      {open && <CreatorModal c={open} onClose={() => setOpen(null)} />}
     </section>
   );
 }
 
-function CreatorCard({ c, onOpen }: { c: Creator; onOpen: () => void }) {
+function CreatorCard({ c }: { c: Creator }) {
   return (
-    <button type="button" onClick={onOpen} className="lift group flex flex-col overflow-hidden rounded-[20px] border-[1.5px] border-line bg-card text-left">
+    <Link href={`/creator/${c.id}`} className="lift group flex flex-col overflow-hidden rounded-[20px] border-[1.5px] border-line bg-card text-left">
       <div className="relative aspect-[16/10] overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={ftImage(c.cover_image)} alt={`${c.nickname} 커버`} loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
@@ -115,66 +113,6 @@ function CreatorCard({ c, onOpen }: { c: Creator; onOpen: () => void }) {
           </div>
         </div>
       </div>
-    </button>
-  );
-}
-
-function CreatorModal({ c, onClose }: { c: Creator; onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-ink/55 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={onClose}>
-      <div
-        className="relative max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-[24px] border-[1.5px] border-line bg-card sm:rounded-[24px]"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="relative aspect-[16/9] overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={ftImage(c.cover_image)} alt={`${c.nickname} 커버`} loading="lazy" decoding="async" className="h-full w-full object-cover" />
-          <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,transparent 40%,rgba(0,0,0,.6))" }} />
-          <button onClick={onClose} className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full bg-ink/70 text-[14px] font-bold text-white hover:bg-ink" aria-label="닫기">✕</button>
-          <span className="absolute left-4 top-4 rounded-full bg-amber px-2.5 py-1 text-[11px] font-extrabold text-onaccent">📍 {c.region}</span>
-        </div>
-        <div className="relative px-6 pb-6">
-          <span className="absolute -top-9 left-6 grid h-[72px] w-[72px] place-items-center overflow-hidden rounded-full border-[3px] border-card bg-card2 shadow-lg">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={ftImage(c.image)} alt={c.name} className="h-full w-full object-cover" />
-          </span>
-          <div className="flex items-start justify-between pt-12">
-            <div>
-              <h3 className="font-display text-[24px] font-black tracking-tight text-ink">{c.nickname}</h3>
-              <div className="mt-0.5 text-[13px] font-bold text-blue-l">{c.name}</div>
-            </div>
-            {c.rating > 0 && (
-              <div className="rounded-[14px] border-[1.5px] border-line px-3 py-1.5 text-center">
-                <div className="font-display text-[18px] font-black tabular-nums text-ink">★ {round1(c.rating)}</div>
-                <div className="text-[10px] font-bold text-muted2">리뷰 {c.review_count}</div>
-              </div>
-            )}
-          </div>
-          <p className="mt-3 text-[14px] leading-relaxed text-muted">{c.description}</p>
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {specialtyTags(c.specialty).map((t) => (
-              <span key={t} className="rounded-full bg-card2 px-3 py-1 text-[12px] font-bold text-muted">#{t}</span>
-            ))}
-          </div>
-          {/* SNS */}
-          <div className="mt-4 flex flex-wrap gap-2">
-            {SNS.filter((s) => c[s.key]).map((s) => (
-              <a
-                key={s.label}
-                href={String(c[s.key])}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-line bg-card px-3.5 py-2 text-[12.5px] font-extrabold text-ink transition-colors hover:border-ink"
-              >
-                <span>{s.icon}</span> {s.label}
-              </a>
-            ))}
-          </div>
-          <Link href="/#tours" onClick={onClose} className="btn-glow mt-5 flex items-center justify-center rounded-full bg-amber px-5 py-3.5 text-[15px] font-extrabold text-onaccent">
-            로컬 투어 보러 가기 →
-          </Link>
-        </div>
-      </div>
-    </div>
+    </Link>
   );
 }

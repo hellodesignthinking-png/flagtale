@@ -5,6 +5,7 @@ import { loadTours, creatorById } from "@/lib/flagtale";
 import { ftImage, round1, specialtyTags } from "@/lib/flagtale-types";
 import { BookingCard } from "@/components/flagtale/detail/BookingCard";
 import { Crumb, DetailSection, CheckList } from "@/components/flagtale/detail/parts";
+import { NaverMiniMap } from "@/components/flagtale/NaverMiniMap";
 
 export function generateStaticParams() {
   return loadTours().map((t) => ({ id: String(t.id) }));
@@ -144,6 +145,24 @@ export default function TourDetailPage({ params }: { params: { id: string } }) {
           <div className="mt-2.5 text-center text-[11.5px] text-muted2">잔여 {left}/{tour.max_seats}석 · {tour.schedule}</div>
         </aside>
       </div>
+
+      {/* 📍 위치 · 정보 (하단 네이버 지도) */}
+      <section className="mt-10">
+        <h2 className="mb-3 font-display text-[20px] font-black tracking-tight text-ink">📍 위치 · 정보</h2>
+        <div className="grid gap-4 md:grid-cols-[1fr_1.5fr]">
+          <div className="rounded-[18px] border-[1.5px] border-line bg-card2 p-5">
+            <dl className="space-y-3 text-[13.5px]">
+              <div className="flex justify-between gap-3"><dt className="font-bold text-muted2">지역</dt><dd className="font-extrabold text-ink">📍 {tour.region}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="font-bold text-muted2">일정</dt><dd className="text-right font-bold text-ink">{tour.schedule}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="font-bold text-muted2">소요 시간</dt><dd className="font-bold text-ink">{tour.duration}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="font-bold text-muted2">정원</dt><dd className="font-bold text-ink">최대 {tour.max_seats}명</dd></div>
+              <div className="flex justify-between gap-3"><dt className="font-bold text-muted2">만나는 곳</dt><dd className="text-right font-bold text-ink">예약 확정 후 안내</dd></div>
+            </dl>
+          </div>
+          <NaverMiniMap lat={tour.lat} lng={tour.lng} name={tour.title} query={tour.region} emoji="🎫" className="h-64 w-full md:h-full md:min-h-[240px]" />
+        </div>
+        <p className="mt-2 text-[11px] text-muted2">* 지역 중심 좌표 기준 — 정확한 만남 장소는 예약 확정 후 안내됩니다. (샘플 데이터)</p>
+      </section>
 
       {others.length > 0 && (
         <section className="mt-12">

@@ -5,6 +5,7 @@ import { loadStays } from "@/lib/flagtale";
 import { ftImage, round1 } from "@/lib/flagtale-types";
 import { BookingCard } from "@/components/flagtale/detail/BookingCard";
 import { Crumb, DetailSection, CheckList } from "@/components/flagtale/detail/parts";
+import { NaverMiniMap } from "@/components/flagtale/NaverMiniMap";
 
 export function generateStaticParams() {
   return loadStays().map((s) => ({ id: String(s.id) }));
@@ -100,6 +101,24 @@ export default function StayDetailPage({ params }: { params: { id: string } }) {
           <div className="mt-2.5 text-center text-[11.5px] text-muted2">최대 {stay.max_guests}명 · {stay.stay_type || "로컬 스테이"}</div>
         </aside>
       </div>
+
+      {/* 📍 위치 · 숙소정보 (하단 네이버 지도) */}
+      <section className="mt-10">
+        <h2 className="mb-3 font-display text-[20px] font-black tracking-tight text-ink">📍 위치 · 숙소정보</h2>
+        <div className="grid gap-4 md:grid-cols-[1fr_1.5fr]">
+          <div className="rounded-[18px] border-[1.5px] border-line bg-card2 p-5">
+            <dl className="space-y-3 text-[13.5px]">
+              <div className="flex justify-between gap-3"><dt className="font-bold text-muted2">주소</dt><dd className="text-right font-bold text-ink">{stay.address || `${stay.region} 일대`}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="font-bold text-muted2">유형</dt><dd className="font-bold text-ink">{stay.stay_type || "로컬 스테이"}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="font-bold text-muted2">최대 인원</dt><dd className="font-bold text-ink">{stay.max_guests}명</dd></div>
+              {stay.host_name && <div className="flex justify-between gap-3"><dt className="font-bold text-muted2">호스트</dt><dd className="font-bold text-ink">{stay.host_name}</dd></div>}
+              <div className="flex justify-between gap-3"><dt className="font-bold text-muted2">1박</dt><dd className="font-extrabold text-ink">{stay.price_per_night.toLocaleString()}원</dd></div>
+            </dl>
+          </div>
+          <NaverMiniMap lat={stay.lat} lng={stay.lng} name={stay.title} query={stay.address || stay.region} emoji="🏠" className="h-64 w-full md:h-full md:min-h-[240px]" />
+        </div>
+        <p className="mt-2 text-[11px] text-muted2">* 정확한 주소는 예약 확정 후 안내됩니다. (샘플 데이터)</p>
+      </section>
 
       {others.length > 0 && (
         <section className="mt-12">

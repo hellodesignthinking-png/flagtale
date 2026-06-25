@@ -82,7 +82,7 @@ export function TourList({ tours, creators }: { tours: Tour[]; creators: Record<
                       <button onClick={() => setOpen(isOpen ? null : t.id)} className="rounded-full border-[1.5px] border-line bg-card px-3.5 py-2 text-[12.5px] font-extrabold text-ink transition-colors hover:border-ink">
                         {isOpen ? "접기" : "📋 코스"}
                       </button>
-                      <Link href={`/tour/${t.id}`} className="btn-glow rounded-full bg-amber px-4 py-2 text-[12.5px] font-extrabold text-onaccent">참여하기</Link>
+                      <Link href={`/tour/${t.id}`} className="btn-glow rounded-full bg-amber px-4 py-2 text-[12.5px] font-extrabold text-onaccent">투어정보 →</Link>
                     </div>
                   </div>
                 </div>
