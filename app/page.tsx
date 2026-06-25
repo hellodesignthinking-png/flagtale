@@ -189,11 +189,16 @@ export default function HomePage() {
               <h2 className="mt-2 font-display text-[clamp(22px,3.2vw,30px)] font-black tracking-[-0.03em]">동네는 <span className="hl-mark">함께</span> 만들어집니다</h2>
               <p className="mt-2 text-[14px] text-muted">확인하고, 제보하고, 경험하세요 — 당신의 참여가 동네의 매력을 키웁니다.</p>
             </div>
-            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
               <Link href="/map-tale" className="lift rounded-[18px] border-[1.5px] border-line bg-card p-5 text-center">
                 <div className="text-[26px]">🔍</div>
                 <div className="mt-1.5 text-[15px] font-black text-ink">내 동네 확인</div>
                 <p className="mt-1 text-[12px] text-muted">우리 동네 매력도·등급·뜨는 이유를 지도에서</p>
+              </Link>
+              <Link href="/board" className="lift rounded-[18px] border-[1.5px] border-line bg-card p-5 text-center">
+                <div className="text-[26px]">💬</div>
+                <div className="mt-1.5 text-[15px] font-black text-ink">동네 게시판</div>
+                <p className="mt-1 text-[12px] text-muted">제보·후기·질문·모임을 함께 나눠요</p>
               </Link>
               <Link href="/host" className="lift rounded-[18px] border-[1.5px] border-amber bg-card p-5 text-center" style={{ boxShadow: "0 0 0 1.5px var(--amber)" }}>
                 <div className="text-[26px]">🏪</div>
