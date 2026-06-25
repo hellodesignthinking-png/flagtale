@@ -25,7 +25,7 @@ function build(): Map<string, Supply> {
     s.kinds[kind] = (s.kinds[kind] ?? 0) + 1;
     s.reviews += it.reviewCount ?? 0;
     // 상세 페이지가 있는 종류(투어·스테이)는 링크 부여 → /place에서 확인→경험(예약) 연결.
-    const href = it.id?.startsWith("tour-") ? `/tour/${it.id.slice(5)}` : it.id?.startsWith("stay-") ? `/stay/${it.id.slice(5)}` : undefined;
+    const href = it.id?.startsWith("tour-") ? `/tour/${it.id.slice(5)}` : it.id?.startsWith("stay-") ? `/stay/${it.id.slice(5)}` : it.id?.startsWith("spot-") ? `/spot/${it.id.slice(5)}` : undefined;
     if (s.items.length < 16) s.items.push({ name: it.name, kind: KIND_LABEL[kind] ?? kind, rating: it.rating, href });
     m.set(cd, s);
   };

@@ -623,7 +623,7 @@ export function MapResultsPanel({
       )}
       {editingSpot && <SpotEditor spot={editingSpot} onClose={() => setEditingSpot(null)} onSaved={(s) => onSpotAdded?.(s)} />}
 
-      <div className="pointer-events-none absolute right-2 top-[54px] z-10 rounded-full bg-[#0d2b5e]/85 px-3 py-1.5 text-[11.5px] font-extrabold text-white md:top-3">🗺 {badge} · {filtered.length}곳</div>
+      <div className="pointer-events-none absolute right-2 top-[54px] z-10 hidden rounded-full bg-[#0d2b5e]/85 px-3 py-1.5 text-[11.5px] font-extrabold text-white md:top-3 md:block">🗺 {badge} · {filtered.length}곳</div>
     </>
   );
 }

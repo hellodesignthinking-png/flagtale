@@ -27,6 +27,10 @@ export default function CreatorDetailPage({ params }: { params: { id: string } }
   if (!c) notFound();
   const tours = loadTours().filter((t) => t.creator_id === c.id);
   const ctr = REGION_CENTROID[c.region]; // [lng, lat]
+  // 지도 정밀화 — 진행 투어의 실좌표가 있으면 그 지점(정밀), 없으면 지역 중심
+  const ft = tours.find((t) => t.lat && t.lng);
+  const mLat = ft?.lat ?? ctr?.[1];
+  const mLng = ft?.lng ?? ctr?.[0];
 
   return (
     <PageShell>
@@ -94,6 +98,19 @@ export default function CreatorDetailPage({ params }: { params: { id: string } }
         </section>
       )}
 
+      {/* 후기 */}
+      <section className="mt-7">
+        <h2 className="mb-3 font-display text-[20px] font-black tracking-[-0.03em] text-ink">후기 {c.rating > 0 && <span className="text-[14px] font-bold text-muted">★ {round1(c.rating)} · {c.review_count}개</span>}</h2>
+        <div className="flex items-start gap-3 rounded-[16px] border border-line bg-card2/40 p-4">
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-amber/20 text-[15px]">🙂</div>
+          <div>
+            <div className="text-[12.5px] font-extrabold text-ink">참여자 · {c.region}</div>
+            <p className="mt-1 text-[13px] leading-relaxed text-muted">“{c.nickname}님 덕분에 {c.region}의 진짜 매력을 알게 됐어요. 현지인만 아는 골목과 이야기가 인상적이었습니다.”</p>
+          </div>
+        </div>
+        <p className="mt-2 text-[11.5px] text-muted2">후기는 샘플입니다 · 실제 후기는 예약·리뷰 연동 후 표시됩니다.</p>
+      </section>
+
       {/* 위치 · 정보 + 네이버 지도 */}
       <section className="mt-7">
         <h2 className="mb-3 font-display text-[20px] font-black tracking-[-0.03em] text-ink">위치 · 정보</h2>
@@ -107,7 +124,7 @@ export default function CreatorDetailPage({ params }: { params: { id: string } }
             </dl>
             <Link href="/map-tale" className="mt-4 inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-line bg-card px-4 py-2 text-[12.5px] font-extrabold text-ink transition-colors hover:border-ink">🗺 플래그맵에서 {c.region} 콘텐츠 보기 →</Link>
           </div>
-          <NaverMiniMap lat={ctr?.[1]} lng={ctr?.[0]} name={`${c.region} · ${c.nickname}`} query={c.naver_place ? `${c.nickname} ${c.region}` : c.region} emoji="🎨" zoom={12} className="h-64 w-full md:h-full md:min-h-[260px]" />
+          <NaverMiniMap lat={mLat} lng={mLng} name={ft ? ft.title : `${c.region} · ${c.nickname}`} query={c.naver_place ? `${c.nickname} ${c.region}` : c.region} emoji={ft ? "🎫" : "🎨"} zoom={ft ? 14 : 12} className="h-64 w-full md:h-full md:min-h-[260px]" />
         </div>
         <p className="mt-2 text-[11px] text-muted2">* 크리에이터 활동 지역 기준 위치 — 정확한 매장·공방 위치는 네이버 플레이스에서 확인하세요. (샘플 데이터)</p>
       </section>
