@@ -33,6 +33,7 @@ export function NaverMiniMap({
   emoji = "📍",
   zoom = 15,
   query,
+  markers,
   className = "h-64 w-full",
 }: {
   lat?: number | null;
@@ -41,15 +42,17 @@ export function NaverMiniMap({
   emoji?: string;
   zoom?: number;
   query?: string; // 폴백/외부 링크 검색어(주소·이름)
+  markers?: { lat: number; lng: number; emoji?: string; name?: string }[]; // 다중 마커(크루 팀 등)
   className?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const hasCoord = typeof lat === "number" && typeof lng === "number" && !!lat && !!lng;
-  const [failed, setFailed] = useState(!CLIENT_ID || !hasCoord);
-  const naverUrl = `https://map.naver.com/p/search/${encodeURIComponent(query || name || (hasCoord ? `${lat},${lng}` : ""))}`;
+  const pts = markers && markers.length ? markers : typeof lat === "number" && typeof lng === "number" && !!lat && !!lng ? [{ lat: lat as number, lng: lng as number, emoji, name }] : [];
+  const markersKey = pts.map((p) => `${p.lat},${p.lng}`).join("|");
+  const [failed, setFailed] = useState(!CLIENT_ID || pts.length === 0);
+  const naverUrl = `https://map.naver.com/p/search/${encodeURIComponent(query || name || (pts[0] ? `${pts[0].lat},${pts[0].lng}` : ""))}`;
 
   useEffect(() => {
-    if (!CLIENT_ID || !hasCoord || !ref.current) {
+    if (!CLIENT_ID || pts.length === 0 || !ref.current) {
       setFailed(true);
       return;
     }
@@ -57,13 +60,14 @@ export function NaverMiniMap({
     loadNaver()
       .then((naver) => {
         if (cancelled || !ref.current) return;
-        const center = new naver.maps.LatLng(lat, lng);
-        const map = new naver.maps.Map(ref.current, { center, zoom, scrollWheel: false });
-        new naver.maps.Marker({
-          position: center,
-          map,
-          icon: { content: `<div style="transform:translate(-50%,-100%);font-size:28px;line-height:1;filter:drop-shadow(0 2px 5px rgba(0,0,0,.45))">${emoji}</div>`, anchor: new naver.maps.Point(0, 0) },
-        });
+        const map = new naver.maps.Map(ref.current, { center: new naver.maps.LatLng(pts[0].lat, pts[0].lng), zoom, scrollWheel: false });
+        const bounds = pts.length > 1 ? new naver.maps.LatLngBounds() : null;
+        for (const p of pts) {
+          const pos = new naver.maps.LatLng(p.lat, p.lng);
+          new naver.maps.Marker({ position: pos, map, icon: { content: `<div style="transform:translate(-50%,-100%);font-size:26px;line-height:1;filter:drop-shadow(0 2px 5px rgba(0,0,0,.45))">${p.emoji ?? emoji}</div>`, anchor: new naver.maps.Point(0, 0) } });
+          if (bounds) bounds.extend(pos);
+        }
+        if (bounds) map.fitBounds(bounds);
       })
       .catch(() => {
         if (!cancelled) setFailed(true);
@@ -71,7 +75,8 @@ export function NaverMiniMap({
     return () => {
       cancelled = true;
     };
-  }, [lat, lng, emoji, zoom, hasCoord]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [markersKey, emoji, zoom]);
 
   if (failed) {
     return (

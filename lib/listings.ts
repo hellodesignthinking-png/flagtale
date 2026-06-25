@@ -12,6 +12,8 @@ export interface Listing {
   region: string; // 예: "서울 마포구" · "강릉"
   host?: string; // 운영자·호스트명
   address?: string;
+  lat?: number; // 주소 지오코딩 좌표(/api/geocode)
+  lng?: number;
   description?: string;
   image?: string; // 이미지 URL(선택)
   // 스팟

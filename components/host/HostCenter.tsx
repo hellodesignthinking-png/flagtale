@@ -20,12 +20,27 @@ export function HostCenter() {
   const [form, setForm] = useState<Partial<Listing>>({});
   const [mine, setMine] = useState<Listing[]>([]);
   const [toast, setToast] = useState<string | null>(null);
+  const [geoMsg, setGeoMsg] = useState<string | null>(null);
+  const [geoBusy, setGeoBusy] = useState(false);
 
   useEffect(() => { setMine(getMyListings()); }, []);
 
   const refresh = () => setMine(getMyListings());
   const set = (k: keyof Listing, v: string | number) => setForm((f) => ({ ...f, [k]: v }));
-  const startNew = (k: ListingKind) => { setKind(k); setForm(emptyForm(k)); setTab("register"); };
+  // 주소 → 좌표 지오코딩(/api/geocode) — 저장 시 좌표가 함께 들어가 상세페이지 지도에 정확히 표시됨
+  const geocode = async () => {
+    const addr = form.address?.trim();
+    if (!addr) { setGeoMsg("주소를 먼저 입력하세요"); return; }
+    setGeoBusy(true); setGeoMsg(null);
+    try {
+      const r = await fetch(`/api/geocode?q=${encodeURIComponent(addr)}`);
+      const j = await r.json();
+      if (r.ok && j.lat && j.lng) { setForm((f) => ({ ...f, lat: j.lat, lng: j.lng })); setGeoMsg(`✓ 위치 확인됨${j.matched ? ` · ${j.matched}` : ""}`); }
+      else setGeoMsg("주소를 찾지 못했어요 — 더 구체적으로 입력해 보세요");
+    } catch { setGeoMsg("위치 검색 실패 — 잠시 후 다시 시도"); }
+    finally { setGeoBusy(false); }
+  };
+  const startNew = (k: ListingKind) => { setKind(k); setForm(emptyForm(k)); setGeoMsg(null); setTab("register"); };
   const startEdit = (l: Listing) => { setKind(l.kind); setForm(l); setTab("register"); window.scrollTo({ top: 0, behavior: "smooth" }); };
 
   const canSave = !!(form.name && form.name.trim() && form.region && form.region.trim());
@@ -40,6 +55,8 @@ export function HostCenter() {
       region: form.region!.trim(),
       host: form.host?.trim() || undefined,
       address: form.address?.trim() || undefined,
+      lat: form.lat,
+      lng: form.lng,
       description: form.description?.trim() || undefined,
       image: form.image?.trim() || undefined,
       category: kind === "spot" ? form.category : undefined,
@@ -132,8 +149,18 @@ export function HostCenter() {
             <Field label={kind === "spot" || kind === "stay" ? "운영자·호스트명" : "진행자명"}>
               <input value={form.host ?? ""} onChange={(e) => set("host", e.target.value)} placeholder="예: 김로컬" className={inp} />
             </Field>
-            <Field label="주소(선택)">
-              <input value={form.address ?? ""} onChange={(e) => set("address", e.target.value)} placeholder="도로명/지번 주소" className={inp} />
+            <Field label="주소" full hint="주소 입력 후 '위치 찾기'로 좌표를 저장하면 지도에 정확히 표시됩니다">
+              <div className="flex gap-2">
+                <input
+                  value={form.address ?? ""}
+                  onChange={(e) => { setForm((f) => ({ ...f, address: e.target.value, lat: undefined, lng: undefined })); setGeoMsg(null); }}
+                  placeholder="도로명/지번 주소"
+                  className={inp}
+                />
+                <button type="button" onClick={geocode} disabled={geoBusy} className="shrink-0 rounded-xl border-[1.5px] border-line bg-card2 px-3 text-[12.5px] font-extrabold text-blue-l transition-colors hover:border-ink disabled:opacity-50">{geoBusy ? "검색…" : "📍 위치 찾기"}</button>
+              </div>
+              {geoMsg && <span className={`mt-1 block text-[11px] font-bold ${geoMsg.startsWith("✓") ? "text-grade-b" : "text-warn"}`}>{geoMsg}</span>}
+              {form.lat && form.lng && <span className="mt-0.5 block text-[10.5px] text-muted2">좌표 {form.lat.toFixed(5)}, {form.lng.toFixed(5)} 저장됨</span>}
             </Field>
             <Field label="이미지 URL(선택)" full>
               <input value={form.image ?? ""} onChange={(e) => set("image", e.target.value)} placeholder="https://…" className={inp} />

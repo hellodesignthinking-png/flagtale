@@ -23,6 +23,7 @@ import { GRADE_LABEL, MARKET_LABEL, NARRATIVE_LABEL, TRAJECTORY_LABEL } from "@/
 import { narrativeForPlace } from "@/lib/narratives";
 import { instagramFor, igCountLabel, buzzBoost } from "@/lib/connectors/instagram";
 import { googleInterestFor, countryKo } from "@/lib/connectors/googleinterest";
+import { loadCreators, ftImage } from "@/lib/flagtale";
 import { supplyFor, supplyBoost, supplyBreakdown, authenticityGap } from "@/lib/supply";
 import { gradeOf } from "@/lib/scoring";
 import { AreaNarrativeCard } from "@/components/flagtale/AreaNarrativeCard";
@@ -65,6 +66,8 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
   const klaiUp = totalBoost ? Math.min(100, Math.round((latest.klai + totalBoost) * 10) / 10) : latest.klai;
   const gradeUp = totalBoost ? gradeOf(latest.klai + totalBoost) : latest.grade;
   const gap = authenticityGap(sBoost, bBoost); // 진정성 갭: 검색 수요 vs 등록 공급 괴리
+  // 이 동네(시군구/시도) 로컬 크리에이터 — 지역 기반
+  const dongCreators = loadCreators().filter((cr) => props.sigungu.includes(cr.region) || props.sido.includes(cr.region)).slice(0, 3);
 
   // 일반 사용자용 한 줄 요약(연구 톤↓) — 등급·흐름·뜨는 이유를 평이하게
   const trendWord = latest.momentum > 1.5 ? "상승세" : latest.momentum < -1.5 ? "하락세" : "안정적";
@@ -152,6 +155,28 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
           <p className="mt-2 text-[12.5px] leading-relaxed text-muted">아직 등록된 공간·프로그램이 없어요. <b className="text-ink">매장·스테이·투어가 등록될수록 이 동네의 매력도가 올라갑니다</b> (등록 1곳당 약 +1.5). 동네에 콘텐츠가 쌓일수록 지역 매력도가 함께 성장하는 구조예요.</p>
         )}
       </div>
+
+      {/* 🎨 이 동네 로컬 크리에이터 — 지역 기반 */}
+      {dongCreators.length > 0 && (
+        <div className="mb-5 rounded-[20px] border-[1.5px] border-line bg-card2/40 p-4 sm:p-5">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className="font-display text-[16px] font-black tracking-tight text-ink">🎨 이 동네 로컬 크리에이터</h2>
+            <span className="text-[11.5px] font-bold text-muted2">{props.sigungu} 일대</span>
+          </div>
+          <div className="grid gap-2.5 sm:grid-cols-3">
+            {dongCreators.map((cr) => (
+              <Link key={cr.id} href={`/creator/${cr.id}`} className="lift flex items-center gap-2.5 rounded-[14px] border-[1.5px] border-line bg-card p-2.5">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={ftImage(cr.image)} alt={cr.name} className="h-11 w-11 shrink-0 rounded-full object-cover" />
+                <div className="min-w-0">
+                  <div className="truncate text-[13.5px] font-black text-ink">{cr.nickname}</div>
+                  <div className="truncate text-[11px] text-muted">{cr.name} · {cr.region}</div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 🎭 이 동네의 실제 이야기 — 핫지역 큐레이션(쇼케이스와 동일 데이터로 일관) */}
       {area && (

@@ -63,7 +63,7 @@ export default function SpotDetailPage({ params }: { params: { id: string } }) {
               <div><dt className="text-[12px] font-bold text-muted2">종류</dt><dd className="font-extrabold text-ink">{m.label}</dd></div>
               {spot.hours && <div><dt className="text-[12px] font-bold text-muted2">영업시간</dt><dd className="font-bold text-ink">{spot.hours}</dd></div>}
               {spot.price_range && <div><dt className="text-[12px] font-bold text-muted2">가격대</dt><dd className="font-bold text-ink">{spot.price_range}</dd></div>}
-              {spot.crew && <div><dt className="text-[12px] font-bold text-muted2">운영</dt><dd className="font-bold text-ink">{spot.crew}</dd></div>}
+              {spot.crew && <div><dt className="text-[12px] font-bold text-muted2">운영 팀</dt><dd><Link href={`/crew/${encodeURIComponent(spot.crew)}`} className="font-extrabold text-blue-l hover:underline">🏴 {spot.crew} →</Link></dd></div>}
               {spot.phone && <div><dt className="text-[12px] font-bold text-muted2">전화</dt><dd className="font-bold text-ink">{spot.phone}</dd></div>}
               {spot.address && <div className="col-span-2"><dt className="text-[12px] font-bold text-muted2">주소</dt><dd className="font-bold text-ink">{spot.address}</dd></div>}
             </dl>
