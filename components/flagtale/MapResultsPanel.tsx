@@ -125,6 +125,7 @@ export function MapResultsPanel({
   const [place, setPlace] = useState<{ category?: string; telephone?: string; address?: string; roadAddress?: string; link?: string } | null>(null);
   const [trend, setTrend] = useState<{ period: string; ratio: number }[] | null>(null);
   const [listView, setListView] = useState<"list" | "map">("list");
+  const [sheet, setSheet] = useState<"peek" | "full">("peek"); // 모바일 바텀시트 높이(네이버부동산식 펼치기)
   const list = view ?? filtered;
   const isFav = (id: string) => !!favs?.includes(id);
   const gallery = sel ? galleryOf(sel) : [];
@@ -227,7 +228,12 @@ export function MapResultsPanel({
       />
 
       {/* 좌측 목록 패널 */}
-      <div className={`absolute inset-x-2 bottom-2 z-20 ${listView === "map" ? "hidden md:flex" : "flex"} max-h-[42%] flex-col overflow-hidden rounded-[18px] border-[1.5px] border-line bg-card shadow-2xl md:inset-x-auto md:bottom-3 md:left-3 md:top-[60px] md:max-h-[calc(100%_-_72px)] md:w-[372px]`}>
+      <div className={`absolute inset-x-2 bottom-2 z-20 ${listView === "map" ? "hidden md:flex" : "flex"} ${sheet === "full" ? "max-h-[86%]" : "max-h-[46%]"} flex-col overflow-hidden rounded-[18px] border-[1.5px] border-line bg-card shadow-2xl transition-[max-height] duration-300 md:inset-x-auto md:bottom-3 md:left-3 md:top-[60px] md:max-h-[calc(100%_-_72px)] md:w-[372px]`}>
+        {/* 드래그 핸들 — 네이버부동산식 시트 펼치기/접기 (모바일) */}
+        <button onClick={() => setSheet((s) => (s === "peek" ? "full" : "peek"))} className="flex shrink-0 flex-col items-center gap-1 border-b border-line py-2 active:bg-card2 md:hidden" aria-label={sheet === "peek" ? "목록 펼치기" : "목록 접기"}>
+          <span className="h-1 w-10 rounded-full bg-line" />
+          <span className="text-[10.5px] font-extrabold text-muted2">{sheet === "peek" ? `▲ 목록 ${list.length}곳 더 보기` : "▼ 지도 보기"}</span>
+        </button>
         {onQuery && (
           <div className="shrink-0 border-b border-line p-2.5">
             <div className="flex items-center gap-2 rounded-full bg-card2 px-3 py-2">
