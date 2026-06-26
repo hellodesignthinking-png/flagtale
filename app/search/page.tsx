@@ -5,6 +5,7 @@ import Link from "next/link";
 import { loadSpots, loadTours, loadStays, loadCreators, ftImage, round1 } from "@/lib/flagtale";
 import { SPOT_CAT } from "@/lib/flagtale-types";
 import { PageShell } from "@/components/page-shell";
+import { SearchBox, type IdxItem } from "@/components/search/SearchBox";
 
 export const metadata: Metadata = { title: "검색 — 매장·투어·스테이·크리에이터·동네" };
 
@@ -22,6 +23,15 @@ export default function SearchPage({ searchParams }: { searchParams: { q?: strin
   const ql = q.toLowerCase();
   const has = (s?: string | null) => !!s && s.toLowerCase().includes(ql);
 
+  // 자동완성 인덱스(전체 콘텐츠) — 클라이언트 SearchBox가 즉시 필터
+  const index: IdxItem[] = [
+    ...loadSpots().map((s) => ({ label: s.name, sub: `${SPOT_CAT[s.category]?.label ?? s.category} · ${s.region}`, type: "spot", href: `/spot/${s.id}` })),
+    ...loadTours().map((t) => ({ label: t.title, sub: `투어 · ${t.region}`, type: "tour", href: `/tour/${t.id}` })),
+    ...loadStays().map((s) => ({ label: s.title, sub: `스테이 · ${s.region}`, type: "stay", href: `/stay/${s.id}` })),
+    ...loadCreators().map((c) => ({ label: c.nickname, sub: `크리에이터 · ${c.region}`, type: "creator", href: `/creator/${c.id}` })),
+    ...([...new Set(loadSpots().map((s) => s.crew).filter(Boolean))] as string[]).map((cr) => ({ label: cr, sub: "로컬 팀(크루)", type: "crew", href: `/crew/${encodeURIComponent(cr)}` })),
+  ];
+
   const spots = q ? loadSpots().filter((s) => has(s.name) || has(s.region) || has(s.category) || has(s.crew) || has(s.address)).slice(0, 12) : [];
   const tours = q ? loadTours().filter((t) => has(t.title) || has(t.region)).slice(0, 8) : [];
   const stays = q ? loadStays().filter((s) => has(s.title) || has(s.region)).slice(0, 8) : [];
@@ -35,11 +45,7 @@ export default function SearchPage({ searchParams }: { searchParams: { q?: strin
       <div className="mb-5">
         <span className="klai-eyebrow">🔍 통합 검색</span>
         <h1 className="mt-1.5 font-display text-[clamp(24px,4vw,34px)] font-black tracking-[-0.03em] text-ink">무엇이든 찾아보세요</h1>
-        <form action="/search" method="get" className="mt-3.5 flex items-center gap-2 rounded-full border-[1.5px] border-line bg-card px-4 py-1.5 focus-within:border-ink">
-          <span className="text-muted2">🔍</span>
-          <input name="q" defaultValue={q} autoFocus placeholder="매장·투어·스테이·크리에이터·크루·동네·게시판 검색 (예: 한옥, 성수, 명주크루)" className="h-10 flex-1 bg-transparent text-[15px] text-ink placeholder:text-muted2 focus:outline-none" />
-          <button type="submit" className="btn-glow shrink-0 rounded-full bg-amber px-4 py-2 text-[13px] font-extrabold text-onaccent">검색</button>
-        </form>
+        <div className="mt-3.5"><SearchBox index={index} initialQ={q} /></div>
         {q && <p className="mt-2.5 text-[13px] text-muted">“<b className="text-ink">{q}</b>” 검색 결과 <b className="text-ink">{total}</b>건</p>}
       </div>
 

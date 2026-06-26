@@ -125,8 +125,8 @@ function PostCard({ post, liked, onLike, onRemove, now }: { post: Post; liked: b
         <span className="text-[11px] text-muted2">· {post.author} · {now ? timeAgo(post.createdAt, now) : ""}</span>
         {post.mine && <button onClick={onRemove} className="ml-auto text-[11px] font-bold text-muted2 hover:text-warn">삭제</button>}
       </div>
-      <h3 className="text-[15.5px] font-black tracking-tight text-ink">{post.title}</h3>
-      <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed text-muted">{post.content}</p>
+      <Link href={`/board/${post.id}`} className="block hover:underline"><h3 className="text-[15.5px] font-black tracking-tight text-ink">{post.title}</h3></Link>
+      <p className="mt-1 line-clamp-3 whitespace-pre-line text-[13px] leading-relaxed text-muted">{post.content}</p>
       <div className="mt-2.5 flex items-center gap-2">
         <button onClick={onLike} className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-bold transition-colors ${liked ? "border-[#e11d48] bg-[#e11d48]/10 text-[#e11d48]" : "border-line text-muted2 hover:border-ink hover:text-ink"}`}>{liked ? "♥" : "♡"} {post.likes + (liked ? 1 : 0)}</button>
         <button onClick={() => setOpen((o) => !o)} className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-bold transition-colors ${open ? "border-ink text-ink" : "border-line text-muted2 hover:border-ink hover:text-ink"}`}>💬 댓글 {comments.length}</button>

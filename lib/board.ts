@@ -95,6 +95,26 @@ export function addComment(postId: string, c: Comment): void {
   }
 }
 
+// 알림 — 내 글에 달린 댓글(데모; 백엔드 활성 시 타인의 좋아요·댓글 실시간 알림)
+export interface Notif {
+  postId: string;
+  title: string;
+  comments: Comment[];
+  latest: number;
+}
+export function getNotifications(): Notif[] {
+  if (typeof window === "undefined") return [];
+  const out: Notif[] = [];
+  for (const p of getMyPosts()) {
+    const cs = getComments(p.id);
+    if (cs.length) out.push({ postId: p.id, title: p.title, comments: cs, latest: Math.max(...cs.map((c) => c.createdAt)) });
+  }
+  return out.sort((a, b) => b.latest - a.latest);
+}
+export function notifCount(): number {
+  return getNotifications().reduce((s, n) => s + n.comments.length, 0);
+}
+
 export function timeAgo(ts: number, now: number): string {
   const d = Math.max(0, now - ts);
   const min = Math.floor(d / 60000);
