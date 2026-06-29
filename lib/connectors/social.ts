@@ -29,21 +29,24 @@ const TTL = 1000 * 60 * 60 * 6;
 
 async function searchNaver(kind: "blog" | "cafearticle", query: string) {
   // 공용 스로틀 경유(동시호출 제한 + 429 재시도) → 진단 병렬 부하에서도 안정
-  return naverJson(`https://openapi.naver.com/v1/search/${kind}.json?query=${encodeURIComponent(query)}&display=30&sort=date`, H) as Promise<{
+  // sort=sim(정확도순): "마포구 성산동"에 가장 관련된 글 우선 → 동명이지역(남원·관악 등) 최신글 혼입 방지. (date순은 느슨매칭 최신글이 섞임)
+  return naverJson(`https://openapi.naver.com/v1/search/${kind}.json?query=${encodeURIComponent(query)}&display=30&sort=sim`, H) as Promise<{
     total?: number;
     items?: { title: string; description?: string; postdate?: string; link: string }[];
   } | null>;
 }
 
-export async function socialBuzz(query: string): Promise<SocialBuzz | null> {
+// keep: 지역 핵심어(시군구·시도 코어). 타지역 동명(제주 성산·창원 성산구 등) 표본 제거용.
+export async function socialBuzz(query: string, keep?: string[]): Promise<SocialBuzz | null> {
   const q = query.trim();
   if (!ID || !SEC || !q) return null;
-  const hit = cache.get(q);
+  const ck = keep?.length ? `${q}|${keep.join(",")}` : q;
+  const hit = cache.get(ck);
   if (hit && Date.now() - hit.at < TTL) return hit.data;
 
   const [blogJson, cafeJson] = await Promise.all([searchNaver("blog", q), searchNaver("cafearticle", q)]);
   if (blogJson?.total == null && cafeJson?.total == null) {
-    cache.set(q, { at: Date.now(), data: null });
+    cache.set(ck, { at: Date.now(), data: null });
     return null;
   }
 
@@ -56,8 +59,17 @@ export async function socialBuzz(query: string): Promise<SocialBuzz | null> {
       link: it.link,
     }));
 
-  const blogItems = toItems(blogJson, "blog");
-  const cafeItems = toItems(cafeJson, "cafe");
+  // 지역 후필터: 표본 텍스트에 시군구/시도 코어 미포함 → 타지역 동명 추정 제거. 표본이 3개↓면 전체 유지(폴백).
+  const rel = (items: ReturnType<typeof toItems>) => {
+    if (!keep?.length) return items;
+    const f = items.filter((i) => keep.some((k) => k && i.text.includes(k)));
+    return f;
+  };
+  let blogItems = toItems(blogJson, "blog");
+  let cafeItems = toItems(cafeJson, "cafe");
+  const fb = rel(blogItems), fc = rel(cafeItems);
+  if (fb.length + fc.length >= 3) { blogItems = fb; cafeItems = fc; } // 충분하면 지역 한정본 사용
+
   const blogTones = aggregateTones(blogItems.map((i) => i.text));
   const cafeTones = aggregateTones(cafeItems.map((i) => i.text));
   const allItems = [...blogItems, ...cafeItems];
@@ -82,6 +94,6 @@ export async function socialBuzz(query: string): Promise<SocialBuzz | null> {
     combined: combined.agg,
     recent,
   };
-  cache.set(q, { at: Date.now(), data });
+  cache.set(ck, { at: Date.now(), data });
   return data;
 }

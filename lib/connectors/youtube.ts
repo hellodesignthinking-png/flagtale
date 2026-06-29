@@ -18,10 +18,12 @@ export interface YoutubeBuzz {
 const cache = new Map<string, { at: number; data: YoutubeBuzz | null }>();
 const TTL = 1000 * 60 * 60 * 12;
 
-export async function youtubeBuzz(query: string): Promise<YoutubeBuzz | null> {
+// keep: 지역 핵심어(시군구·시도 코어). 타지역 동명 영상 제거용.
+export async function youtubeBuzz(query: string, keep?: string[]): Promise<YoutubeBuzz | null> {
   const q = query.trim();
   if (!KEY || !q) return null;
-  const hit = cache.get(q);
+  const ck = keep?.length ? `${q}|${keep.join(",")}` : q;
+  const hit = cache.get(ck);
   if (hit && Date.now() - hit.at < TTL) return hit.data;
 
   const url =
@@ -32,26 +34,30 @@ export async function youtubeBuzz(query: string): Promise<YoutubeBuzz | null> {
     .catch(() => null);
 
   if (!j?.items) {
-    cache.set(q, { at: Date.now(), data: null });
+    cache.set(ck, { at: Date.now(), data: null });
     return null;
   }
 
-  const items = (j.items as { id?: { videoId?: string }; snippet?: { title?: string; description?: string; channelTitle?: string; publishedAt?: string } }[]).map((it) => ({
+  const all = (j.items as { id?: { videoId?: string }; snippet?: { title?: string; description?: string; channelTitle?: string; publishedAt?: string } }[]).map((it) => ({
     title: cleanText(it.snippet?.title ?? ""),
     text: cleanText(it.snippet?.title ?? "") + " " + cleanText(it.snippet?.description ?? ""),
     channel: it.snippet?.channelTitle ?? "",
     date: (it.snippet?.publishedAt ?? "").slice(0, 10),
     videoId: it.id?.videoId,
   }));
+  // 지역 후필터(시군구/시도 코어 미포함=타지역 추정 제거). 3개↓면 전체 유지(폴백).
+  const f = keep?.length ? all.filter((i) => keep.some((k) => k && i.text.includes(k))) : all;
+  const items = f.length >= 3 ? f : all;
+
   const { agg, tones } = aggregateTones(items.map((i) => i.text));
   const topVideos = items.slice(0, 6).map((i, k) => ({ title: i.title, channel: i.channel, date: i.date, videoId: i.videoId, tone: tones[k] }));
 
   const data: YoutubeBuzz = {
     query: q,
-    videoTotal: Number(j.pageInfo?.totalResults ?? items.length),
+    videoTotal: items.length, // 지역 한정 영상 수(필터 후)
     agg,
     topVideos,
   };
-  cache.set(q, { at: Date.now(), data });
+  cache.set(ck, { at: Date.now(), data });
   return data;
 }

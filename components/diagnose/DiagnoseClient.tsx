@@ -486,6 +486,36 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd, mode = "parcel
                 <div className="text-[12px] font-extrabold uppercase tracking-wide text-blue-l">📌 종합 결론 · {result.devStrategy.stage}</div>
                 <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink">{result.devStrategy.conclusion}</p>
               </div>
+              {(() => {
+                const profile: { label: string; v: number }[] = [];
+                if (result.realScore) profile.push({ label: "실측 매력도", v: result.realScore.score });
+                if (result.potential) profile.push({ label: "발전가능성", v: result.potential.grade * 10 });
+                if (result.commerceReal) profile.push({ label: "상권 다양성", v: Math.round(result.commerceReal.diversity * 100) });
+                if (result.building?.typeMix != null) profile.push({ label: "용도 혼합", v: Math.round(result.building.typeMix * 100) });
+                if (result.cultureReal) profile.push({ label: "문화 활력", v: Math.min(100, Math.round(result.cultureReal.events / 5)) });
+                if (result.vacant?.ratio != null) profile.push({ label: "주거 안정도", v: Math.max(0, Math.round(100 - result.vacant.ratio * 3)) });
+                if (profile.length < 3) return null;
+                return (
+                  <div className="mt-3.5 rounded-lg border border-line bg-card2 px-3.5 py-3">
+                    <div className="mb-2 text-[12px] font-bold text-muted">📊 지표 프로파일 <span className="font-normal text-muted2">· 0~100 정규화 (낮은 축 = 전략 타깃)</span></div>
+                    <div className="space-y-1.5">
+                      {profile.map((p) => {
+                        const col = p.v >= 60 ? "var(--green)" : p.v >= 40 ? "#d4861e" : "var(--warn)";
+                        return (
+                          <div key={p.label} className="flex items-center gap-2">
+                            <span className="w-[64px] shrink-0 text-[11px] text-muted">{p.label}</span>
+                            <div className="relative h-3.5 flex-1 overflow-hidden rounded-full bg-navy2/50">
+                              <div className="absolute inset-y-0 left-[60%] w-px bg-line/60" />
+                              <div className="h-full rounded-full transition-all" style={{ width: `${p.v}%`, background: col }} />
+                            </div>
+                            <span className="w-7 shrink-0 text-right text-[11px] font-extrabold tabular-nums" style={{ color: col }}>{p.v}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
               <div className="mt-3.5 mb-1.5 text-[12px] font-bold text-muted">실데이터 기반 전략 (근거 데이터 포함)</div>
               <div className="space-y-2">
                 {result.devStrategy.strategies.map((s, i) => (
@@ -1351,46 +1381,71 @@ function signed(n: number) {
 }
 
 function QuadrantMatrix({ s }: { s: Sustainability }) {
-  const W = 300,
-    H = 268,
-    padL = 30,
-    padB = 28,
-    top = 8,
-    right = 8;
+  const W = 340, H = 300, padL = 42, padB = 38, top = 18, right = 16;
   const cl = (v: number) => Math.max(0, Math.min(100, v));
   const px = (v: number) => padL + (cl(v) / 100) * (W - padL - right);
   const py = (v: number) => H - padB - (cl(v) / 100) * (H - padB - top);
-  const bx = px(55),
-    by = py(50);
+  const x0 = padL, x1 = W - right, y0 = top, y1 = H - padB;
+  const bx = px(55), by = py(50);
   const cells = [
-    { key: "potential", x: padL, y: top, w: bx - padL, h: by - top, c: "#4b9cd3", icon: "🌱", label: "잠재·안정" },
-    { key: "grow", x: bx, y: top, w: W - right - bx, h: by - top, c: "#34a853", icon: "⭐", label: "지속 성장" },
-    { key: "decline", x: padL, y: by, w: bx - padL, h: H - padB - by, c: "#a23a2a", icon: "🔻", label: "쇠퇴·소멸" },
-    { key: "overheat", x: bx, y: by, w: W - right - bx, h: H - padB - by, c: "#ff7a3d", icon: "⚠", label: "과열·위태" },
+    { key: "potential", x: x0, y: y0, w: bx - x0, h: by - y0, c: "#4b9cd3", icon: "🌱", label: "잠재·안정", lx: x0 + 9, ly: y0 + 16, anchor: "start" as const, g: [0, 0, 1, 1] },
+    { key: "grow", x: bx, y: y0, w: x1 - bx, h: by - y0, c: "#2eb35e", icon: "⭐", label: "지속 성장", lx: x1 - 9, ly: y0 + 16, anchor: "end" as const, g: [1, 0, 0, 1] },
+    { key: "decline", x: x0, y: by, w: bx - x0, h: y1 - by, c: "#cf4434", icon: "🔻", label: "쇠퇴·소멸", lx: x0 + 9, ly: y1 - 10, anchor: "start" as const, g: [0, 1, 1, 0] },
+    { key: "overheat", x: bx, y: by, w: x1 - bx, h: y1 - by, c: "#ff7a3d", icon: "⚠", label: "과열·위태", lx: x1 - 9, ly: y1 - 10, anchor: "end" as const, g: [1, 1, 0, 0] },
   ];
-  const dx = px(s.attractiveness),
-    dy = py(s.score);
+  const dx = px(s.attractiveness), dy = py(s.score);
+  const active = cells.find((c) => c.key === s.quadrant.key);
+  const ac = active?.c ?? "var(--ink)";
+  // 값 칩 — 점 근처, 가까운 모서리 반대쪽으로 배치 후 클램프
+  const chipW = 100, chipH = 18;
+  let chipX = s.attractiveness < 55 ? dx + 12 : dx - 12 - chipW;
+  chipX = Math.max(x0 + 2, Math.min(chipX, x1 - chipW - 2));
+  let chipY = s.score < 50 ? dy - 12 - chipH : dy + 12;
+  chipY = Math.max(y0 + 2, Math.min(chipY, y1 - chipH - 2));
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="매력×지속가능성 4분면">
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="매력×지속가능성 4분면 — 현재 위치">
+      <defs>
+        {cells.map((c) => (
+          <linearGradient key={c.key} id={`qm-${c.key}`} x1={c.g[0]} y1={c.g[1]} x2={c.g[2]} y2={c.g[3]}>
+            <stop offset="0%" stopColor={c.c} stopOpacity={0.62} />
+            <stop offset="80%" stopColor={c.c} stopOpacity={0} />
+          </linearGradient>
+        ))}
+        <radialGradient id="qm-glow">
+          <stop offset="0%" stopColor="#fff" stopOpacity={0.85} />
+          <stop offset="100%" stopColor="#fff" stopOpacity={0} />
+        </radialGradient>
+      </defs>
+      {/* 사분면 채움(코너→중심 그라데이션) */}
+      {cells.map((c) => (
+        <rect key={c.key} x={c.x} y={c.y} width={c.w} height={c.h} fill={`url(#qm-${c.key})`} fillOpacity={c.key === s.quadrant.key ? 1 : 0.34} rx={3} />
+      ))}
+      {/* 외곽 테두리 + 중앙 분할선 */}
+      <rect x={x0} y={y0} width={x1 - x0} height={y1 - y0} fill="none" stroke="var(--line)" strokeWidth={1} rx={5} />
+      <line x1={bx} y1={y0} x2={bx} y2={y1} stroke="var(--muted2)" strokeWidth={0.8} strokeDasharray="3 3" opacity={0.45} />
+      <line x1={x0} y1={by} x2={x1} y2={by} stroke="var(--muted2)" strokeWidth={0.8} strokeDasharray="3 3" opacity={0.45} />
+      {/* 사분면 라벨(외곽 코너) */}
       {cells.map((c) => {
-        const active = c.key === s.quadrant.key;
+        const on = c.key === s.quadrant.key;
         return (
-          <g key={c.key}>
-            <rect x={c.x} y={c.y} width={c.w} height={c.h} fill={c.c} fillOpacity={active ? 0.2 : 0.05} stroke={active ? c.c : "var(--line)"} strokeWidth={active ? 1.6 : 0.5} />
-            <text x={c.x + c.w / 2} y={c.y + 16} textAnchor="middle" fontSize="10.5" fontWeight={active ? 800 : 600} fill={active ? c.c : "var(--muted2)"}>
-              {c.icon} {c.label}
-            </text>
-          </g>
+          <text key={c.key} x={c.lx} y={c.ly} textAnchor={c.anchor} fontSize="11" fontWeight={on ? 800 : 600} fill={on ? c.c : "var(--muted2)"} opacity={on ? 1 : 0.75}>
+            {c.icon} {c.label}
+          </text>
         );
       })}
-      <text x={(padL + W - right) / 2} y={H - 7} textAnchor="middle" fontSize="9.5" fill="var(--muted)">
-        매력 (KLAI) →
-      </text>
-      <text x={11} y={(top + H - padB) / 2} textAnchor="middle" fontSize="9.5" fill="var(--muted)" transform={`rotate(-90 11 ${(top + H - padB) / 2})`}>
-        지속가능성 →
-      </text>
-      <circle className="klai-pulse-ring" cx={dx} cy={dy} r={9} fill="none" stroke="#fff" strokeWidth={2} />
-      <circle cx={dx} cy={dy} r={6} fill="var(--ink)" stroke="#fff" strokeWidth={2} style={{ filter: "drop-shadow(0 0 6px rgba(255,255,255,0.55))" }} />
+      {/* 축 라벨 */}
+      <text x={(x0 + x1) / 2} y={H - 7} textAnchor="middle" fontSize="9.5" fontWeight={600} fill="var(--muted)">매력도 (KLAI) →</text>
+      <text x={13} y={(y0 + y1) / 2} textAnchor="middle" fontSize="9.5" fontWeight={600} fill="var(--muted)" transform={`rotate(-90 13 ${(y0 + y1) / 2})`}>지속가능성 →</text>
+      {/* 크로스헤어 */}
+      <line x1={dx} y1={y1} x2={dx} y2={dy} stroke={ac} strokeWidth={1} strokeDasharray="2 2" opacity={0.6} />
+      <line x1={x0} y1={dy} x2={dx} y2={dy} stroke={ac} strokeWidth={1} strokeDasharray="2 2" opacity={0.6} />
+      {/* 값 칩 */}
+      <rect x={chipX} y={chipY} width={chipW} height={chipH} rx={9} fill="var(--card)" stroke={ac} strokeWidth={1.2} />
+      <text x={chipX + chipW / 2} y={chipY + 12.5} textAnchor="middle" fontSize="9.5" fontWeight={700} fill="var(--ink)">매력 {Math.round(s.attractiveness)} · 지속 {Math.round(s.score)}</text>
+      {/* 위치 점(글로우 + 펄스) */}
+      <circle cx={dx} cy={dy} r={14} fill="url(#qm-glow)" />
+      <circle className="klai-pulse-ring" cx={dx} cy={dy} r={9} fill="none" stroke={ac} strokeWidth={2} />
+      <circle cx={dx} cy={dy} r={5.5} fill={ac} stroke="#fff" strokeWidth={2} />
     </svg>
   );
 }

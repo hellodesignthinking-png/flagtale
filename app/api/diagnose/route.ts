@@ -78,6 +78,12 @@ export async function POST(req: NextRequest) {
   const sLng = geo?.point.lng ?? bundle.props.centroidLng;
   const sLat = geo?.point.lat ?? bundle.props.centroidLat;
   const sname = searchName(bundle.props.name);
+  // 소셜·유튜브 지역 한정 — 동명이지역(제주 성산일출봉·창원 성산구 등) 오염 방지.
+  // 질의에 시군구를 붙이고(마포구 성산동), 결과는 시군구/시도 코어로 후필터.
+  const sgCore = (bundle.props.sigungu || "").replace(/(특별자치시|특별자치도|광역시|특별시)$/, "").replace(/(시|군|구)$/, "").trim();
+  const sdCore = (bundle.props.sido || "").replace(/(특별자치도|특별자치시|특별시|광역시|도)$/, "").trim();
+  const regionQ = [bundle.props.sigungu, sname].filter(Boolean).join(" ").trim() || sname;
+  const keepTerms = [sgCore, sdCore].filter((s) => s && s.length >= 2);
 
   // 외부 커넥터 병렬 호출 — 순차 await 시 도달 불가한 서울 API 타임아웃(각 7~8s)이
   // 누적돼 콜드 17s+. 병렬이면 가장 느린 커넥터(~8s)로 수렴. 각자 graceful null.
@@ -93,8 +99,8 @@ export async function POST(req: NextRequest) {
     livingPop(bundle.props.admCd2, bundle.props.sido).catch(() => null), // 생활인구 시간대(서울)
     cultureInfo(bundle.props.sido, bundle.props.sigungu).catch(() => null), // 문화 공연·전시·축제
     localVenues(sname, { lng: sLng, lat: sLat }, 1200).catch(() => null), // 갤러리·도서관·책방·공연장·체육관·공원
-    socialBuzz(sname).catch(() => null), // 소셜 등록수(블로그·카페) + 긍부정
-    youtubeBuzz(sname).catch(() => null), // 유튜브 영상 + 긍부정 (YOUTUBE_API_KEY 필요)
+    socialBuzz(regionQ, keepTerms).catch(() => null), // 소셜 등록수(블로그·카페) + 긍부정 — 지역 한정
+    youtubeBuzz(regionQ, keepTerms).catch(() => null), // 유튜브 영상 + 긍부정 — 지역 한정 (YOUTUBE_API_KEY 필요)
     storeName ? storeBuzz(storeName, storeArea).catch(() => null) : Promise.resolve(null), // 매장 스코프 버즈(관련도 필터)
     storeName ? naverInterest(storeQuery).catch(() => null) : Promise.resolve(null), // 매장명+지역 검색 관심도
   ]);
