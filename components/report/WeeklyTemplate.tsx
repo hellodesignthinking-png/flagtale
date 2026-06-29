@@ -154,6 +154,26 @@ export function WeeklyTemplate({ report }: { report: Report }) {
         </Block>
       </section>
 
+      {/* 2.5 빈집 고위험 (소멸·공실) — 통계청 인구주택총조사 실데이터 */}
+      {b.vacantHigh?.length ? (
+        <Block title="🏚 빈집 고위험 동네 (소멸·공실)" accent="warn">
+          <div className="mb-2 text-[11.5px] text-muted2">통계청 인구주택총조사 빈집비율(실데이터) 상위 — 시군구 단위, 거래절벽·노후 가속 위험.</div>
+          <ul className="grid gap-1.5 sm:grid-cols-2">
+            {b.vacantHigh.map((v) => (
+              <li key={v.admCd2} className="rounded-lg border border-line bg-card2 px-3 py-2">
+                <div className="flex items-center justify-between">
+                  <Link href={`/place/${v.admCd2}`} className="text-[13px] font-bold text-ink hover:text-amber">
+                    {v.name} <span className="text-[11px] font-normal text-muted2">{v.sigungu}</span>
+                  </Link>
+                  <span className="text-[12px] font-bold text-warn">빈집 {v.ratio}%</span>
+                </div>
+                <div className="mt-0.5 text-[11.5px] text-muted">{v.reason}</div>
+              </li>
+            ))}
+          </ul>
+        </Block>
+      ) : null}
+
       {/* 3. 내러티브 */}
       <Block title="③ 뜨는 / 식는 내러티브">
         <div className="grid gap-4 sm:grid-cols-2">

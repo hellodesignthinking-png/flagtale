@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { geocodeToPlace, getPlace, getPeerAvg, getRegionComparison, nationalSignalAverage, populationMeta } from "@/lib/data";
+import { geocodeToPlace, getPlace, getPeerAvg, getRegionComparison, nationalSignalAverage, populationMeta, vacantFor } from "@/lib/data";
 import { geocodeToDistrict, pointToDistrict } from "@/lib/geocode";
 import { naverInterest } from "@/lib/connectors/naver";
 import { anchorStores } from "@/lib/connectors/anchor";
@@ -155,6 +155,7 @@ export async function POST(req: NextRequest) {
     supplyBoost: sBoost, // 공급 가산점(0~10)
     buzzBoost: bBoost, // 검색 수요(인스타 버즈) 가산점(0~6)
     authGap, // 진정성 갭(검색 수요 vs 등록 공급) — 과열/미발견/균형
+    vacant: vacantFor(place.admCd2), // 빈집비율(시군구)·동 추정 빈집호수 — 소멸·공실 실신호(KOSIS)
     periods: bundle.series.map((s) => s.period),
     entitled,
     reportId: `parcel_${place.admCd2}_${bundle.latest.period}`,

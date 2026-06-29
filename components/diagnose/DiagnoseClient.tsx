@@ -78,6 +78,7 @@ interface DiagnoseResult {
   supplyBoost: number;
   buzzBoost: number;
   authGap: AuthGap | null;
+  vacant: { ratio: number | null; count: number | null; houses?: number | null; est?: number | null; year: number } | null;
   periods: string[];
   reportId: string;
 }
@@ -1110,6 +1111,15 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd, mode = "parcel
               ))}
               {(!d || d.risks.length === 0) && (
                 <div className="rounded-lg border border-line bg-card2 px-3 py-2 text-[12.5px] text-muted">임계 경보 없음 — 정상 범위. 선제 모니터링 권장.</div>
+              )}
+              {result?.vacant && result.vacant.ratio != null && result.vacant.ratio >= 10 && (
+                <div className="rounded-lg border border-warn/30 bg-warn/10 px-3 py-2">
+                  <div className="text-[13px] font-bold text-warn">🏚 빈집 비율 {result.vacant.ratio}% — 소멸·공실 경보</div>
+                  <div className="mt-0.5 text-[12.5px] text-muted">
+                    전국 평균(~8%)을 {result.vacant.ratio >= 15 ? "크게 " : ""}상회.{result.vacant.est != null ? ` 이 동 추정 빈집 ~${result.vacant.est.toLocaleString()}호.` : ""} 거래절벽·노후 가속 위험 — 빈집 활용(리모델링·임대전환)·정비 검토 권고.
+                  </div>
+                  <div className="mt-1 text-[11px] text-muted2">통계청 인구주택총조사(실데이터) · 비율 시군구{result.vacant.houses != null ? ` · 동 주택 ${result.vacant.houses.toLocaleString()}호` : ""}</div>
+                </div>
               )}
               {ag?.verdict === "hype" && (
                 <div className="rounded-lg border border-warn/30 bg-warn/10 px-3 py-2">

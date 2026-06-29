@@ -3,7 +3,7 @@
 // → 매주 새 리포트가 자동 존재(서버리스 읽기전용 FS에 쓰기 불필요). 실데이터 도입 시 실제 주간 변화 반영.
 // 연구자 톤: 전국 변화·검색·인구를 종합해 "어떤 동네가 왜 뜨고/지는지"를 서술.
 import "server-only";
-import { loadScores, loadDistricts, loadSignals, loadDemographics } from "@/lib/data";
+import { loadScores, loadDistricts, loadSignals, loadDemographics, loadVacant } from "@/lib/data";
 import { supplyBoost, authenticityGap } from "@/lib/supply";
 import { narrativeForPlace } from "@/lib/narratives";
 import { instagramFor, buzzBoost } from "@/lib/connectors/instagram";
@@ -74,6 +74,7 @@ export interface WeeklyBlocks {
   fallers: WeeklyRiser[];
   gentriAlerts: { admCd2: string; name: string; sigungu: string; stage: number; g: number; reason: string }[];
   cliffs: { admCd2: string; name: string; sigungu: string; klai: number; reason: string }[];
+  vacantHigh: { admCd2: string; name: string; sigungu: string; ratio: number; est: number | null; reason: string }[]; // 빈집 고위험(소멸·공실, KOSIS 실데이터)
   narrativesHot: string[];
   narrativesCold: string[];
   gapHype: GapMover[]; // 과열·거품(수요≫공급)
@@ -320,6 +321,22 @@ export function computeWeekly(year: number, week: number): Report {
     reason: (r.p.popChangeRate || 0) < -0.5 ? "거래 위축 + 인구 유출 동반" : "거래량 둔화·공실 확대 — 가격 하락 선행 신호",
   }));
 
+  // 빈집 고위험 — 통계청 인구주택총조사 빈집비율(시군구 실데이터). 시군구 중복 제거해 고위험 지역.
+  const vac = loadVacant();
+  const seenSig = new Set<string>();
+  const vacantHigh = vac
+    ? rows
+        .map((r) => ({ r, v: vac.byPlace[r.admCd2] }))
+        .filter((x) => x.v && x.v.ratio != null && x.v.ratio >= 12)
+        .sort((a, b) => (b.v!.ratio! - a.v!.ratio!))
+        .filter(({ r }) => (seenSig.has(r.sigungu) ? false : (seenSig.add(r.sigungu), true)))
+        .slice(0, 6)
+        .map(({ r, v }) => ({
+          admCd2: r.admCd2, name: r.name, sigungu: r.sigungu, ratio: v!.ratio!, est: v!.est ?? null,
+          reason: `빈집비율 ${v!.ratio}% (전국 ~8%)${v!.est != null ? ` · 추정 ${v!.est.toLocaleString()}호` : ""} — 소멸·공실 고위험`,
+        }))
+    : [];
+
   // 진정성 갭 — 검색 수요 vs 등록 공급 괴리. 과열(수요≫공급)·미발견(공급≫수요) 상위 동.
   const gapAll = rows.map((r) => {
     const nb = narrativeForPlace(r.admCd2);
@@ -372,6 +389,7 @@ export function computeWeekly(year: number, week: number): Report {
       fallers,
       gentriAlerts,
       cliffs,
+      vacantHigh,
       narrativesHot,
       narrativesCold,
       gapHype,
