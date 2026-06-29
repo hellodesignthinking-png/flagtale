@@ -130,6 +130,15 @@ export function colorForLayer(
       alpha = 150 + Math.round(t * 95);
       break;
     }
+    case "vacant": {
+      // 빈집비율 실측 — 높을수록 위기(청록 → 빨강). 데이터 없으면(-1) 베이스.
+      const r = (s as unknown as Record<string, number>).vacantRatio ?? -1;
+      if (r < 0) { rgb = [44, 58, 86]; alpha = 90; break; }
+      const t = Math.min(r / 15, 1); // 전국 ~8%
+      rgb = mix([46, 78, 96], [200, 64, 48], Math.pow(t, 0.8));
+      alpha = 150 + Math.round(t * 95);
+      break;
+    }
     default:
       rgb = SLATE;
   }
@@ -178,6 +187,10 @@ export function elevationForLayer(layer: LayerId, s: PlaceScore): number {
     case "commerce": {
       const n = (s as unknown as Record<string, number>).commerceStores ?? 0;
       return n > 0 ? clamp01((Math.log(n + 1) / Math.log(3000)) * 100) : 0;
+    }
+    case "vacant": {
+      const r = (s as unknown as Record<string, number>).vacantRatio ?? -1;
+      return r < 0 ? 0 : clamp01((r / 20) * 100);
     }
     default:
       return clamp01(s.klai);
@@ -239,6 +252,11 @@ export function displayForLayer(layer: LayerId, s: PlaceScore): string {
       const r = s as unknown as Record<string, number>;
       const n = r.commerceStores ?? 0;
       return n > 0 ? `${n.toLocaleString()} 상가 · 다양성 ${Math.round((r.commerceDiv ?? 0) * 100)}` : "상권 데이터 없음";
+    }
+    case "vacant": {
+      const r = s as unknown as Record<string, number>;
+      const v = r.vacantRatio ?? -1;
+      return v < 0 ? "빈집 데이터 없음" : `빈집 ${v}%${r.vacantCount ? ` · ${r.vacantCount.toLocaleString()}호` : ""}`;
     }
     default:
       return `${s.klai}`;

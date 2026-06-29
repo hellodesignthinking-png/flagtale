@@ -61,6 +61,12 @@ export function Legend({ layer }: { layer: LayerId }) {
         { color: "#1a8a5e", label: "중간" },
         { color: "#18B460", label: "상가 밀집" },
       ];
+    if (layer === "vacant")
+      return [
+        { color: "#2e4e60", label: "빈집 적음" },
+        { color: "#9a6048", label: "보통" },
+        { color: "#C84030", label: "빈집 많음(위기)" },
+      ];
     if (layer === "gentri")
       return [
         { color: "#2e456b", label: "정상" },

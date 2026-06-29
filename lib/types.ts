@@ -21,7 +21,8 @@ export type LayerId =
   | "budget"
   | "vitality"
   | "authgap"
-  | "commerce";
+  | "commerce"
+  | "vacant";
 
 export interface DistrictProps {
   admCd2: string;
@@ -216,6 +217,20 @@ export interface CommerceFile {
   source: string;
   fetchedAt: string;
   byPlace: Record<string, CommercePlace>;
+}
+
+// ── 빈집 실측 — 통계청 인구주택총조사 미거주주택(빈집)비율 (KOSIS, 시군구) ──
+export interface VacantPlace {
+  ratio: number | null; // 빈집비율(%)
+  count: number | null; // 빈집 수(호)
+  year: number;
+}
+export interface VacantFile {
+  source: string;
+  fetchedAt: string;
+  resolution: string; // "sigungu"
+  year: number;
+  byPlace: Record<string, VacantPlace>;
 }
 
 // ── 지역 신호 (검색·기사·인구·임대료·매물) ──────────────────

@@ -113,6 +113,7 @@ export const LAYERS: LayerDef[] = [
   { id: "gentri", label: "젠트리 경보", desc: "경보 동에 주황 펄스 외곽선", kind: "alert", group: "위기 신호" },
   { id: "market", label: "시장 활성도", desc: "활발 / 정체 / 위축(거래절벽)", kind: "categorical-market", group: "위기 신호" },
   { id: "narrative", label: "내러티브", desc: "형성·확산·절정·쇠퇴 + 부정서사", kind: "categorical-narrative", group: "위기 신호" },
+  { id: "vacant", label: "🏚 빈집 비율", desc: "미거주 주택(빈집) 비율 · 통계청 인구주택총조사 실데이터(시군구)", kind: "sequential", group: "위기 신호", real: true },
   { id: "budget", label: "공공예산 유입", desc: "나라장터 공고예산 유입 강도 (억/년)", kind: "sequential", group: "공공 투입" },
   { id: "vitality", label: "플래그테일 활력", desc: "등록 공급 + 검색 수요(인스타) 밀도 · 네트워크 효과", kind: "sequential", group: "플래그테일", real: true },
   { id: "authgap", label: "진정성 갭", desc: "과열(검색≫등록)=빨강 · 미발견(등록≫검색)=초록", kind: "diverging", group: "플래그테일", real: true },

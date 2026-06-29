@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { commerceFor, getPeerAvg, getPlace, getRegionComparison, nationalSignalAverage, populationMeta } from "@/lib/data";
+import { commerceFor, vacantFor, getPeerAvg, getPlace, getRegionComparison, nationalSignalAverage, populationMeta } from "@/lib/data";
 import { NaverPanel } from "@/components/analysis/NaverPanel";
 import { PageShell } from "@/components/page-shell";
 import { Button, MomentumChip, Panel, Pill, ProvisionalBadge, SectionHead, Stat } from "@/components/ui";
@@ -62,6 +62,7 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
   const supply = supplyFor(props.admCd2);
   const sBoost = supplyBoost(props.admCd2); // 공급: 등록 콘텐츠 밀도
   const commerce = commerceFor(props.admCd2); // 상권 실측(상가수·업종 다양성) — data.go.kr 인제스트 시에만 존재
+  const vacant = vacantFor(props.admCd2); // 빈집비율 실측(KOSIS 시군구) — 소멸/공실 신호
   const bBoost = buzzBoost(ig?.postsCount); // 수요: 인스타 검색량(버즈)
   const totalBoost = Math.round((sBoost + bBoost) * 10) / 10;
   const klaiUp = totalBoost ? Math.min(100, Math.round((latest.klai + totalBoost) * 10) / 10) : latest.klai;
@@ -298,6 +299,23 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
           )}
           <p className="mt-3 text-[11px] leading-snug text-muted2">
             행정동 등록 상가 {commerce.sampled.toLocaleString()}개 표본 기준 업종 다양성(Shannon, 0~100). 위 매력도 점수(샘플·잠정)와 별개의 <b className="text-ink">실측 지표</b>입니다.
+          </p>
+        </Panel>
+      )}
+
+      {/* 빈집 비율 — 통계청 인구주택총조사(KOSIS). 소멸·공실 실신호. 시군구 단위 */}
+      {vacant && vacant.ratio != null && (
+        <Panel className="mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <SectionHead title="🏚 빈집 비율 — 소멸·공실 신호" desc="통계청 인구주택총조사 · 시군구 단위" />
+            <span className="rounded-full bg-[#C84030]/15 px-2.5 py-1 text-[10.5px] font-extrabold text-[#C84030] ring-1 ring-[#C84030]/30">● 실데이터</span>
+          </div>
+          <div className="mt-3 flex flex-wrap items-end gap-6">
+            <Stat label="빈집비율" value={`${vacant.ratio}%`} accent={vacant.ratio >= 12 ? "warn" : "blue"} sub={`${vacant.year}년 · 전국 ~8%`} />
+            {vacant.count != null && <Stat label="빈집 수" value={`${vacant.count.toLocaleString()}호`} sub="시군구 합계" />}
+          </div>
+          <p className="mt-3 text-[11px] leading-snug text-muted2">
+            미거주 주택(빈집) 비율 — <b className="text-ink">{vacant.ratio >= 12 ? "전국 평균(8%)보다 높아 소멸·공실 주의" : vacant.ratio >= 8 ? "전국 평균 수준" : "전국 평균보다 낮음"}</b>. 시군구 단위 실측(동별 공유) · 인구주택총조사.
           </p>
         </Panel>
       )}

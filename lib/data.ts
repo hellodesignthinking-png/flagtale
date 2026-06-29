@@ -5,6 +5,8 @@ import { buildSignalSeries } from "./signalGen";
 import type {
   CommerceFile,
   CommercePlace,
+  VacantFile,
+  VacantPlace,
   DemographicsFile,
   DemographicYear,
   Diagnosis,
@@ -113,6 +115,23 @@ export function loadCommerce(): CommerceFile | null {
 /** 동별 실측 상권(상가수·업종 다양성) — 실데이터 인제스트 시에만 존재, 없으면 null */
 export function commerceFor(admCd2: string): CommercePlace | null {
   return loadCommerce()?.byPlace?.[admCd2] ?? null;
+}
+
+// 빈집 실측(vacant.json) — `npm run ingest:vacant`(KOSIS) 전에는 없으므로 안전 폴백
+let _vacant: VacantFile | null | undefined;
+export function loadVacant(): VacantFile | null {
+  if (_vacant !== undefined) return _vacant;
+  const p = path.join(DATA_DIR, "vacant.json");
+  if (!fs.existsSync(p)) return (_vacant = null);
+  try {
+    return (_vacant = JSON.parse(fs.readFileSync(p, "utf-8")) as VacantFile);
+  } catch {
+    return (_vacant = null);
+  }
+}
+/** 동별 빈집비율·빈집수(시군구 단위 KOSIS) — 인제스트 시에만 존재, 없으면 null */
+export function vacantFor(admCd2: string): VacantPlace | null {
+  return loadVacant()?.byPlace?.[admCd2] ?? null;
 }
 
 export function listPlaces(): DistrictProps[] {
