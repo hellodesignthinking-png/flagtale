@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { geocodeToPlace, getPlace, getPeerAvg, getRegionComparison, nationalSignalAverage, populationMeta, vacantFor, commerceFor, buildingFor, cultureFor, potentialFor } from "@/lib/data";
 import { realComposite } from "@/lib/realScore";
 import { programsFor } from "@/lib/programs";
+import { devStrategy } from "@/lib/devStrategy";
 import { geocodeToDistrict, pointToDistrict } from "@/lib/geocode";
 import { naverInterest } from "@/lib/connectors/naver";
 import { anchorStores } from "@/lib/connectors/anchor";
@@ -165,6 +166,18 @@ export async function POST(req: NextRequest) {
     potential: potentialFor(place.admCd2), // 발전가능성(국토부 쇠퇴진단 3부문 등급)
     realScore: realComposite(place.admCd2, bundle.latest), // 실측 매력도(실데이터 합성)
     programs: programsFor(place.admCd2), // 정부 지역활성화 사업 지정(청년마을·문화도시)
+    // 데이터 기반 결론·전략·대안 — 위 실데이터 값으로 규칙 처방 생성
+    devStrategy: devStrategy({
+      name: bundle.props.name,
+      realScore: realComposite(place.admCd2, bundle.latest),
+      potential: potentialFor(place.admCd2),
+      vacant: vacantFor(place.admCd2),
+      commerceReal: commerceFor(place.admCd2),
+      building: buildingFor(place.admCd2),
+      cultureReal: cultureFor(place.admCd2),
+      programs: programsFor(place.admCd2),
+      authGap,
+    }),
     periods: bundle.series.map((s) => s.period),
     entitled,
     reportId: `parcel_${place.admCd2}_${bundle.latest.period}`,

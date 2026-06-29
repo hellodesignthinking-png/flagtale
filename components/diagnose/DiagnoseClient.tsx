@@ -85,6 +85,7 @@ interface DiagnoseResult {
   potential?: { grade: number; indicators: Record<string, number> } | null;
   realScore?: { score: number; coverage: number; d1r: number | null; d2r: number | null; d3r: number | null; d4c: number | null; policy: number } | null;
   programs?: { key: string; label: string; agency: string }[];
+  devStrategy?: { conclusion: string; stage: string; strategies: { title: string; detail: string; basis: string }[]; alternatives: string[] } | null;
   periods: string[];
   reportId: string;
 }
@@ -475,6 +476,39 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd, mode = "parcel
                 </div>
               )}
               <p className="mt-2 text-[11px] leading-snug text-muted2">전부 정부·공공 <b className="text-ink">실데이터</b>(소진공 상가·KOSIS 인구주택총조사·국토부 쇠퇴진단·문화정보원). 위 샘플 점수와 별개의 실측 지표입니다.</p>
+            </Section>
+          )}
+
+          {/* 📌 데이터 기반 결론·전략·대안 — 실측 데이터 값으로 자동 처방 */}
+          {result.devStrategy && result.devStrategy.strategies.length > 0 && (
+            <Section num="PLAN" title="데이터 기반 결론 · 전략 · 대안" tone="grade-b">
+              <div className="rounded-xl border-[1.5px] border-blue-l/40 bg-blue-l/10 px-4 py-3.5">
+                <div className="text-[12px] font-extrabold uppercase tracking-wide text-blue-l">📌 종합 결론 · {result.devStrategy.stage}</div>
+                <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink">{result.devStrategy.conclusion}</p>
+              </div>
+              <div className="mt-3.5 mb-1.5 text-[12px] font-bold text-muted">실데이터 기반 전략 (근거 데이터 포함)</div>
+              <div className="space-y-2">
+                {result.devStrategy.strategies.map((s, i) => (
+                  <div key={i} className="rounded-lg border border-line bg-card2 px-3.5 py-2.5">
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
+                      <span className="text-[13.5px] font-bold text-ink">{i + 1}. {s.title}</span>
+                      <span className="shrink-0 rounded-full bg-card px-2 py-0.5 text-[10.5px] font-bold text-blue-l">📊 {s.basis}</span>
+                    </div>
+                    <div className="mt-1 text-[12.5px] leading-relaxed text-muted">{s.detail}</div>
+                  </div>
+                ))}
+              </div>
+              {result.devStrategy.alternatives.length > 0 && (
+                <div className="mt-3.5 rounded-lg border border-amber/30 bg-amber/8 px-3.5 py-3">
+                  <div className="mb-1.5 text-[12px] font-bold text-amber-d">💡 지역 대안 아이디어</div>
+                  <ul className="space-y-1">
+                    {result.devStrategy.alternatives.map((alt, i) => (
+                      <li key={i} className="flex gap-1.5 text-[12.5px] leading-relaxed text-muted"><span className="shrink-0 text-amber-d">▸</span><span>{alt}</span></li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <p className="mt-2.5 text-[11px] leading-snug text-muted2">위 결론·전략·대안은 모두 실측 데이터(실측 매력도·발전가능성·빈집·상권 다양성·용도혼합·문화 활력) 값에 근거한 <b className="text-ink">자동 처방</b>입니다.</p>
             </Section>
           )}
 
