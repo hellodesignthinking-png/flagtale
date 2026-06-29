@@ -10,14 +10,15 @@ import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/", label: "발견·경험" },
+  { href: "/board", label: "게시판" }, // 우선 노출
   { href: "/map-tale", label: "플래그맵" },
-  { href: "/board", label: "게시판" },
-  { href: "/host", label: "호스트 등록" },
   { href: "/hub", label: "허브" },
   { href: "/lab", label: "플래그테일랩" },
   { href: "/reports", label: "리포트" },
   { href: "/diagnose", label: "진단" },
 ];
+// 호스트 등록 — 일반 메뉴에서 숨김, 로그인한 호스트에게만 노출
+const HOST_NAV = { href: "/host", label: "🏪 호스트 등록" };
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -32,6 +33,8 @@ export function SiteHeader() {
     return () => data.subscription.unsubscribe();
   }, []);
   useEffect(() => setMenuOpen(false), [pathname]); // 라우트 이동 시 모바일 메뉴 닫기
+  // 호스트 등록은 로그인(호스트)일 때만 메뉴에 노출 — '게시판' 다음에 삽입
+  const visibleNav = email ? [NAV[0], NAV[1], HOST_NAV, ...NAV.slice(2)] : NAV;
 
   return (
     <header
@@ -57,7 +60,7 @@ export function SiteHeader() {
         </Link>
 
         <nav className="ml-2 hidden items-center gap-1 md:flex">
-          {NAV.map((n) => {
+          {visibleNav.map((n) => {
             const active = pathname === n.href || pathname.startsWith(n.href + "/");
             return (
               <Link
@@ -111,7 +114,7 @@ export function SiteHeader() {
       {menuOpen && (
         <div className={cn("absolute inset-x-0 top-14 border-b shadow-xl md:hidden", onMap ? "border-line/40 bg-card" : "theme-light border-line bg-card")}>
           <nav className="mx-auto grid max-w-[1400px] gap-0.5 px-3 py-2">
-            {NAV.map((n) => {
+            {visibleNav.map((n) => {
               const active = pathname === n.href || pathname.startsWith(n.href + "/");
               return (
                 <Link
