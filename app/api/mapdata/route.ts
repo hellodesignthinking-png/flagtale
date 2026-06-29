@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { commerceFor, vacantFor, buildingFor, loadDistricts, loadScores } from "@/lib/data";
+import { realComposite } from "@/lib/realScore";
 import { colorForLayer, displayForLayer, elevationForLayer, isPulseAlert, gradeOf } from "@/lib/scoring";
 import { narrativeForPlace, STAGE_META } from "@/lib/narratives";
 import { supplyBoost, authenticityGap } from "@/lib/supply";
@@ -76,6 +77,9 @@ export function GET(req: NextRequest) {
         s = { ...s0, vacantRatio: vac?.ratio ?? -1, vacantCount: vac?.count ?? 0 } as typeof s0;
       } else if (layer === "building") {
         s = { ...s0, buildingMix: bld?.typeMix ?? -1, buildingOld: bld?.oldRatio ?? 0 } as typeof s0;
+      } else if (layer === "real") {
+        const rc = realComposite(cd, s0); // 실데이터 합성(상권·건축물·인구·빈집), 2축 미만이면 null
+        s = { ...s0, realScore: rc?.score ?? -1, realCov: rc?.coverage ?? 0 } as typeof s0;
       }
       c.push(narrColor ?? colorForLayer(layer, s));
       l.push(narrLabel ?? displayForLayer(layer, s));

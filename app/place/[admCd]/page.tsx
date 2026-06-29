@@ -26,6 +26,7 @@ import { googleInterestFor, countryKo } from "@/lib/connectors/googleinterest";
 import { loadCreators, ftImage } from "@/lib/flagtale";
 import { supplyFor, supplyBoost, supplyBreakdown, authenticityGap } from "@/lib/supply";
 import { gradeOf } from "@/lib/scoring";
+import { realComposite } from "@/lib/realScore";
 import { AreaNarrativeCard } from "@/components/flagtale/AreaNarrativeCard";
 import { formatKRW, signed } from "@/lib/utils";
 
@@ -64,6 +65,7 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
   const commerce = commerceFor(props.admCd2); // 상권 실측(상가수·업종 다양성) — data.go.kr 인제스트 시에만 존재
   const vacant = vacantFor(props.admCd2); // 빈집비율 실측(KOSIS 시군구) — 소멸/공실 신호
   const building = buildingFor(props.admCd2); // D3 건축물 실측(용도혼합·노후·밀도) — KOSIS 인구주택총조사
+  const real = realComposite(props.admCd2, latest); // 실측 매력도 — 실데이터(상권·건축물·인구·빈집) 합성, 2축 미만이면 null
   const bBoost = buzzBoost(ig?.postsCount); // 수요: 인스타 검색량(버즈)
   const totalBoost = Math.round((sBoost + bBoost) * 10) / 10;
   const klaiUp = totalBoost ? Math.min(100, Math.round((latest.klai + totalBoost) * 10) / 10) : latest.klai;
@@ -277,6 +279,29 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
           </div>
         </Panel>
       </div>
+
+      {/* 실측 매력도 — 실데이터(상권·건축물·인구·빈집) 합성. 샘플 KLAI와 별개의 실데이터 기반 점수 */}
+      {real && (
+        <Panel className="mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <SectionHead title="🟢 실측 매력도 — 실데이터 합성" desc="상권·건축물·인구·빈집 실측만으로 계산 (샘플 KLAI와 별개)" />
+            <span className="rounded-full bg-[#0F6E5C]/15 px-2.5 py-1 text-[10.5px] font-extrabold text-[#0F6E5C] ring-1 ring-[#0F6E5C]/30">● 실데이터 {real.coverage}축</span>
+          </div>
+          <div className="mt-3 flex flex-wrap items-end gap-x-6 gap-y-3">
+            <Stat label="실측 매력도" value={`${real.score} · ${gradeOf(real.score)}등급`} accent="blue" />
+            <Stat label="샘플 KLAI (참고)" value={`${latest.klai} · ${latest.grade}등급`} sub="난수 샘플" />
+          </div>
+          <div className="mt-3 flex flex-wrap gap-1.5 text-[12px]">
+            {real.d2r != null && <span className="rounded-full border border-line bg-card2/50 px-2.5 py-1 text-muted">상권 <b className="text-ink">{real.d2r}</b></span>}
+            {real.d3r != null && <span className="rounded-full border border-line bg-card2/50 px-2.5 py-1 text-muted">용도혼합 <b className="text-ink">{real.d3r}</b></span>}
+            {real.d1r != null && <span className="rounded-full border border-line bg-card2/50 px-2.5 py-1 text-muted">인구지속 <b className="text-ink">{real.d1r}</b></span>}
+            {real.vacantPenalty < 1 && <span className="rounded-full border border-warn/30 bg-warn/10 px-2.5 py-1 text-warn">빈집 감점 ×{real.vacantPenalty}</span>}
+          </div>
+          <p className="mt-3 text-[11px] leading-snug text-muted2">
+            실데이터 <b className="text-ink">{real.coverage}개 축</b>(상권·건축물·인구) 결합 — 위 KLAI 종합점수는 아직 샘플(난수)이며, 이 <b className="text-ink">실측 매력도</b>가 실데이터 기반 참고치입니다. 지도 '🟢 실측 매력도' 레이어로도 확인.
+          </p>
+        </Panel>
+      )}
 
       {/* 상권 실측 — 소상공인시장진흥공단 상가정보(data.go.kr). commerce.json 인제스트 시에만 노출(실데이터) */}
       {commerce && (

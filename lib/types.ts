@@ -23,7 +23,8 @@ export type LayerId =
   | "authgap"
   | "commerce"
   | "vacant"
-  | "building";
+  | "building"
+  | "real";
 
 export interface DistrictProps {
   admCd2: string;

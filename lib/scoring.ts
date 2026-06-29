@@ -148,6 +148,13 @@ export function colorForLayer(
       alpha = 150 + Math.round(t * 95);
       break;
     }
+    case "real": {
+      // 실측 매력도 — 실데이터 합성 점수(등급 발산). 합성 불가(-1)면 베이스.
+      const r = (s as unknown as Record<string, number>).realScore ?? -1;
+      if (r < 0) { rgb = [44, 58, 86]; alpha = 90; break; }
+      rgb = GRADE_RGB[gradeOf(r)];
+      break;
+    }
     default:
       rgb = SLATE;
   }
@@ -204,6 +211,10 @@ export function elevationForLayer(layer: LayerId, s: PlaceScore): number {
     case "building": {
       const m = (s as unknown as Record<string, number>).buildingMix ?? -1;
       return m < 0 ? 0 : clamp01(m * 100);
+    }
+    case "real": {
+      const r = (s as unknown as Record<string, number>).realScore ?? -1;
+      return r < 0 ? 0 : clamp01(r);
     }
     default:
       return clamp01(s.klai);
@@ -275,6 +286,11 @@ export function displayForLayer(layer: LayerId, s: PlaceScore): string {
       const r = s as unknown as Record<string, number>;
       const m = r.buildingMix ?? -1;
       return m < 0 ? "건물 데이터 없음" : `용도혼합 ${Math.round(m * 100)}${r.buildingOld ? ` · 노후 ${r.buildingOld}%` : ""}`;
+    }
+    case "real": {
+      const r = s as unknown as Record<string, number>;
+      const v = r.realScore ?? -1;
+      return v < 0 ? "실측 데이터 부족(2축+ 필요)" : `실측 매력도 ${v} · ${gradeOf(v)}등급 (실${r.realCov ?? 0}축)`;
     }
     default:
       return `${s.klai}`;

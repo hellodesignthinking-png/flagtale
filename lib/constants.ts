@@ -104,6 +104,7 @@ export const AXIS_LABEL: Record<"d1" | "d2" | "d3" | "d4", string> = {
 export const LAYERS: LayerDef[] = [
   { id: "klai", label: "종합 KLAI", desc: "4축 합성 매력도 · 등급 발산", kind: "grade", group: "종합" },
   { id: "axis4", label: "4축 강점", desc: "우세 매력축 — 높이=종합, 색=1위 축", kind: "categorical-axis", group: "종합" },
+  { id: "real", label: "🟢 실측 매력도", desc: "실데이터(상권·건축물·인구·빈집)만으로 계산 — 샘플 KLAI와 별개", kind: "grade", group: "종합", real: true },
   { id: "d1", label: "D1 인구·지속성", desc: "재생산력·유입·연령균형 (20%)", kind: "grade", group: "매력 4축" },
   { id: "d2", label: "D2 경제·상권", desc: "창업·다양성·매출·공실 (30%)", kind: "grade", group: "매력 4축" },
   { id: "d3", label: "D3 공간·물리", desc: "용도혼합·보행·노후·자산 (20%)", kind: "grade", group: "매력 4축" },
