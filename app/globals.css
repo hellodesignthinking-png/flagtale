@@ -17,6 +17,7 @@
   --blue-l: #b6f24e; /* 링크·텍스트 강조(다크 위 밝은 라임) */
   --amber: #a3e635;  /* 강조 채움(라임-400) */
   --amber-d: #84cc16;
+  --amber-ink: #a3e635; /* amber를 '텍스트'로 쓸 때 — 다크선 라임 그대로 가독 */
   --on-accent: #14210a; /* 라임 위 텍스트(다크 그린-블랙) */
   --accent-bright: #bef264; /* 비비드 라임(형광·배지) */
   --green: #34d399;  /* 긍정(emerald) */
@@ -58,8 +59,9 @@
   --line: #ececE6;    /* 1.5px 보더 */
   --blue: #3f6212;    /* 다크 프라이머리(lime-800, 흰 텍스트 가독) */
   --blue-l: #4d7c0f;  /* 링크·텍스트 강조(lime-700, 화이트 위 가독) */
-  --amber: #d9f21e;   /* 강조 채움(careet 샤르트뢰즈) */
+  --amber: #d9f21e;   /* 강조 채움(careet 샤르트뢰즈) — FILL 전용(흰 배경 텍스트 금지) */
   --amber-d: #c4f000; /* hover(진한 샤르트뢰즈) */
+  --amber-ink: #a16207; /* amber를 '텍스트'로 쓸 때 — 흰 배경 가독 골드(형광 금지) */
   --on-accent: #1c2b02; /* 샤르트뢰즈 위 텍스트(다크 그린블랙) */
   --accent-bright: #d9f21e; /* 형광펜·배지(악센트와 동일) */
   --green: #059669;   /* emerald 긍정 */
@@ -77,6 +79,13 @@
   --amber-rgb: 217 242 30;
   --accent-bright-rgb: 217 242 30;
   --warn-rgb: 225 29 72;
+}
+
+/* 라이트모드: amber(형광 채움색)를 '텍스트'로 쓴 유틸을 가독 골드로 리맵 — 흰 배경 형광 글씨 방지(앱 전역).
+   채움(bg-amber·border-amber)은 그대로 두고 글자색만 교정. 2-클래스 선택자라 Tailwind 유틸보다 우선. */
+.theme-light .text-amber,
+.theme-light .text-amber-d {
+  color: var(--amber-ink);
 }
 
 * {

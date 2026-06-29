@@ -68,7 +68,7 @@ export function Stat({
   icon?: ReactNode;
 }) {
   const color =
-    accent === "amber" ? "var(--amber)" : accent === "warn" ? "var(--warn)" : "var(--blue-l)";
+    accent === "amber" ? "var(--amber-ink)" : accent === "warn" ? "var(--warn)" : "var(--blue-l)";
   return (
     <div className="bento group relative overflow-hidden rounded-2xl border border-line bg-card2/70 px-4 py-3.5">
       {/* 강조 글로우 */}

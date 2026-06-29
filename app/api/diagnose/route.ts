@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { geocodeToPlace, getPlace, getPeerAvg, getRegionComparison, nationalSignalAverage, populationMeta, vacantFor, commerceFor, buildingFor, cultureFor, potentialFor } from "@/lib/data";
 import { realComposite } from "@/lib/realScore";
 import { programsFor } from "@/lib/programs";
-import { devStrategy } from "@/lib/devStrategy";
+import { devStrategy, narrativeDurability } from "@/lib/devStrategy";
 import { geocodeToDistrict, pointToDistrict } from "@/lib/geocode";
 import { naverInterest } from "@/lib/connectors/naver";
 import { anchorStores } from "@/lib/connectors/anchor";
@@ -192,6 +192,15 @@ export async function POST(req: NextRequest) {
       cultureReal: cultureFor(place.admCd2),
       programs: programsFor(place.admCd2),
       authGap,
+    }),
+    // 내러티브 지속성 — 0~5 쇠퇴사이클을 밟는 쇠퇴형 vs 홍대·성수처럼 계속 갱신되는 지속형
+    narrativeDurability: narrativeDurability({
+      commerceReal: commerceFor(place.admCd2),
+      cultureReal: cultureFor(place.admCd2),
+      potential: potentialFor(place.admCd2),
+      diffusionRole: diffusion?.selfRole,
+      diffusionCount: diffusion?.candidates?.length,
+      authGapVerdict: authGap?.verdict,
     }),
     periods: bundle.series.map((s) => s.period),
     entitled,

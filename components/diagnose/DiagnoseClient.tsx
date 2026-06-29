@@ -88,6 +88,7 @@ interface DiagnoseResult {
   realScore?: { score: number; coverage: number; d1r: number | null; d2r: number | null; d3r: number | null; d4c: number | null; policy: number } | null;
   programs?: { key: string; label: string; agency: string }[];
   devStrategy?: { conclusion: string; stage: string; strategies: { title: string; detail: string; basis: string }[]; alternatives: string[] } | null;
+  narrativeDurability?: { mode: string; score: number; total: number; factors: { factor: string; has: boolean; detail: string }[]; why: string; alternatives: string[] } | null;
   periods: string[];
   reportId: string;
 }
@@ -562,7 +563,7 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd, mode = "parcel
             </div>
             <div className="space-y-2">
               {result.drivers.drivers.map((dv) => {
-                const tone = dv.key === "local" ? "var(--green)" : dv.key === "public" ? "var(--blue-l)" : "var(--amber)";
+                const tone = dv.key === "local" ? "var(--green)" : dv.key === "public" ? "var(--blue-l)" : "var(--amber-ink)";
                 return (
                   <div key={dv.key} className="flex items-center gap-3">
                     <span className="w-28 shrink-0 text-[12px] font-bold text-ink">{dv.label}</span>
@@ -1070,7 +1071,7 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd, mode = "parcel
                           className="rounded-t"
                           style={{
                             height: `${Math.max(2, Math.round((p / max) * 100))}%`,
-                            background: h >= 10 && h <= 17 ? "var(--blue-l)" : h >= 19 || h <= 5 ? "var(--amber)" : "var(--line)",
+                            background: h >= 10 && h <= 17 ? "#3e9aa8" : h >= 19 || h <= 5 ? "#e2a33a" : "var(--line)",
                           }}
                         />
                       </div>
@@ -1079,8 +1080,8 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd, mode = "parcel
                 </div>
                 <div className="mt-1 flex justify-between text-[9px] text-muted2"><span>0시</span><span>6</span><span>12</span><span>18</span><span>23</span></div>
               </div>
-              <div className="mt-2 text-[10.5px]" style={{ color: "var(--green)" }}>
-                실데이터 · 서울 생활인구(시간대별) · <span style={{ color: "var(--blue-l)" }}>파랑=주간</span> <span style={{ color: "var(--amber)" }}>앰버=야간</span> · {result.living.type} 분류
+              <div className="mt-2 text-[10.5px] text-muted">
+                실데이터 · 서울 생활인구(시간대별) · <span className="font-bold" style={{ color: "#3e9aa8" }}>● 주간(10~17h)</span> <span className="font-bold" style={{ color: "#e2a33a" }}>● 야간(19~5h)</span> · {result.living.type} 분류
               </div>
             </Section>
           )}
@@ -1301,6 +1302,37 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd, mode = "parcel
                 <CausalLoop kind={d?.trajectory === "declining" ? "vicious" : "virtuous"} className="w-full" />
               </div>
             </div>
+            {result.narrativeDurability && (() => {
+              const nd = result.narrativeDurability;
+              const c = nd.mode === "지속형" ? "var(--green)" : nd.mode === "전환점" ? "#d4861e" : "var(--warn)";
+              return (
+                <div className="mt-3 rounded-xl border-[1.5px] px-4 py-3.5" style={{ borderColor: c, background: `color-mix(in srgb, ${c} 9%, transparent)` }}>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[13.5px] font-extrabold" style={{ color: c }}>🔄 내러티브 지속성 — {nd.mode}</span>
+                    <span className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums" style={{ color: c, border: `1px solid ${c}` }}>지속요인 {nd.score}/{nd.total}</span>
+                  </div>
+                  <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted">{nd.why}</p>
+                  <div className="mt-2.5 grid grid-cols-1 gap-1 sm:grid-cols-2">
+                    {nd.factors.map((f) => (
+                      <div key={f.factor} className="flex items-center gap-1.5 text-[11.5px]">
+                        <span className="shrink-0">{f.has ? "✅" : "⬜"}</span>
+                        <span className={f.has ? "font-semibold text-ink" : "text-muted2"}>{f.factor}</span>
+                        <span className="text-muted2">· {f.detail}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-2.5 border-t border-line pt-2">
+                    <div className="mb-1 text-[11px] font-bold text-muted">지속형 전환·유지 대안</div>
+                    <ul className="space-y-0.5">
+                      {nd.alternatives.map((alt, i) => (
+                        <li key={i} className="flex gap-1.5 text-[12px] leading-snug text-muted"><span className="shrink-0" style={{ color: c }}>▸</span><span>{alt}</span></li>
+                      ))}
+                    </ul>
+                  </div>
+                  <p className="mt-2 text-[10.5px] leading-snug text-muted2">젠트리 0~5 사이클은 기본 경로지만, <b className="text-ink">규모·다양성·문화앵커·확산</b>이 받치면 5단계(쇠퇴)로 가지 않고 지속됩니다(홍대·성수형). 위 요인이 그 갈림길입니다.</p>
+                </div>
+              );
+            })()}
             <div className="mt-3 space-y-2">
               {(d?.risks ?? []).map((r, i) => (
                 <div key={i} className="rounded-lg border border-warn/30 bg-warn/10 px-3 py-2">

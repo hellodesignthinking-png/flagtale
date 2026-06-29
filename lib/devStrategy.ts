@@ -95,3 +95,57 @@ export function devStrategy(a: Args): DevStrategy {
 
   return { conclusion, stage, strategies, alternatives };
 }
+
+// ── 내러티브 지속성 — 젠트리 0~5 사이클을 '그대로 밟는' 쇠퇴형 vs 홍대·성수처럼 '계속 갱신되는' 지속형 ──
+// 핵심: 사이클 5(쇠퇴)로 가느냐는 '규모·다양성·문화앵커·확산생활권·발전기반'이 가른다.
+// 이 요인이 많으면 자본이 들어와도 획일화로 붕괴하지 않고 지속(홍대=대학·다양성·연남/상수 확산).
+export interface NarrativeDurability {
+  mode: "지속형" | "전환점" | "쇠퇴 사이클 위험";
+  score: number;
+  total: number;
+  factors: { factor: string; has: boolean; detail: string }[];
+  why: string;
+  alternatives: string[];
+}
+export function narrativeDurability(a: {
+  commerceReal: { stores: number; diversity: number } | null;
+  cultureReal: { events: number } | null;
+  potential: { grade: number } | null;
+  diffusionRole?: string;
+  diffusionCount?: number;
+  authGapVerdict?: string;
+}): NarrativeDurability {
+  const stores = a.commerceReal?.stores ?? 0;
+  const div = a.commerceReal ? Math.round(a.commerceReal.diversity * 100) : 0;
+  const cul = a.cultureReal?.events ?? 0;
+  const pot = a.potential?.grade ?? 0;
+  const spread = a.diffusionRole === "source" || (a.diffusionCount ?? 0) >= 2;
+
+  const factors = [
+    { factor: "상권 규모(획일화 저항)", has: stores >= 1500, detail: `${stores.toLocaleString()}개 상가` },
+    { factor: "업종 다양성(회복력)", has: div >= 70, detail: `다양성 ${div}/100` },
+    { factor: "문화 앵커(지속 유인)", has: cul >= 200, detail: `문화행사 ${cul}건` },
+    { factor: "확산 생활권(압력 분산)", has: spread, detail: spread ? "인접 동 확산 원천/연계" : "단일 생활권" },
+    { factor: "발전 기반", has: pot >= 6, detail: pot ? `발전 ${pot}/10` : "데이터 부족" },
+  ];
+  const score = factors.filter((f) => f.has).length;
+
+  let mode: NarrativeDurability["mode"];
+  let why: string;
+  let alternatives: string[];
+  if (score >= 4) {
+    mode = "지속형";
+    why = "규모·다양성·문화앵커·확산이 받쳐 사이클 5단계(쇠퇴)로 가지 않고 계속 갱신되는 구조입니다(홍대·성수형). 대형 자본·프랜차이즈가 들어와도 넓은 면적과 업종 다양성, 인접 동으로의 확산이 압력을 흡수해 획일화 붕괴를 막습니다. 다만 임대료 급등은 상시 관리 대상입니다.";
+    alternatives = ["상생협약·공공임대상가로 임대료 안정 — 지속의 최대 변수", "인접 동 연계(확산)로 수요·임대 압력 분산", "고유 문화 앵커·독립 점포 보전(획일화 방지)"];
+  } else if (score >= 2) {
+    mode = "전환점";
+    why = "일부 지속 요인은 있으나 다양성 또는 확산·문화 앵커가 약해, 자본 진입 이후 사이클대로 쇠퇴할 수도 / 지속형으로 도약할 수도 있는 분기점입니다. 부족한 요인의 보강 여부가 5단계 쇠퇴와 지속을 가릅니다.";
+    alternatives = ["부족 요인(다양성·문화·확산) 집중 보강 — 지속/쇠퇴의 갈림길", "임대료 급등 선제 관리(상한·상생협약)", "독립 점포·로컬 콘텐츠로 고유성 강화"];
+  } else {
+    mode = "쇠퇴 사이클 위험";
+    why = "규모·다양성·문화 앵커가 약해, 자본 진입 → 임대료 급등 → 초기 상점·원주민 내몰림 → 획일화 → 공실의 0~5단계 사이클을 그대로 밟을 위험이 큽니다. 짧은 호황 뒤 쇠퇴로 직행하기 쉬운 구조입니다.";
+    alternatives = ["전면 자본화 전에 업종 다양성·문화 앵커 먼저 구축", "임대료 상한·상생협약을 호황 초기에 선제 도입", "인접 생활권 연계·확산 기반 마련으로 단일 의존 탈피"];
+  }
+  if (a.authGapVerdict === "hype" && mode !== "지속형") why += " 현재 검색·관심이 실체를 앞서(과열) 사이클 가속 위험이 더 큽니다.";
+  return { mode, score, total: factors.length, factors, why, alternatives };
+}

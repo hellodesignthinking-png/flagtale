@@ -16,6 +16,7 @@ const NAV = [
   { href: "/lab", label: "플래그테일랩" },
   { href: "/reports", label: "리포트" },
   { href: "/diagnose", label: "진단" },
+  { href: "/culture-impact", label: "문화영향평가" },
 ];
 // 호스트 등록 — 일반 메뉴에서 숨김, 로그인한 호스트에게만 노출
 const HOST_NAV = { href: "/host", label: "🏪 호스트 등록" };
