@@ -11,6 +11,8 @@ import type {
   BuildingPlace,
   CultureFile,
   CulturePlace,
+  PotentialFile,
+  PotentialPlace,
   DemographicsFile,
   DemographicYear,
   Diagnosis,
@@ -170,6 +172,23 @@ export function loadCulture(): CultureFile | null {
 /** 동별 문화 활력(공연·전시·축제 수, 시군구) — 인제스트 시에만 존재, 없으면 null */
 export function cultureFor(admCd2: string): CulturePlace | null {
   return loadCulture()?.byPlace?.[admCd2] ?? null;
+}
+
+// 발전가능성(potential.json) — `npm run ingest:decline`(국토부 쇠퇴진단) 전엔 없으므로 폴백
+let _potential: PotentialFile | null | undefined;
+export function loadPotential(): PotentialFile | null {
+  if (_potential !== undefined) return _potential;
+  const p = path.join(DATA_DIR, "potential.json");
+  if (!fs.existsSync(p)) return (_potential = null);
+  try {
+    return (_potential = JSON.parse(fs.readFileSync(p, "utf-8")) as PotentialFile);
+  } catch {
+    return (_potential = null);
+  }
+}
+/** 동별 발전가능성(국토부 쇠퇴진단 등급, 시군구) — 인제스트 시에만 존재, 없으면 null */
+export function potentialFor(admCd2: string): PotentialPlace | null {
+  return loadPotential()?.byPlace?.[admCd2] ?? null;
 }
 
 export function listPlaces(): DistrictProps[] {

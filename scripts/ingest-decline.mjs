@@ -1,14 +1,15 @@
-// 발전가능성 — 국토부 도시재생 쇠퇴진단 등급(읍면동) (data.go.kr 1611000/DceDgnssGradeService).
-//   읍면동별 쇠퇴 등급(인구사회·산업경제·물리환경 3부문) → data/decline.json. 동단위 발전가능성/쇠퇴 신호.
-// 사용: DATA_GO_KR_KEY=... node scripts/ingest-decline.mjs   (키는 env로만)
-// ⚠ 활용신청 승인 직후 키 활성화 전파 지연 → 403이면 자동 재시도(최대 ~1시간).
+// 발전가능성(국토부 도시재생 쇠퇴진단 등급) — data.go.kr 1611000/DceDgnssGradeService/getGradeSigngu.
+//   시군구별 핵심 지표 등급(1~10, 높을수록 양호) 합성 → data/potential.json. 동단위 broadcast.
+//   지표: 인구순이동·인구변화율·재정자립도·총사업체수증감(인구·경제·재정 균형). 2021년.
+// 사용: DATA_GO_KR_KEY=... npm run ingest:decline   (키는 env로만, 활용신청 승인 필요)
+// ⚠ 응답은 body 에 단건. signguCd=행안부 5자리(admCd2[:5]). data.go.kr 레이트리밋 → 백오프·resumable.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DATA = path.join(ROOT, "data");
-const log = (m) => console.log(`[decline] ${m}`);
+const log = (m) => console.log(`[potential] ${m}`);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 try {
@@ -19,91 +20,87 @@ try {
 } catch { /* 없음 */ }
 const KEY = process.env.DATA_GO_KR_KEY;
 if (!KEY) { console.error("DATA_GO_KR_KEY 없음."); process.exit(1); }
-
-const B = "http://apis.data.go.kr/1611000/DceDgnssGradeService/";
 const ek = encodeURIComponent(KEY);
+const B = "http://apis.data.go.kr/1611000/DceDgnssGradeService/getGradeSigngu";
+const YEAR = process.env.DECLINE_YEAR || "2021";
+// 핵심 지표(등급 1~10, 높을수록 양호) — 인구·경제·재정 균형 합성
+const INDICATORS = [
+  ["인구변화", "GRADE00003"],
+  ["재정자립", "GRADE00021"],
+  ["사업체증감", "GRADE00027"],
+  ["지가변동", "GRADE00023"],
+];
 
-// 승인 전파 대기 — getGradeEmd(읍면동) 200 될 때까지 재시도
-async function waitActive() {
-  for (let i = 0; i < 30; i++) {
+async function grade(signguCd, gradeCd) {
+  for (let a = 0; a < 3; a++) {
     try {
-      const r = await fetch(`${B}getGradeEmd?serviceKey=${ek}&type=json&numOfRows=1&pageNo=1`);
+      const r = await fetch(`${B}?serviceKey=${ek}&type=json&numOfRows=1&pageNo=1&signguCd=${signguCd}&gradeCd=${gradeCd}&year=${YEAR}`, { signal: AbortSignal.timeout(12000) });
       const t = await r.text();
-      if (r.status === 200 && /resultCode/.test(t) && !/Forbidden|등록되지|SERVICE_KEY/.test(t)) { log(`활성화 확인(${i + 1}회차)`); return true; }
-      log(`대기 ${i + 1}/30 — HTTP ${r.status} (전파 중)…`);
-    } catch (e) { log(`대기 ${i + 1} — ${e.message}`); }
-    await sleep(120000); // 2분
+      let j; try { j = JSON.parse(t); } catch { if (a < 2) { await sleep(800 * (a + 1)); continue; } return { err: t.slice(0, 60) }; }
+      const b = j.body;
+      if (b && b.value != null) return { value: Number(b.value) };
+      return { value: null, rc: j.header?.resultCode };
+    } catch (e) { if (a < 2) { await sleep(800 * (a + 1)); continue; } return { err: e.message }; }
   }
-  return false;
 }
 
-function pickField(obj, res) { for (const k of Object.keys(obj)) if (res.test(k)) return k; return null; }
-
 async function main() {
-  log("쇠퇴진단 등급(읍면동) 활성화 대기…");
-  if (!(await waitActive())) { log("1시간 내 활성화 안 됨 — 나중에 재실행."); process.exit(1); }
+  // 행안부 시군구(admCd2[:5]) + 동 목록
+  const scores = Object.keys(JSON.parse(fs.readFileSync(path.join(DATA, "scores.json"), "utf-8")).byPlace);
+  const sigOf = {}; const sigSet = new Set();
+  for (const cd of scores) { const s = cd.slice(0, 5); sigOf[cd] = s; sigSet.add(s); }
+  const sigs = [...sigSet];
+  log(`시군구 ${sigs.length}곳 × 지표 ${INDICATORS.length} (year ${YEAR}) 수집`);
 
-  // 전체 읍면동 등급 수신 (numOfRows 크게)
-  let allItems = [];
-  for (let page = 1; page <= 40; page++) {
-    const r = await fetch(`${B}getGradeEmd?serviceKey=${ek}&type=json&numOfRows=1000&pageNo=${page}`);
-    const t = await r.text();
-    let j; try { j = JSON.parse(t); } catch { log(`page${page} 비JSON: ${t.slice(0, 120)}`); break; }
-    const body = (j.response ?? j).body ?? {};
-    let items = body.items?.item ?? body.items ?? [];
-    if (!Array.isArray(items)) items = items ? [items] : [];
-    if (page === 1) { log(`구조: total=${body.totalCount} · 필드=${Object.keys(items[0] || {}).join(",")}`); fs.writeFileSync(path.join(DATA, "decline.raw.json"), JSON.stringify(items.slice(0, 5), null, 2)); }
-    allItems.push(...items);
-    if (items.length < 1000) break;
-    await sleep(120);
+  // resumable
+  let bySig = {};
+  try { bySig = JSON.parse(fs.readFileSync(path.join(DATA, "potential.raw.json"), "utf-8")); } catch { /* 신규 */ }
+
+  let ok = 0, consec = 0, diag = true;
+  for (let i = 0; i < sigs.length; i++) {
+    const sg = sigs[i];
+    if (bySig[sg]) continue;
+    const vals = {};
+    let any = false;
+    for (const [name, g] of INDICATORS) {
+      const r = await grade(sg, g);
+      if (diag) { log(`진단(${sg} ${name}): ${JSON.stringify(r)}`); diag = false; }
+      if (r.value != null) { vals[name] = r.value; any = true; consec = 0; }
+      else consec++;
+      await sleep(130);
+    }
+    if (any) { bySig[sg] = vals; ok++; }
+    if (consec >= 30) { fs.writeFileSync(path.join(DATA, "potential.raw.json"), JSON.stringify(bySig)); log(`연속 실패 ${consec} — 90초 대기(레이트리밋)…`); await sleep(90000); consec = 0; }
+    if ((i + 1) % 20 === 0) { fs.writeFileSync(path.join(DATA, "potential.raw.json"), JSON.stringify(bySig)); log(`진행 ${i + 1}/${sigs.length} (성공 ${ok})`); }
   }
-  log(`총 ${allItems.length}행 수신`);
-  if (!allItems.length) { log("0행 — getGradeEmd 가 시군구코드 필요할 수 있음. decline.raw.json 확인."); process.exit(1); }
+  fs.writeFileSync(path.join(DATA, "potential.raw.json"), JSON.stringify(bySig));
+  log(`시군구 수집 완료: ${Object.keys(bySig).length}곳`);
 
-  // 필드 자동 식별: 행정동/읍면동 코드 + 등급
-  const s0 = allItems[0];
-  const codeF = pickField(s0, /emd.*[Cc]d|emdong|admCd|행정|법정|stdgCd|adstrd/) || pickField(s0, /[Cc]d$|code/i);
-  const gradeF = pickField(s0, /grade|등급|gradeCd|tot.*grade|grd/i);
-  const yearF = pickField(s0, /year|년도|yr|stdrYear/i);
-  log(`식별: code=${codeF} grade=${gradeF} year=${yearF}`);
-  if (!codeF || !gradeF) { log("코드/등급 필드 미식별 — decline.raw.json 보고 수동 매핑 필요."); process.exit(1); }
-
-  // 최신 연도만, 코드별 등급
-  const byCode = {};
-  for (const it of allItems) {
-    const code = String(it[codeF] || "");
-    const grade = Number(it[gradeF]);
-    if (!code || !Number.isFinite(grade)) continue;
-    const y = yearF ? Number(it[yearF]) : 0;
-    if (!byCode[code] || y >= byCode[code].y) byCode[code] = { grade, y };
-  }
-  log(`코드 ${Object.keys(byCode).length}개`);
-
-  // 크로스워크: 쇠퇴진단 코드 ↔ 우리 admCd2/admCd. 경계 geojson 으로 시도.
-  const geo = JSON.parse(fs.readFileSync(path.join(DATA, "boundaries", "admdong.simplified.geojson"), "utf-8"));
+  // 동별 broadcast + 합성 등급(평균 1~10)
   const byPlace = {};
   let matched = 0;
-  for (const f of geo.features) {
-    const p = f.properties;
-    // 코드 후보: admCd2(10) · admCd(통계청 8) · admCd2[:8]
-    const cands = [String(p.admCd2), String(p.admCd), String(p.admCd2).slice(0, 8)];
-    for (const c of cands) { if (byCode[c]) { byPlace[p.admCd2] = { grade: byCode[c].grade }; matched++; break; } }
+  for (const cd of scores) {
+    const v = bySig[sigOf[cd]];
+    if (!v) continue;
+    const arr = Object.values(v).filter((x) => Number.isFinite(x));
+    if (!arr.length) continue;
+    const g = Math.round((arr.reduce((a, b) => a + b, 0) / arr.length) * 10) / 10;
+    byPlace[cd] = { grade: g, indicators: v };
+    matched++;
   }
-  log(`동 매칭: ${matched}/${geo.features.length}`);
-  fs.writeFileSync(path.join(DATA, "decline.json"), JSON.stringify({
-    source: "국토부 도시재생 쇠퇴진단 등급(읍면동) data.go.kr 1611000",
+  fs.writeFileSync(path.join(DATA, "potential.json"), JSON.stringify({
+    source: "국토부 도시재생 쇠퇴진단 등급(시군구) data.go.kr 1611000",
     fetchedAt: new Date().toISOString().slice(0, 10),
-    note: "등급↑=쇠퇴 심함(1~10 추정). 발전가능성/위기 신호.",
+    year: YEAR,
+    note: "등급 1~10(높을수록 양호). 인구순이동·인구변화·재정자립·사업체증감 평균 = 발전가능성 등급.",
     byPlace,
   }));
-  log(`완료 → data/decline.json (${matched}동)`);
+  log(`완료 → data/potential.json (${matched}동, 시군구 단위)`);
   if (matched) {
     const ip = path.join(DATA, ".ingested.json");
     let prev = []; try { prev = JSON.parse(fs.readFileSync(ip, "utf-8")); } catch { /* 없음 */ }
-    fs.writeFileSync(ip, JSON.stringify([...new Set([...prev, "decline"])]));
-    log(".ingested 에 'decline' 표시.");
-  } else {
-    log("매칭 0 — decline.raw.json 의 코드 형식 확인 후 크로스워크 보정 필요.");
+    fs.writeFileSync(ip, JSON.stringify([...new Set([...prev, "potential"])]));
+    log(".ingested 에 'potential' 표시.");
   }
 }
-main().catch((e) => console.error("[decline] 실패:", e.message));
+main().catch((e) => console.error("[potential] 실패:", e.message));

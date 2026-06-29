@@ -265,6 +265,19 @@ export interface CultureFile {
   byPlace: Record<string, CulturePlace>;
 }
 
+// ── 발전가능성 — 국토부 도시재생 쇠퇴진단 등급(시군구) ──
+export interface PotentialPlace {
+  grade: number; // 핵심지표 평균 등급 1~10(높을수록 양호)
+  indicators: Record<string, number>; // 인구변화·재정자립·사업체증감·지가변동 등급
+}
+export interface PotentialFile {
+  source: string;
+  fetchedAt: string;
+  year: string;
+  note: string;
+  byPlace: Record<string, PotentialPlace>;
+}
+
 // ── 지역 신호 (검색·기사·인구·임대료·매물) ──────────────────
 export type SignalKey = "search" | "news" | "population" | "rent" | "listings";
 export type SignalSeries = Record<SignalKey, number[]>;

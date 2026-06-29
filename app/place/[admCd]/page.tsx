@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { commerceFor, vacantFor, buildingFor, getPeerAvg, getPlace, getRegionComparison, nationalSignalAverage, populationMeta } from "@/lib/data";
+import { commerceFor, vacantFor, buildingFor, potentialFor, getPeerAvg, getPlace, getRegionComparison, nationalSignalAverage, populationMeta } from "@/lib/data";
 import { NaverPanel } from "@/components/analysis/NaverPanel";
 import { PageShell } from "@/components/page-shell";
 import { Button, MomentumChip, Panel, Pill, ProvisionalBadge, SectionHead, Stat } from "@/components/ui";
@@ -68,6 +68,7 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
   const building = buildingFor(props.admCd2); // D3 건축물 실측(용도혼합·노후·밀도) — KOSIS 인구주택총조사
   const real = realComposite(props.admCd2, latest); // 실측 매력도 — 실데이터(상권·건축물·인구·빈집) 합성, 2축 미만이면 null
   const programs = programsFor(props.admCd2); // 정부 지역활성화 사업 지정(청년마을·문화도시 등)
+  const potential = potentialFor(props.admCd2); // 발전가능성 — 국토부 도시재생 쇠퇴진단 등급(시군구)
   const bBoost = buzzBoost(ig?.postsCount); // 수요: 인스타 검색량(버즈)
   const totalBoost = Math.round((sBoost + bBoost) * 10) / 10;
   const klaiUp = totalBoost ? Math.min(100, Math.round((latest.klai + totalBoost) * 10) / 10) : latest.klai;
@@ -381,6 +382,27 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
           )}
           <p className="mt-3 text-[11px] leading-snug text-muted2">
             용도혼합(주택종류 다양성)·노후도 <b className="text-ink">실측</b>(인구주택총조사). 혼합↑·노후↓일수록 D3 공간 매력 양호 · 용도혼합=동, 노후=시군구.
+          </p>
+        </Panel>
+      )}
+
+      {/* 발전가능성 — 국토부 도시재생 쇠퇴진단 등급(시군구). potential.json 인제스트 시 노출 */}
+      {potential && (
+        <Panel className="mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <SectionHead title="🏛 발전가능성 — 국토부 쇠퇴진단" desc="도시재생 쇠퇴진단 등급 · 시군구 · 1~10(높을수록 양호)" />
+            <span className="rounded-full bg-[#1E5FA8]/15 px-2.5 py-1 text-[10.5px] font-extrabold text-[#1E5FA8] ring-1 ring-[#1E5FA8]/30">● 실데이터</span>
+          </div>
+          <div className="mt-3 flex flex-wrap items-end gap-x-6 gap-y-3">
+            <Stat label="종합 등급" value={`${potential.grade}/10`} accent={potential.grade >= 6 ? "blue" : potential.grade <= 4 ? "warn" : undefined} sub="핵심지표 평균" />
+          </div>
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {Object.entries(potential.indicators).map(([k, v]) => (
+              <span key={k} className="rounded-full border border-line bg-card2/50 px-2.5 py-1 text-[12px] text-muted">{k} <b className="text-ink">{v}</b></span>
+            ))}
+          </div>
+          <p className="mt-3 text-[11px] leading-snug text-muted2">
+            국토부 도시재생 <b className="text-ink">쇠퇴진단 등급</b>(인구변화·재정자립·사업체증감·지가변동, 1~10). 낮으면 쇠퇴·정부 집중지원 대상(발전 잠재), 높으면 양호. 시군구 단위 실측.
           </p>
         </Panel>
       )}
