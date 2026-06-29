@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+interface CIInput { label: string; value: string; source: string }
 interface Indicator {
   key: string;
   area: "문화기본권" | "문화정체성" | "문화발전";
@@ -9,6 +10,9 @@ interface Indicator {
   score: number | null;
   confidence: "높음" | "중간" | "근사";
   basis: string;
+  inputs: CIInput[];
+  formula: string;
+  interpret: string;
 }
 interface Result {
   place: { admCd2: string; name: string; sido: string; sigungu: string };
@@ -109,6 +113,15 @@ export function CultureImpactClient({ initialQuery = "" }: { initialQuery?: stri
             </div>
           </div>
 
+          {/* 문화영향 6지표 레이더 프로파일 */}
+          <div className="klai-panel p-5">
+            <div className="mb-1 flex items-center gap-2">
+              <span className="h-4 w-1 rounded bg-grade-b" />
+              <h3 className="text-[15px] font-extrabold text-ink">문화영향 프로파일 <span className="text-[11px] font-normal text-muted2">· 6지표 한눈에(0~100)</span></h3>
+            </div>
+            <div className="mx-auto max-w-[380px]"><CIRadar indicators={ci.indicators} /></div>
+          </div>
+
           {/* 시도 공식 지수(NABIS) + 지역특화거리 */}
           {(ci.regional || ci.streets) && (
             <div className="klai-panel p-5">
@@ -156,18 +169,33 @@ export function CultureImpactClient({ initialQuery = "" }: { initialQuery?: stri
                 <p className="mb-3 text-[11.5px] text-muted2">{area.desc}</p>
                 <div className="space-y-3">
                   {items.map((ind) => (
-                    <div key={ind.key}>
-                      <div className="mb-1 flex items-center justify-between gap-2">
-                        <span className="text-[13px] font-semibold text-ink">{ind.label}</span>
+                    <div key={ind.key} className="rounded-xl border border-line bg-card2/40 p-3.5">
+                      <div className="mb-1.5 flex items-center justify-between gap-2">
+                        <span className="text-[13.5px] font-bold text-ink">{ind.label}</span>
                         <span className="flex shrink-0 items-center gap-1.5">
                           <span className="rounded-full px-1.5 py-0.5 text-[9.5px] font-bold" style={{ color: confColor(ind.confidence), border: `1px solid ${confColor(ind.confidence)}` }}>{ind.confidence}</span>
-                          <span className="w-7 text-right text-[14px] font-extrabold tabular-nums" style={{ color: ind.score != null ? scoreColor(ind.score) : "var(--muted2)" }}>{ind.score ?? "—"}</span>
+                          <span className="w-8 text-right text-[17px] font-extrabold tabular-nums" style={{ color: ind.score != null ? scoreColor(ind.score) : "var(--muted2)" }}>{ind.score ?? "—"}</span>
                         </span>
                       </div>
                       <div className="h-2.5 overflow-hidden rounded-full bg-navy2/60">
-                        {ind.score != null && <div className="h-full rounded-full" style={{ width: `${ind.score}%`, background: scoreColor(ind.score) }} />}
+                        {ind.score != null && <div className="h-full rounded-full transition-all" style={{ width: `${ind.score}%`, background: scoreColor(ind.score) }} />}
                       </div>
-                      <div className="mt-1 text-[11px] text-muted2">{ind.basis}</div>
+                      {ind.inputs.length > 0 && (
+                        <div className="mt-2.5 space-y-1">
+                          <div className="text-[10px] font-bold uppercase tracking-wide text-muted2">근거 데이터</div>
+                          {ind.inputs.map((inp, i) => (
+                            <div key={i} className="flex items-baseline justify-between gap-2 border-b border-line/50 pb-0.5 text-[11.5px] last:border-0">
+                              <span className="text-muted">{inp.label}</span>
+                              <span className="flex items-baseline gap-1.5 text-right"><b className="text-ink">{inp.value}</b><span className="shrink-0 text-[9.5px] text-muted2">{inp.source}</span></span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div className="mt-2 rounded-md bg-navy2/50 px-2.5 py-1.5">
+                        <span className="text-[10px] font-bold text-muted2">산출식 </span>
+                        <span className="text-[11px] text-ink" style={{ fontFamily: "ui-monospace, SFMono-Regular, monospace" }}>{ind.formula}</span>
+                      </div>
+                      <p className="mt-1.5 text-[11.5px] leading-relaxed text-muted">{ind.interpret}</p>
                     </div>
                   ))}
                 </div>
@@ -203,5 +231,40 @@ export function CultureImpactClient({ initialQuery = "" }: { initialQuery?: stri
         </div>
       )}
     </div>
+  );
+}
+
+// 문화영향 6지표 레이더 — 6축 0~100 프로파일
+function CIRadar({ indicators }: { indicators: Indicator[] }) {
+  const W = 340, H = 300, cx = 170, cy = 150, R = 92, N = 6;
+  const order = [
+    { k: "hyangyu", l: "문화향유" },
+    { k: "pyohyeon", l: "표현·참여" },
+    { k: "yusan", l: "국가유산" },
+    { k: "gongdong", l: "공동체" },
+    { k: "damyang", l: "다양성" },
+    { k: "changui", l: "창의성" },
+  ];
+  const vals = order.map((o) => indicators.find((x) => x.key === o.k)?.score ?? 0);
+  const pt = (i: number, rad: number): [number, number] => {
+    const a = -Math.PI / 2 + (i * 2 * Math.PI) / N;
+    return [cx + Math.cos(a) * rad, cy + Math.sin(a) * rad];
+  };
+  const rings = [0.25, 0.5, 0.75, 1].map((f) => order.map((_, i) => pt(i, R * f).join(",")).join(" "));
+  const poly = vals.map((v, i) => pt(i, (R * v) / 100).join(",")).join(" ");
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="문화영향 6지표 레이더">
+      {rings.map((rg, i) => <polygon key={i} points={rg} fill="none" stroke="var(--line)" strokeWidth={0.7} />)}
+      {order.map((_, i) => { const [x, y] = pt(i, R); return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="var(--line)" strokeWidth={0.7} />; })}
+      <polygon points={poly} fill="rgba(62,154,168,0.22)" stroke="#3e9aa8" strokeWidth={2} />
+      {vals.map((v, i) => { const [x, y] = pt(i, (R * v) / 100); return <circle key={i} cx={x} cy={y} r={3.2} fill="#3e9aa8" stroke="#fff" strokeWidth={1} />; })}
+      {order.map((o, i) => {
+        const [x, y] = pt(i, R + 20);
+        const ax = Math.cos(-Math.PI / 2 + (i * 2 * Math.PI) / N);
+        const anchor = ax > 0.3 ? "start" : ax < -0.3 ? "end" : "middle";
+        return <text key={i} x={x} y={y} textAnchor={anchor} dominantBaseline="middle" fontSize="10.5" fontWeight={700} fill="var(--muted)">{o.l}</text>;
+      })}
+      {vals.map((v, i) => { const [x, y] = pt(i, (R * v) / 100); return <text key={"v" + i} x={x} y={y - 8} textAnchor="middle" fontSize="9.5" fontWeight={800} fill="var(--ink)">{v}</text>; })}
+    </svg>
   );
 }
