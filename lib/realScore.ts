@@ -4,15 +4,17 @@
 // 아키텍처 step6(축별 실측 합성)의 lite 버전 — 외부 데이터 추가 없이 기존 실데이터 결합.
 import "server-only";
 import { commerceFor, buildingFor, vacantFor, cultureFor } from "./data";
+import { policyBoost } from "./programs";
 import type { PlaceScore } from "./types";
 
 export interface RealComposite {
-  score: number;        // 실측 매력도 0~100
+  score: number;        // 실측 매력도 0~100 (정책 가산 포함)
   coverage: number;     // 실측 축 수 (2~4)
   d1r: number | null;   // 인구 지속성(실)
   d2r: number | null;   // 상권(실)
   d3r: number | null;   // 공간 용도혼합(실)
   d4c: number | null;   // 문화 활력(실 — 공연·전시·축제)
+  policy: number;       // 정책 사업 지정 가산(청년마을·문화도시 등, 0~8)
   vacantPenalty: number; // 빈집 감점 계수(0~1)
 }
 
@@ -42,11 +44,14 @@ export function realComposite(admCd2: string, score: PlaceScore): RealComposite 
 
   // 빈집 감점 — 빈집비율 높을수록 매력 차감(최대 약 -25%)
   const vacantPenalty = vac && vac.ratio != null ? 1 - Math.min(vac.ratio, 20) / 80 : 1;
+  // 정책 사업 지정 가산 — 청년마을·문화도시 등(정부 투자·활력 신호)
+  const policy = policyBoost(admCd2);
   const base = parts.reduce((a, b) => a + b, 0) / parts.length;
   return {
-    score: Math.max(0, Math.min(100, Math.round(base * vacantPenalty))),
+    score: Math.max(0, Math.min(100, Math.round(base * vacantPenalty + policy))),
     coverage: parts.length,
     d1r, d2r, d3r, d4c,
+    policy,
     vacantPenalty: Math.round(vacantPenalty * 100) / 100,
   };
 }

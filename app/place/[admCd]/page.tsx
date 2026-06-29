@@ -27,6 +27,7 @@ import { loadCreators, ftImage } from "@/lib/flagtale";
 import { supplyFor, supplyBoost, supplyBreakdown, authenticityGap } from "@/lib/supply";
 import { gradeOf } from "@/lib/scoring";
 import { realComposite } from "@/lib/realScore";
+import { programsFor } from "@/lib/programs";
 import { AreaNarrativeCard } from "@/components/flagtale/AreaNarrativeCard";
 import { formatKRW, signed } from "@/lib/utils";
 
@@ -66,6 +67,7 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
   const vacant = vacantFor(props.admCd2); // 빈집비율 실측(KOSIS 시군구) — 소멸/공실 신호
   const building = buildingFor(props.admCd2); // D3 건축물 실측(용도혼합·노후·밀도) — KOSIS 인구주택총조사
   const real = realComposite(props.admCd2, latest); // 실측 매력도 — 실데이터(상권·건축물·인구·빈집) 합성, 2축 미만이면 null
+  const programs = programsFor(props.admCd2); // 정부 지역활성화 사업 지정(청년마을·문화도시 등)
   const bBoost = buzzBoost(ig?.postsCount); // 수요: 인스타 검색량(버즈)
   const totalBoost = Math.round((sBoost + bBoost) * 10) / 10;
   const klaiUp = totalBoost ? Math.min(100, Math.round((latest.klai + totalBoost) * 10) / 10) : latest.klai;
@@ -298,6 +300,16 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
             {real.d4c != null && <span className="rounded-full border border-line bg-card2/50 px-2.5 py-1 text-muted">문화활력 <b className="text-ink">{real.d4c}</b></span>}
             {real.vacantPenalty < 1 && <span className="rounded-full border border-warn/30 bg-warn/10 px-2.5 py-1 text-warn">빈집 감점 ×{real.vacantPenalty}</span>}
           </div>
+          {programs.length > 0 && (
+            <div className="mt-3 rounded-lg border border-[#0F6E5C]/30 bg-[#0F6E5C]/10 px-3 py-2">
+              <div className="text-[12px] font-bold text-[#0F6E5C]">🏛 정부 지역활성화 사업 지정 — 매력 +{real.policy}</div>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {programs.map((p) => (
+                  <span key={p.key} className="rounded-full bg-card px-2 py-0.5 text-[11px] font-semibold text-ink">{p.label} <span className="font-normal text-muted2">· {p.agency}</span></span>
+                ))}
+              </div>
+            </div>
+          )}
           <p className="mt-3 text-[11px] leading-snug text-muted2">
             실데이터 <b className="text-ink">{real.coverage}개 축</b>(상권·건축물·인구) 결합 — 위 KLAI 종합점수는 아직 샘플(난수)이며, 이 <b className="text-ink">실측 매력도</b>가 실데이터 기반 참고치입니다. 지도 '🟢 실측 매력도' 레이어로도 확인.
           </p>
