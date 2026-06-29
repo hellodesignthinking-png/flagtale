@@ -221,8 +221,10 @@ export interface CommerceFile {
 
 // ── 빈집 실측 — 통계청 인구주택총조사 미거주주택(빈집)비율 (KOSIS, 시군구) ──
 export interface VacantPlace {
-  ratio: number | null; // 빈집비율(%)
-  count: number | null; // 빈집 수(호)
+  ratio: number | null; // 빈집비율(%) — 시군구
+  count: number | null; // 빈집 수(호) — 시군구 합계
+  houses?: number | null; // 동 총주택수(호) — 읍면동 census (동단위 실측)
+  est?: number | null; // 동 추정 빈집호수 = 동주택수 × 시군구율
   year: number;
 }
 export interface VacantFile {
@@ -230,6 +232,7 @@ export interface VacantFile {
   fetchedAt: string;
   resolution: string; // "sigungu"
   year: number;
+  censusYear?: number | null; // 총주택수 census 연도
   byPlace: Record<string, VacantPlace>;
 }
 

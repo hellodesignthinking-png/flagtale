@@ -75,40 +75,41 @@ function diversity(counts) {
   return Math.min(1, H / Math.log(10)); // 대분류 최대 10개 기준
 }
 
-let ok = 0, fail = 0, diag = true;
+let ok = 0, fail = 0, diag = true, consec = 0; // consec=연속 실패(IP 레이트리밋 감지)
 for (let i = 0; i < todo.length; i++) {
   const code = todo[i];
   // 상권 API adongCd = 행정동코드 8자리 (= 앱 adm_cd2 앞 8자리; 끝 "00" 제외). 검증: 사직동 1111053000→11110530→2388점포.
   const url = `${BASE}?serviceKey=${encodeURIComponent(KEY)}&divId=adongCd&key=${code.slice(0, 8)}&numOfRows=1000&pageNo=1&type=json`;
-  try {
-    const res = await fetch(url);
-    const text = await res.text();
-    const r = parseBody(text);
-    if (diag) { // 첫 응답 구조 1회 진단
-      log(`진단(${code}): HTTP ${res.status} · ${r.error ? "오류=" + r.error : `total=${r.total}, sample=${r.items.length}, 필드=${Object.keys(r.items[0] || {}).slice(0, 8).join(",")}`}`);
-      diag = false;
-    }
-    if (r.error) {
-      fail++;
-      if (/SERVICE_KEY|등록되지|허용되지|LIMITED|HTTP_ERROR|30|22/.test(r.error) && fail <= 2) {
-        log(`⚠ 키/할당량 의심 — ${r.error}. (DATA_GO_KR_KEY=일반인증키(Decoding) 확인, 활용신청 승인·트래픽 확인)`);
+  let done = false;
+  for (let attempt = 0; attempt < 3 && !done; attempt++) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+      const text = await res.text();
+      const r = parseBody(text);
+      if (diag) { log(`진단(${code}): HTTP ${res.status} · ${r.error ? "오류=" + r.error : `total=${r.total}, sample=${r.items.length}`}`); diag = false; }
+      if (r.error) {
+        fail++; consec++;
+        if (/SERVICE_KEY|등록되지|허용되지|LIMITED|30|22/.test(r.error) && fail <= 2) log(`⚠ 키/할당량 의심 — ${r.error} (DATA_GO_KR_KEY·활용신청 확인)`);
+        done = true; break;
       }
-      if (fail > 20 && ok === 0) { log("연속 실패 20+ · 수집 중단. 위 진단/키 확인 후 재실행."); break; }
-      continue;
+      const cat = {};
+      for (const it of r.items) { const k = it.indsLclsNm || it.indsLclsCd || "기타"; cat[k] = (cat[k] || 0) + 1; }
+      out.byPlace[code] = {
+        stores: r.total,
+        sampled: r.items.length,
+        diversity: Math.round(diversity(cat) * 100) / 100,
+        topCategories: Object.entries(cat).sort((a, b) => b[1] - a[1]).slice(0, 5),
+      };
+      ok++; consec = 0; done = true;
+    } catch (e) {
+      if (attempt < 2) { await sleep(800 * (attempt + 1)); continue; } // 네트워크 실패 → 백오프 후 재시도
+      fail++; consec++; if (fail <= 3) log(`요청 실패(${code}): ${e.message}`);
     }
-    const cat = {};
-    for (const it of r.items) { const k = it.indsLclsNm || it.indsLclsCd || "기타"; cat[k] = (cat[k] || 0) + 1; }
-    out.byPlace[code] = {
-      stores: r.total,
-      sampled: r.items.length,
-      diversity: Math.round(diversity(cat) * 100) / 100,
-      topCategories: Object.entries(cat).sort((a, b) => b[1] - a[1]).slice(0, 5),
-    };
-    ok++;
-  } catch (e) { fail++; if (fail <= 3) log(`요청 실패(${code}): ${e.message}`); }
-
+  }
+  // 연속 실패 누적(IP 레이트리밋 의심) → 90초 대기 후 회복 시도 (resumable 이라 진행분 보존)
+  if (consec >= 25) { fs.writeFileSync(OUT, JSON.stringify(out)); log(`연속 실패 ${consec} — 90초 대기(레이트리밋 회복)…`); await sleep(90000); consec = 0; }
   if ((i + 1) % 50 === 0) { fs.writeFileSync(OUT, JSON.stringify(out)); log(`진행 ${i + 1}/${todo.length} (성공 ${ok}, 실패 ${fail})`); }
-  await sleep(110); // API 예의 + 할당량 분산
+  await sleep(140); // API 예의 + 할당량 분산
 }
 
 out.fetchedAt = new Date().toISOString().slice(0, 10);
