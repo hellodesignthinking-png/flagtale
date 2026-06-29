@@ -426,7 +426,7 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
             ))}
           </div>
           <p className="mt-3 text-[11px] leading-snug text-muted2">
-            국토부 도시재생 <b className="text-ink">쇠퇴진단 등급</b>(인구변화·재정자립·사업체증감·지가변동, 1~10). 낮으면 쇠퇴·정부 집중지원 대상(발전 잠재), 높으면 양호. 시군구 단위 실측.
+            국토부 도시재생 <b className="text-ink">쇠퇴진단 종합등급</b>(인구·경제·물리 3부문 — 인구변화·재정자립·사업체증감·지가·공가율·접도율, 1~10). 낮으면 쇠퇴·정부 집중지원 대상(발전 잠재), 높으면 양호. 시군구 단위 실측.
           </p>
         </Panel>
       )}
