@@ -1,14 +1,282 @@
 {
   "source": "serpapi google_trends · GEO_MAP_0 · region=COUNTRY",
-  "fetchedAt": "sample",
-  "note": "구글 국가별 검색 관심(해외·국내). 현재 샘플 — SERPAPI_KEY 추가 후 `node scripts/ingest-serpapi.mjs`로 실데이터 수집. 국가명 영문 저장(표시는 한글 매핑).",
+  "fetchedAt": "2026-06-25",
+  "note": "구글 국가별 검색 관심(해외·국내). SerpApi 수집.",
   "byName": {
-    "성수동": { "domestic": 100, "foreignShare": 31, "sample": true, "countries": [ { "name": "South Korea", "value": 100 }, { "name": "Japan", "value": 21 }, { "name": "United States", "value": 14 }, { "name": "Taiwan", "value": 9 }, { "name": "Thailand", "value": 6 } ], "foreignTop": [ { "name": "Japan", "value": 21 }, { "name": "United States", "value": 14 }, { "name": "Taiwan", "value": 9 }, { "name": "Thailand", "value": 6 } ] },
-    "익선동": { "domestic": 100, "foreignShare": 24, "sample": true, "countries": [ { "name": "South Korea", "value": 100 }, { "name": "Japan", "value": 16 }, { "name": "United States", "value": 9 }, { "name": "Taiwan", "value": 7 } ], "foreignTop": [ { "name": "Japan", "value": 16 }, { "name": "United States", "value": 9 }, { "name": "Taiwan", "value": 7 } ] },
-    "북촌 한옥마을": { "domestic": 78, "foreignShare": 48, "sample": true, "countries": [ { "name": "South Korea", "value": 78 }, { "name": "United States", "value": 31 }, { "name": "China", "value": 22 }, { "name": "Japan", "value": 14 }, { "name": "France", "value": 5 } ], "foreignTop": [ { "name": "United States", "value": 31 }, { "name": "China", "value": 22 }, { "name": "Japan", "value": 14 }, { "name": "France", "value": 5 } ] },
-    "전주 한옥마을": { "domestic": 100, "foreignShare": 22, "sample": true, "countries": [ { "name": "South Korea", "value": 100 }, { "name": "United States", "value": 12 }, { "name": "Japan", "value": 9 }, { "name": "China", "value": 7 } ], "foreignTop": [ { "name": "United States", "value": 12 }, { "name": "Japan", "value": 9 }, { "name": "China", "value": 7 } ] },
-    "부산 감천문화마을": { "domestic": 70, "foreignShare": 52, "sample": true, "countries": [ { "name": "South Korea", "value": 70 }, { "name": "China", "value": 28 }, { "name": "United States", "value": 20 }, { "name": "Taiwan", "value": 16 }, { "name": "Japan", "value": 12 } ], "foreignTop": [ { "name": "China", "value": 28 }, { "name": "United States", "value": 20 }, { "name": "Taiwan", "value": 16 }, { "name": "Japan", "value": 12 } ] },
-    "제주 월정리": { "domestic": 92, "foreignShare": 27, "sample": true, "countries": [ { "name": "South Korea", "value": 92 }, { "name": "China", "value": 17 }, { "name": "Japan", "value": 10 }, { "name": "United States", "value": 7 } ], "foreignTop": [ { "name": "China", "value": 17 }, { "name": "Japan", "value": 10 }, { "name": "United States", "value": 7 } ] },
-    "해방촌": { "domestic": 100, "foreignShare": 19, "sample": true, "countries": [ { "name": "South Korea", "value": 100 }, { "name": "United States", "value": 13 }, { "name": "Japan", "value": 8 } ], "foreignTop": [ { "name": "United States", "value": 13 }, { "name": "Japan", "value": 8 } ] }
+    "성수동": {
+      "domestic": 100,
+      "foreignShare": 31,
+      "sample": true,
+      "countries": [
+        {
+          "name": "South Korea",
+          "value": 100
+        },
+        {
+          "name": "Japan",
+          "value": 21
+        },
+        {
+          "name": "United States",
+          "value": 14
+        },
+        {
+          "name": "Taiwan",
+          "value": 9
+        },
+        {
+          "name": "Thailand",
+          "value": 6
+        }
+      ],
+      "foreignTop": [
+        {
+          "name": "Japan",
+          "value": 21
+        },
+        {
+          "name": "United States",
+          "value": 14
+        },
+        {
+          "name": "Taiwan",
+          "value": 9
+        },
+        {
+          "name": "Thailand",
+          "value": 6
+        }
+      ]
+    },
+    "익선동": {
+      "domestic": 100,
+      "foreignShare": 24,
+      "sample": true,
+      "countries": [
+        {
+          "name": "South Korea",
+          "value": 100
+        },
+        {
+          "name": "Japan",
+          "value": 16
+        },
+        {
+          "name": "United States",
+          "value": 9
+        },
+        {
+          "name": "Taiwan",
+          "value": 7
+        }
+      ],
+      "foreignTop": [
+        {
+          "name": "Japan",
+          "value": 16
+        },
+        {
+          "name": "United States",
+          "value": 9
+        },
+        {
+          "name": "Taiwan",
+          "value": 7
+        }
+      ]
+    },
+    "북촌 한옥마을": {
+      "domestic": 78,
+      "foreignShare": 48,
+      "sample": true,
+      "countries": [
+        {
+          "name": "South Korea",
+          "value": 78
+        },
+        {
+          "name": "United States",
+          "value": 31
+        },
+        {
+          "name": "China",
+          "value": 22
+        },
+        {
+          "name": "Japan",
+          "value": 14
+        },
+        {
+          "name": "France",
+          "value": 5
+        }
+      ],
+      "foreignTop": [
+        {
+          "name": "United States",
+          "value": 31
+        },
+        {
+          "name": "China",
+          "value": 22
+        },
+        {
+          "name": "Japan",
+          "value": 14
+        },
+        {
+          "name": "France",
+          "value": 5
+        }
+      ]
+    },
+    "전주 한옥마을": {
+      "domestic": 100,
+      "foreignShare": 22,
+      "sample": true,
+      "countries": [
+        {
+          "name": "South Korea",
+          "value": 100
+        },
+        {
+          "name": "United States",
+          "value": 12
+        },
+        {
+          "name": "Japan",
+          "value": 9
+        },
+        {
+          "name": "China",
+          "value": 7
+        }
+      ],
+      "foreignTop": [
+        {
+          "name": "United States",
+          "value": 12
+        },
+        {
+          "name": "Japan",
+          "value": 9
+        },
+        {
+          "name": "China",
+          "value": 7
+        }
+      ]
+    },
+    "부산 감천문화마을": {
+      "domestic": 70,
+      "foreignShare": 52,
+      "sample": true,
+      "countries": [
+        {
+          "name": "South Korea",
+          "value": 70
+        },
+        {
+          "name": "China",
+          "value": 28
+        },
+        {
+          "name": "United States",
+          "value": 20
+        },
+        {
+          "name": "Taiwan",
+          "value": 16
+        },
+        {
+          "name": "Japan",
+          "value": 12
+        }
+      ],
+      "foreignTop": [
+        {
+          "name": "China",
+          "value": 28
+        },
+        {
+          "name": "United States",
+          "value": 20
+        },
+        {
+          "name": "Taiwan",
+          "value": 16
+        },
+        {
+          "name": "Japan",
+          "value": 12
+        }
+      ]
+    },
+    "제주 월정리": {
+      "domestic": 92,
+      "foreignShare": 27,
+      "sample": true,
+      "countries": [
+        {
+          "name": "South Korea",
+          "value": 92
+        },
+        {
+          "name": "China",
+          "value": 17
+        },
+        {
+          "name": "Japan",
+          "value": 10
+        },
+        {
+          "name": "United States",
+          "value": 7
+        }
+      ],
+      "foreignTop": [
+        {
+          "name": "China",
+          "value": 17
+        },
+        {
+          "name": "Japan",
+          "value": 10
+        },
+        {
+          "name": "United States",
+          "value": 7
+        }
+      ]
+    },
+    "해방촌": {
+      "domestic": 100,
+      "foreignShare": 19,
+      "sample": true,
+      "countries": [
+        {
+          "name": "South Korea",
+          "value": 100
+        },
+        {
+          "name": "United States",
+          "value": 13
+        },
+        {
+          "name": "Japan",
+          "value": 8
+        }
+      ],
+      "foreignTop": [
+        {
+          "name": "United States",
+          "value": 13
+        },
+        {
+          "name": "Japan",
+          "value": 8
+        }
+      ]
+    }
   }
 }

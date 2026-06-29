@@ -24,11 +24,14 @@ const ek = encodeURIComponent(KEY);
 const B = "http://apis.data.go.kr/1611000/DceDgnssGradeService/getGradeSigngu";
 const YEAR = process.env.DECLINE_YEAR || "2021";
 // 핵심 지표(등급 1~10, 높을수록 양호) — 인구·경제·재정 균형 합성
+// 3부문(인구·경제·물리) 종합 — 등급 1~10 모두 높을수록 양호(방향 일관). 활성화/잠재력 별도 서비스 미발견 → 쇠퇴진단 전부문으로 대체.
 const INDICATORS = [
-  ["인구변화", "GRADE00003"],
-  ["재정자립", "GRADE00021"],
-  ["사업체증감", "GRADE00027"],
-  ["지가변동", "GRADE00023"],
+  ["인구변화", "GRADE00003"],   // 인구사회
+  ["재정자립", "GRADE00021"],   // 산업경제
+  ["사업체증감", "GRADE00027"], // 산업경제
+  ["지가변동", "GRADE00023"],   // 자산
+  ["공가율", "GRADE00035"],     // 물리환경(낮은 공가=양호)
+  ["접도율", "GRADE00041"],     // 물리환경(접근성)
 ];
 
 async function grade(signguCd, gradeCd) {

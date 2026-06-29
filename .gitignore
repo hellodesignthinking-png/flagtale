@@ -45,3 +45,6 @@ data/procurement.real.json
 data/culture.raw.json
 data/decline.raw.json
 data/potential.raw.json
+
+# NABIS 인포그래픽 hwp(재현 불필요) — 시계열 xlsx만 커밋(ingest:nabis 소스)
+지방시대위원회/*.hwp
