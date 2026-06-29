@@ -21,6 +21,7 @@ import type { AnchorStore } from "@/lib/connectors/anchor";
 import type { VenuesResult } from "@/lib/connectors/venues";
 import type { SocialBuzz } from "@/lib/connectors/social";
 import type { YoutubeBuzz } from "@/lib/connectors/youtube";
+import type { RegionBuzz } from "@/lib/connectors/regionBuzz";
 import type { DriverAttribution } from "@/lib/driver";
 import type { Sustainability } from "@/lib/sustainability";
 import type { TenantRx } from "@/lib/tenant";
@@ -69,6 +70,7 @@ interface DiagnoseResult {
   venues: VenuesResult | null;
   social: SocialBuzz | null;
   youtube: YoutubeBuzz | null;
+  regionBuzz?: RegionBuzz | null;
   drivers: DriverAttribution;
   sustainability: Sustainability | null;
   tenantRx: TenantRx | null;
@@ -909,6 +911,76 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd, mode = "parcel
                 <div className="mt-2 text-[10.5px]" style={{ color: "var(--green)" }}>
                   실데이터 · 네이버 지역검색 · 공공(구립·시립·국립…)+민간/재단 모두 · 진단 지점 지도에 종류별 색 핀으로 배치 · 다양·근접할수록 동네 강점
                 </div>
+              </Section>
+            );
+          })()}
+
+          {/* 지역 종합 신호 — 그 지역 등록 매장·공간들의 뉴스·소셜을 지역한정 집계(동/지역 진단 핵심 방법론) */}
+          {result.regionBuzz && (() => {
+            const rb = result.regionBuzz;
+            const tc = (t: number) => (t > 0 ? "var(--green)" : t < 0 ? "var(--warn)" : "var(--muted2)");
+            const tl = (t: number) => (t > 0 ? "긍정" : t < 0 ? "부정" : "중립");
+            return (
+              <Section num="★" title="지역 종합 신호 — 등록 매장·공간의 뉴스·소셜 집계" tone="grade-b">
+                <p className="mb-3 text-[12px] leading-relaxed text-muted">
+                  동네 이름만이 아니라 <b className="text-ink">{rb.scope}</b>를 각각 <b className="text-ink">&ldquo;공간명 + 동&rdquo;</b>으로 지역 한정 검색해 집계했습니다 — 타지역 동명 매장 혼입 없이 이 지역의 실제 신호.
+                </p>
+                <div className="mb-3 grid grid-cols-3 gap-2">
+                  {[
+                    { l: "공간 소셜(블로그)", v: rb.totalBuzz.toLocaleString(), c: "var(--ink)" },
+                    { l: "공간 기사", v: rb.totalNews.toLocaleString(), c: "var(--ink)" },
+                    { l: "통합 감성", v: `${rb.agg.sentiment > 0 ? "+" : ""}${rb.agg.sentiment}`, c: tc(rb.agg.sentiment) },
+                  ].map((s) => (
+                    <div key={s.l} className="rounded-lg border border-line bg-card2 px-2.5 py-2 text-center">
+                      <div className="text-[10.5px] text-muted2">{s.l}</div>
+                      <div className="text-[16px] font-extrabold tabular-nums" style={{ color: s.c }}>{s.v}</div>
+                    </div>
+                  ))}
+                </div>
+                <PosNegBar label="종합" agg={rb.agg} strong />
+                {/* 공간별 신호 */}
+                <div className="mt-3 mb-1 text-[11.5px] font-bold text-muted">공간별 신호 (소셜 버즈순)</div>
+                <div className="space-y-1">
+                  {rb.places.map((p) => (
+                    <div key={p.name} className="flex items-center gap-2 rounded-md bg-card2/60 px-2.5 py-1.5">
+                      <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: tc(p.tone) }} title={tl(p.tone)} />
+                      <span className="min-w-0 flex-1 truncate text-[12px] font-semibold text-ink">{p.name}</span>
+                      <span className="hidden shrink-0 text-[10px] text-muted2 sm:inline">{p.category.split(">").pop()}</span>
+                      <span className="shrink-0 text-[11px] tabular-nums text-muted">블로그 {p.buzz.toLocaleString()}</span>
+                      <span className="shrink-0 text-[11px] tabular-nums text-muted2">기사 {p.news.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+                {/* 대표 기사·게시물 */}
+                {rb.articles.length > 0 && (
+                  <div className="mt-3">
+                    <div className="mb-1 text-[11.5px] font-bold text-muted">📰 지역 공간 대표 기사</div>
+                    <ul className="space-y-1">
+                      {rb.articles.slice(0, 4).map((a, i) => (
+                        <li key={i} className="flex items-start gap-1.5 text-[11.5px] leading-snug">
+                          <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: tc(a.tone) }} />
+                          <a href={a.link} target="_blank" rel="noreferrer" className="min-w-0 flex-1 text-muted hover:text-ink hover:underline">{a.title}</a>
+                          <span className="shrink-0 text-[10px] text-muted2">{a.place}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {rb.posts.length > 0 && (
+                  <div className="mt-2.5">
+                    <div className="mb-1 text-[11.5px] font-bold text-muted">💬 지역 공간 대표 소셜</div>
+                    <ul className="space-y-1">
+                      {rb.posts.slice(0, 4).map((p, i) => (
+                        <li key={i} className="flex items-start gap-1.5 text-[11.5px] leading-snug">
+                          <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: tc(p.tone) }} />
+                          <a href={p.link} target="_blank" rel="noreferrer" className="min-w-0 flex-1 text-muted hover:text-ink hover:underline">{p.title}</a>
+                          <span className="shrink-0 text-[10px] text-muted2">{p.place}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <p className="mt-2.5 text-[11px] leading-snug text-muted2">이 지역에 등록된 매장·공간을 개별 지역한정 검색(네이버 블로그·뉴스)해 합산 — 동네 단위가 아닌 <b className="text-ink">공간 단위</b> 실측. 브랜드 진단 시엔 해당 브랜드만 분석.</p>
               </Section>
             );
           })()}

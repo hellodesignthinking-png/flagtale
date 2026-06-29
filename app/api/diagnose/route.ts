@@ -14,6 +14,7 @@ import { cultureInfo } from "@/lib/connectors/culture";
 import { localVenues } from "@/lib/connectors/venues";
 import { socialBuzz } from "@/lib/connectors/social";
 import { youtubeBuzz } from "@/lib/connectors/youtube";
+import { regionPlacesBuzz } from "@/lib/connectors/regionBuzz";
 import { computeCorrected, searchName } from "@/lib/corrected";
 import { attributeDrivers } from "@/lib/driver";
 import { computeSustainability } from "@/lib/sustainability";
@@ -105,6 +106,12 @@ export async function POST(req: NextRequest) {
     storeName ? naverInterest(storeQuery).catch(() => null) : Promise.resolve(null), // 매장명+지역 검색 관심도
   ]);
 
+  // 지역 종합 신호 — 동/지역 진단이면 그 지역에 등록된 공간들(앵커 점포)의 뉴스·소셜을 '지역 한정'으로 집계.
+  // 동네 이름만이 아니라 그 안의 매장·공간 단위로 검토해야 제대로 된 지역 조사. (브랜드 진단은 단일 매장이므로 생략)
+  const regionBuzz = !storeName && anchor && anchor.length
+    ? await regionPlacesBuzz(anchor.map((a) => ({ name: a.name, category: a.category })), sname).catch(() => null)
+    : null;
+
   // 실측 보정(네이버 D4·모멘텀)·동인 분해는 위 결과에 의존 → 병렬 후 계산
   const corrected = computeCorrected(bundle.latest, naver, peer);
   const drivers = attributeDrivers({ latest: bundle.latest, corrected, sangga, reb });
@@ -155,6 +162,8 @@ export async function POST(req: NextRequest) {
     venues, // 지역 문화 인프라(갤러리·도서관·책방·공연장·체육관·공원, 공공/민간) — 강점 자산
     social, // 소셜 등록수(블로그·카페) + 긍정/부정
     youtube, // 유튜브 영상 + 긍정/부정 (키 없으면 null)
+    regionBuzz, // 지역 등록 공간(매장)들의 뉴스·소셜 지역한정 집계 — 동/지역 진단 핵심
+
     drivers, // 활성화 동인 분해(로컬크리에이터/공공지원/자본)
     sustainability, // 매력×지속가능성 2축(상생지수·4분면·대형화·수익성 가위)
     tenantRx, // 업종 처방(부족 업종 추천 Top3) — 모듈 D
