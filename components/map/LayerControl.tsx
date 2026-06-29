@@ -59,8 +59,7 @@ export function LayerControl() {
       <div className="mt-2.5 border-t border-line pt-2">
         <p className="text-[11px] leading-snug text-muted2">{active.desc}</p>
         <p className="mt-1.5 text-[10px] leading-snug text-muted2">
-          지도는 전국 일괄이라 대부분 <b className="text-muted">샘플</b>(인구만 KOSIS 실). 임대·매출·유동·상권{" "}
-          <b className="text-muted">실데이터</b>는 동 클릭 →{" "}
+          <b className="text-muted">● 실데이터</b> 표시 레이어(상권·빈집·건축물·인구변화)는 KOSIS·소진공 실측. KLAI 종합·4축은 아직 샘플. 임대·매출·유동 등은 동 클릭 →{" "}
           <a href="/diagnose" className="text-blue-l hover:underline">진단</a>.
         </p>
       </div>

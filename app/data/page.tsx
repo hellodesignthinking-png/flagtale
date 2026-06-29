@@ -77,7 +77,7 @@ export default function DataPage() {
       </Panel>
 
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat label="실연동 소스" value={realCount} accent="blue" sub="경계(행정동)" />
+        <Stat label="실연동 소스" value={realCount} accent="blue" sub="경계·인구·상권·빈집·건축물" />
         <Stat label="키 설정됨" value={keySetCount} accent="amber" sub="인제스트 시 실데이터 전환" />
         <Stat label="키 필요(미연동)" value={pendingCount} accent="warn" sub="키 발급 후 연동" />
         <Stat label="기본 시계열" value={<span className="text-lg">인구 10년</span>} sub="2016~2025" />
@@ -147,7 +147,7 @@ export default function DataPage() {
           <li>3. 키 없는 소스는 그대로 <b className="text-warn">미연동</b>으로 남아 이 페이지에 이유가 표시됩니다.</li>
         </ol>
         <p className="mt-3 text-[12px] text-muted2">
-          ⚠ 현재 인구·점수·신호·조달은 <b className="text-muted">예시(합성)</b> 데이터입니다. 경계만 실제. 위 절차로 소스별 실데이터로 대체됩니다.
+          ⚠ 현재 <b className="text-muted">KLAI 점수·신호·조달</b>은 예시(합성)입니다. 경계·인구·상권·빈집·건축물은 <b className="text-ink">실데이터</b>. 위 절차로 나머지도 소스별 실데이터로 대체됩니다.
         </p>
       </Panel>
     </PageShell>

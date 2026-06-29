@@ -1112,7 +1112,7 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd, mode = "parcel
               {(!d || d.risks.length === 0) && (
                 <div className="rounded-lg border border-line bg-card2 px-3 py-2 text-[12.5px] text-muted">임계 경보 없음 — 정상 범위. 선제 모니터링 권장.</div>
               )}
-              {result?.vacant && result.vacant.ratio != null && result.vacant.ratio >= 10 && (
+              {result?.vacant && result.vacant.ratio != null && result.vacant.ratio >= 12 && (
                 <div className="rounded-lg border border-warn/30 bg-warn/10 px-3 py-2">
                   <div className="text-[13px] font-bold text-warn">🏚 빈집 비율 {result.vacant.ratio}% — 소멸·공실 경보</div>
                   <div className="mt-0.5 text-[12.5px] text-muted">

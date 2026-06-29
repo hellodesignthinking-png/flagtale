@@ -113,6 +113,25 @@ data/
 
 ---
 
+## 6.5 신규 방법 — 국내외 논문 검토 (2026-06-29)
+
+현재 미사용이나 한국 공개데이터로 가능한 진단 고도화 방법(우선순위순). ⚠ 3,554동 전국 커버리지가 binding 제약.
+
+| # | 방법 | 개선 축 | 한국 데이터 | 난이도 | 현재 대비 |
+|---|---|---|---|---|---|
+| **1** | **POI Richness / Hill numbers** | D2 다양성 | (기존 상가 업종 재계산) | **쉬움** | Shannon은 vibrancy ~1%만 설명 — richness가 우월(IJGIS 2016) |
+| **2** | **2SFCA 대중교통·POI 접근성** | **신규 축**(D3·입지) | data.go.kr 15013205(철도역)·15067528(버스)·기존 상가 | 중 | 접근성 축이 전무 — 매력·젠트리 onset 핵심 동인, 혼잡도 반영 |
+| **3** | **생활인구 주야·소비** | D1·D2 활력 | data.go.kr 15130539(행안부, **89 인구감소지역+서울**) | 쉬움(부분) | 주민등록은 활력 오표기 — 실제 체류·방문이 진짜 활력 |
+| 4 | 야간조도(VIIRS DNB) 추세 | D2·모멘텀 | NASA/NOAA 무료 래스터 → 동 zonal | 중(지오) | 서베이 독립 — 농산어촌 쇠퇴 조기포착 |
+| 5 | 스트리트뷰 CNN 시지각 | D4(물리) | 네이버 거리뷰 + Place Pulse 모델 | 어려움(ML) | 텍스트 D4가 못 보는 물리적 미관·안전 |
+| 6 | Space Syntax(가로망 integration) | D3 | OSM/VWorld 도로망 + osmnx | 중 | 상권을 지탱하는 morphology — 구조적 쇠퇴 설명 |
+| 7 | Granger 선행지표/DiD | 모멘텀·젠트리 전이 | (기존 시계열 재분석) | 중 | 정적 진단→**예측**(카페 진입이 집값 선행, NBER) |
+| 8 | 카드소비 변동성·회복력 | D2·위기 | 15130539 소비 + 카드 데이터랩 | 쉬움(부분) | 매출 수준만으론 취약 상권 구분 불가 |
+
+**Top-3 실행 순서**: ① POI Richness(즉시·무비용) → ② 2SFCA(신규 축·전국) → ③ 생활인구(89지역+서울, 나머지 폴백·배지). 이후 시계열이 쌓이면 ⑥ Granger가 Phase 5 예측 엔진.
+
+출처: [POI richness/Hill(IJGIS 2016)](https://www.tandfonline.com/doi/full/10.1080/13658816.2016.1220561) · [2SFCA 철도접근성(Sustainability 2022)](https://doi.org/10.3390/su142215281) · [행안부 생활인구 15130539](https://www.data.go.kr/data/15130539/fileData.do) · [VIIRS 도시재생(Urban Sci 2026)](https://doi.org/10.3390/urbansci10010036) · [Place Pulse(ECCV 2016)](https://ar5iv.labs.arxiv.org/html/1608.01769) · [젠트리 Granger(NBER w24952)](https://www.nber.org/system/files/working_papers/w24952/w24952.pdf)
+
 ## 7. 참고 (방법론 출처)
 - 도시활력·POI 혼합도(Shannon/Simpson, 2SFCA): *Evaluating urban morphology on vitality (big geo-data)*; *Assessing urban vitality with POI reviews (Nature HSS Comm. 2025)*.
 - 스트리트뷰 시지각: MIT **Place Pulse 2.0**(110,988장·56도시)·**Streetscore**(SVR); *Mapping human perception from street-view (deep learning)*.
