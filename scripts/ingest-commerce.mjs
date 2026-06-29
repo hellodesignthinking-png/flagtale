@@ -58,6 +58,7 @@ function parseBody(text) {
   }
   const root = j.response ?? j;
   const rc = root.header?.resultCode ?? root.cmmMsgHeader?.returnReasonCode;
+  if (rc === "03") return { total: 0, items: [] };       // NODATA_ERROR = 등록 상가 없음(유효한 빈 동)
   if (rc && rc !== "00") return { error: `resultCode=${rc} ${root.header?.resultMsg ?? ""}`.trim() };
   const body = root.body ?? {};
   let items = body.items ?? [];
@@ -77,7 +78,8 @@ function diversity(counts) {
 let ok = 0, fail = 0, diag = true;
 for (let i = 0; i < todo.length; i++) {
   const code = todo[i];
-  const url = `${BASE}?serviceKey=${encodeURIComponent(KEY)}&divId=adongCd&key=${code}&numOfRows=1000&pageNo=1&type=json`;
+  // 상권 API adongCd = 행정동코드 8자리 (= 앱 adm_cd2 앞 8자리; 끝 "00" 제외). 검증: 사직동 1111053000→11110530→2388점포.
+  const url = `${BASE}?serviceKey=${encodeURIComponent(KEY)}&divId=adongCd&key=${code.slice(0, 8)}&numOfRows=1000&pageNo=1&type=json`;
   try {
     const res = await fetch(url);
     const text = await res.text();
