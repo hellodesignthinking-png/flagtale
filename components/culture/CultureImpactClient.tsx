@@ -1,6 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { CIRadar } from "@/components/charts/CIRadar";
+
+const RADAR_ORDER = [
+  { key: "hyangyu", label: "문화향유" },
+  { key: "pyohyeon", label: "표현·참여" },
+  { key: "yusan", label: "국가유산" },
+  { key: "gongdong", label: "공동체" },
+  { key: "damyang", label: "다양성" },
+  { key: "changui", label: "창의성" },
+];
 
 interface CIInput { label: string; value: string; source: string }
 interface Indicator {
@@ -119,7 +129,7 @@ export function CultureImpactClient({ initialQuery = "" }: { initialQuery?: stri
               <span className="h-4 w-1 rounded bg-grade-b" />
               <h3 className="text-[15px] font-extrabold text-ink">문화영향 프로파일 <span className="text-[11px] font-normal text-muted2">· 6지표 한눈에(0~100)</span></h3>
             </div>
-            <div className="mx-auto max-w-[380px]"><CIRadar indicators={ci.indicators} /></div>
+            <div className="mx-auto max-w-[380px]"><CIRadar points={RADAR_ORDER.map((o) => ({ label: o.label, value: ci.indicators.find((x) => x.key === o.key)?.score ?? 0 }))} /></div>
           </div>
 
           {/* 시도 공식 지수(NABIS) + 지역특화거리 */}
@@ -231,40 +241,5 @@ export function CultureImpactClient({ initialQuery = "" }: { initialQuery?: stri
         </div>
       )}
     </div>
-  );
-}
-
-// 문화영향 6지표 레이더 — 6축 0~100 프로파일
-function CIRadar({ indicators }: { indicators: Indicator[] }) {
-  const W = 340, H = 300, cx = 170, cy = 150, R = 92, N = 6;
-  const order = [
-    { k: "hyangyu", l: "문화향유" },
-    { k: "pyohyeon", l: "표현·참여" },
-    { k: "yusan", l: "국가유산" },
-    { k: "gongdong", l: "공동체" },
-    { k: "damyang", l: "다양성" },
-    { k: "changui", l: "창의성" },
-  ];
-  const vals = order.map((o) => indicators.find((x) => x.key === o.k)?.score ?? 0);
-  const pt = (i: number, rad: number): [number, number] => {
-    const a = -Math.PI / 2 + (i * 2 * Math.PI) / N;
-    return [cx + Math.cos(a) * rad, cy + Math.sin(a) * rad];
-  };
-  const rings = [0.25, 0.5, 0.75, 1].map((f) => order.map((_, i) => pt(i, R * f).join(",")).join(" "));
-  const poly = vals.map((v, i) => pt(i, (R * v) / 100).join(",")).join(" ");
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="문화영향 6지표 레이더">
-      {rings.map((rg, i) => <polygon key={i} points={rg} fill="none" stroke="var(--line)" strokeWidth={0.7} />)}
-      {order.map((_, i) => { const [x, y] = pt(i, R); return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="var(--line)" strokeWidth={0.7} />; })}
-      <polygon points={poly} fill="rgba(62,154,168,0.22)" stroke="#3e9aa8" strokeWidth={2} />
-      {vals.map((v, i) => { const [x, y] = pt(i, (R * v) / 100); return <circle key={i} cx={x} cy={y} r={3.2} fill="#3e9aa8" stroke="#fff" strokeWidth={1} />; })}
-      {order.map((o, i) => {
-        const [x, y] = pt(i, R + 20);
-        const ax = Math.cos(-Math.PI / 2 + (i * 2 * Math.PI) / N);
-        const anchor = ax > 0.3 ? "start" : ax < -0.3 ? "end" : "middle";
-        return <text key={i} x={x} y={y} textAnchor={anchor} dominantBaseline="middle" fontSize="10.5" fontWeight={700} fill="var(--muted)">{o.l}</text>;
-      })}
-      {vals.map((v, i) => { const [x, y] = pt(i, (R * v) / 100); return <text key={"v" + i} x={x} y={y - 8} textAnchor="middle" fontSize="9.5" fontWeight={800} fill="var(--ink)">{v}</text>; })}
-    </svg>
   );
 }

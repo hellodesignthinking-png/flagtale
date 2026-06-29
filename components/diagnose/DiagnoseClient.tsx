@@ -39,6 +39,7 @@ import { ProcurementTable } from "@/components/charts/ProcurementTable";
 import { CityCompare, RatioCompare } from "@/components/charts/CityCompare";
 import { GentriStageBar } from "@/components/charts/GentriStageBar";
 import { CausalLoop } from "@/components/charts/CausalLoop";
+import { CIRadar } from "@/components/charts/CIRadar";
 import { SignalAnalysis } from "@/components/analysis/SignalAnalysis";
 import { DiagnoseMap } from "@/components/diagnose/DiagnoseMap";
 import { BrandReportView } from "@/components/diagnose/BrandReportView";
@@ -89,6 +90,12 @@ interface DiagnoseResult {
   programs?: { key: string; label: string; agency: string }[];
   devStrategy?: { conclusion: string; stage: string; strategies: { title: string; detail: string; basis: string }[]; alternatives: string[] } | null;
   narrativeDurability?: { mode: string; score: number; total: number; factors: { factor: string; has: boolean; detail: string }[]; why: string; alternatives: string[] } | null;
+  cultureImpact?: {
+    total: number | null; grade: string; coverage: number;
+    indicators: { key: string; label: string; score: number | null; confidence: string }[];
+    regional: { develop: number | null; innovate: number | null; creative: number | null; year: string | null } | null;
+    streets: { count: number; totalStores: number; names: string[] } | null;
+  } | null;
   periods: string[];
   reportId: string;
 }
@@ -481,6 +488,52 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd, mode = "parcel
               <p className="mt-2 text-[11px] leading-snug text-muted2">전부 정부·공공 <b className="text-ink">실데이터</b>(소진공 상가·KOSIS 인구주택총조사·국토부 쇠퇴진단·문화정보원). 위 샘플 점수와 별개의 실측 지표입니다.</p>
             </Section>
           )}
+
+          {/* 🎭 문화영향평가 종합 — 문화기본법 §5④ 6지표 레이더 + 시도 공식지수 + 특화거리 */}
+          {result.cultureImpact && result.cultureImpact.total != null && (() => {
+            const ci = result.cultureImpact!;
+            const RADAR = [
+              { key: "hyangyu", label: "문화향유" }, { key: "pyohyeon", label: "표현·참여" }, { key: "yusan", label: "국가유산" },
+              { key: "gongdong", label: "공동체" }, { key: "damyang", label: "다양성" }, { key: "changui", label: "창의성" },
+            ];
+            const sc = (s: number | null | undefined) => s == null ? "var(--muted2)" : s >= 70 ? "var(--green)" : s >= 55 ? "#3e9aa8" : s >= 40 ? "#d4861e" : "var(--warn)";
+            return (
+              <Section num="★" title="문화영향평가 — 문화적 관점 진단 (문화기본법 §5④)" tone="grade-b">
+                <div className="grid items-center gap-4 sm:grid-cols-2">
+                  <div className="mx-auto w-full max-w-[330px]">
+                    <CIRadar points={RADAR.map((o) => ({ label: o.label, value: ci.indicators.find((x) => x.key === o.key)?.score ?? 0 }))} />
+                  </div>
+                  <div>
+                    <div className="mb-2 flex items-baseline gap-2">
+                      <span className="text-[28px] font-black leading-none" style={{ color: sc(ci.total) }}>{ci.total}</span>
+                      <span className="text-[13px] text-muted">/100 · {ci.grade} <span className="text-muted2">(6지표 {ci.coverage}개 산출)</span></span>
+                    </div>
+                    <div className="space-y-1">
+                      {RADAR.map((o) => {
+                        const v = ci.indicators.find((x) => x.key === o.key)?.score;
+                        return (
+                          <div key={o.key} className="flex items-center gap-2">
+                            <span className="w-[58px] shrink-0 text-[11px] text-muted">{o.label}</span>
+                            <div className="h-2 flex-1 overflow-hidden rounded-full bg-navy2/50"><div className="h-full rounded-full" style={{ width: `${v ?? 0}%`, background: sc(v) }} /></div>
+                            <span className="w-6 text-right text-[11px] font-bold tabular-nums" style={{ color: sc(v) }}>{v ?? "—"}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2 border-t border-line pt-3 text-[11.5px]">
+                  {ci.regional && (ci.regional.develop != null || ci.regional.creative != null) && (
+                    <span className="rounded-lg bg-card2 px-2.5 py-1 text-muted">🏛 시도 공식(NABIS {ci.regional.year}): 발전 <b className="text-ink">{ci.regional.develop ?? "—"}</b> · 혁신 <b className="text-ink">{ci.regional.innovate ?? "—"}</b> · 창조 <b className="text-ink">{ci.regional.creative ?? "—"}</b></span>
+                  )}
+                  {ci.streets && (
+                    <span className="rounded-lg bg-card2 px-2.5 py-1 text-muted">🛍 특화거리 <b className="text-ink">{ci.streets.count}개</b>{ci.streets.names.length ? ` (${ci.streets.names.slice(0, 2).join(", ")})` : ""}</span>
+                  )}
+                </div>
+                <Link href={`/culture-impact?admCd=${result.place.admCd2}`} className="mt-2 inline-block text-[12px] font-semibold text-blue-l hover:underline">→ 문화영향평가 전체 보고서 (지표별 근거·산출식·대안)</Link>
+              </Section>
+            );
+          })()}
 
           {/* 📌 데이터 기반 결론·전략·대안 — 실측 데이터 값으로 자동 처방 */}
           {result.devStrategy && result.devStrategy.strategies.length > 0 && (

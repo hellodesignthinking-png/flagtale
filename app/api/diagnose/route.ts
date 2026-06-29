@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { geocodeToPlace, getPlace, getPeerAvg, getRegionComparison, nationalSignalAverage, populationMeta, vacantFor, commerceFor, buildingFor, cultureFor, potentialFor } from "@/lib/data";
+import { geocodeToPlace, getPlace, getPeerAvg, getRegionComparison, nationalSignalAverage, populationMeta, vacantFor, commerceFor, buildingFor, cultureFor, potentialFor, nabisForSido, specialStreetFor } from "@/lib/data";
+import { cultureImpact } from "@/lib/cultureImpact";
 import { realComposite } from "@/lib/realScore";
 import { programsFor } from "@/lib/programs";
 import { devStrategy, narrativeDurability } from "@/lib/devStrategy";
@@ -201,6 +202,17 @@ export async function POST(req: NextRequest) {
       diffusionRole: diffusion?.selfRole,
       diffusionCount: diffusion?.candidates?.length,
       authGapVerdict: authGap?.verdict,
+    }),
+    // 문화영향평가(문화기본법 §5④) 6지표 + 시도 공식지수(NABIS) + 특화거리 — 진단에도 문화 차원 반영
+    cultureImpact: cultureImpact({
+      culture: cultureFor(place.admCd2),
+      commerce: commerceFor(place.admCd2),
+      building: buildingFor(place.admCd2),
+      programs: programsFor(place.admCd2),
+      potential: potentialFor(place.admCd2),
+      nabis: nabisForSido(bundle.props.sido),
+      specialStreet: specialStreetFor(place.admCd2),
+      sido: bundle.props.sido,
     }),
     periods: bundle.series.map((s) => s.period),
     entitled,
