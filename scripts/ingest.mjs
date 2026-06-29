@@ -64,8 +64,9 @@ async function population() {
 
 // ── 공공조달 (조달청 나라장터) ────────────────────────────────
 // G2B 키 검증 + 실 입찰공고 표본 → data/procurement.real.json (검수용).
-// 주의: 공고→행정동(adm_cd2) 귀속은 수요기관 주소 지오코딩이 필요 → 다음 단계.
-//   (그 전까지 앱이 읽는 procurement.json[seed]은 덮어쓰지 않음 — 잘못된 귀속으로 앱 훼손 방지)
+// ⚠ 동(adm_cd2) 귀속 불가: 응답에 주소·PNU·행정동코드 없음. dminsttNm=기관명(협회·법인 多),
+//   rgnLmtBidLocplcNm=지역제한(대개 빈값) → 최선은 시군구 근사. 그래서 앱 seed procurement.json
+//   은 덮어쓰지 않음(잘못된 동 귀속으로 앱 훼손 방지). 정밀 귀속은 별도 기관DB 매핑 필요.
 async function procurement() {
   const key = process.env.G2B_API_KEY;
   if (!key) return log("조달: G2B_API_KEY(serviceKey) 없음 → 미연동 (data.go.kr '나라장터 입찰공고정보' 활용신청)");
@@ -74,8 +75,9 @@ async function procurement() {
   const now = new Date();
   const ago = new Date(now.getTime() - 7 * 864e5);
   const fmt = (d) => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}0000`;
+  // 작동 확인된 오퍼레이션: /1230000/ad/BidPublicInfoService/getBidPblancListInfoServcPPSSrch (총 15,301건/7일)
   const url =
-    `https://apis.data.go.kr/1230000/BidPublicInfoService05/getBidPblancListInfoServc` +
+    `https://apis.data.go.kr/1230000/ad/BidPublicInfoService/getBidPblancListInfoServcPPSSrch` +
     `?serviceKey=${encodeURIComponent(key)}&pageNo=1&numOfRows=50&type=json&inqryDiv=1` +
     `&inqryBgnDt=${fmt(ago)}&inqryEndDt=${fmt(now)}`;
   try {

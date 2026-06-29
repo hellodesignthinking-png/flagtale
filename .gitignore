@@ -41,3 +41,4 @@ data/boundaries/
 
 # 경계 다운로드 캐시(재생성 가능)
 data/boundaries/_raw.geojson
+data/procurement.real.json
