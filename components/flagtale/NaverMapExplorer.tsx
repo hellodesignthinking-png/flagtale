@@ -136,6 +136,17 @@ export default function NaverMapExplorer({ items: propItems, title }: { items: M
   const itemsRef = useRef<MapItem[]>(items);
   itemsRef.current = items; // 렌더마다 최신 동기화 — idle/?sel/popstate의 stale-closure 방지(늦게 로드되는 커뮤니티 스팟 선택)
   useEffect(() => { fetch("/api/spots").then((r) => (r.ok ? r.json() : null)).then((d) => { if (Array.isArray(d?.spots) && d.spots.length) setCommunity(d.spots as MapItem[]); }).catch(() => { /* noop */ }); }, []);
+  // 자연어 추천 검색(MapAISearch) 결과 클릭 → 해당 위치로 지도 이동
+  useEffect(() => {
+    function onFocus(e: Event) {
+      const d = (e as CustomEvent).detail as { lng: number; lat: number } | undefined;
+      const naver = naverRef.current, map = mapRef.current;
+      if (!d || !naver || !map || !Number.isFinite(d.lat) || !Number.isFinite(d.lng)) return;
+      map.morph(new naver.maps.LatLng(d.lat, d.lng), 14);
+    }
+    window.addEventListener("ft:map-focus", onFocus);
+    return () => window.removeEventListener("ft:map-focus", onFocus);
+  }, []);
   const cats = useMemo(() => {
     const c: Record<string, number> = {};
     items.forEach((i) => (c[i.cat] = (c[i.cat] ?? 0) + 1));
