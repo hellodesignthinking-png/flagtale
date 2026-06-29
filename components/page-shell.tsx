@@ -66,7 +66,8 @@ export function SiteFooter() {
             </span>
           </div>
           <p className="mt-3 max-w-xs text-[12px] leading-relaxed text-muted2">
-            플래그테일(Flagtale)의 로컬 데이터 랩 — 전국 지역 관광·상품·상권의 매력도와 트렌드 변화를 데이터로 진단합니다. 개념 검증(MVP) · 샘플·잠정 데이터.
+            플래그테일(Flagtale)의 로컬 데이터 랩 — 전국 지역 관광·상품·상권의 매력도와 트렌드 변화를 데이터로 진단합니다. 개념 검증(MVP) · 일부 샘플·잠정.{" "}
+            <Link href="/data" className="font-bold text-blue-l hover:underline">무엇이 실데이터인지 보기 →</Link>
           </p>
           <p className="mt-3 text-[11px] text-muted2">ZeroSite · NutUnion — Flagtale Lab</p>
         </div>
