@@ -67,6 +67,18 @@ export function Legend({ layer }: { layer: LayerId }) {
         { color: "#6a5cc0", label: "중간" },
         { color: "#8B6EF6", label: "용도 다양(혼합)" },
       ];
+    if (layer === "culture")
+      return [
+        { color: "#28325a", label: "행사 적음" },
+        { color: "#b07a3a", label: "중간" },
+        { color: "#E28A3A", label: "문화행사 많음" },
+      ];
+    if (layer === "potential")
+      return [
+        { color: "#CE6040", label: "쇠퇴(낮음)" },
+        { color: "#5b6470", label: "보통" },
+        { color: "#2878C8", label: "양호(높음)" },
+      ];
     if (layer === "vacant")
       return [
         { color: "#2e4e60", label: "빈집 적음" },

@@ -135,6 +135,16 @@ export const SOURCES: DataSource[] = [
     note: "✅ 연동됨: 시군구별 공연·전시·축제 수 → 실측 매력도 '문화 활력' 축. 로컬100(문체부 매력 명소)의 데이터 기반 대용.",
   },
   {
+    id: "potential",
+    metric: "발전가능성 (도시재생 쇠퇴진단 등급)",
+    axis: "발전가능성 / 도시정책",
+    source: "국토부 도시재생 쇠퇴진단 등급 (data.go.kr 1611000)",
+    url: "https://www.data.go.kr/data/15058591/openapi.do",
+    keyEnv: ["DATA_GO_KR_KEY"],
+    cadence: "연(census기반)",
+    note: "✅ 연동됨(활용신청 승인): 시군구별 인구변화·재정자립·사업체증감·지가변동 등급(1~10) 평균 = 발전가능성. 32+ 지표 中 핵심 4종. 잠재력·활성화 진단 지표도 동일 API로 확장 가능.",
+  },
+  {
     id: "landprice",
     metric: "개별공시지가 (㎡당)",
     axis: "D3-5 자산가치",

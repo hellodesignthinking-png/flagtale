@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { commerceFor, vacantFor, buildingFor, loadDistricts, loadScores } from "@/lib/data";
+import { commerceFor, vacantFor, buildingFor, cultureFor, potentialFor, loadDistricts, loadScores } from "@/lib/data";
 import { realComposite } from "@/lib/realScore";
 import { colorForLayer, displayForLayer, elevationForLayer, isPulseAlert, gradeOf } from "@/lib/scoring";
 import { narrativeForPlace, STAGE_META } from "@/lib/narratives";
@@ -58,6 +58,8 @@ export function GET(req: NextRequest) {
     const vac = layer === "vacant" ? vacantFor(cd) : null;
     // 건축물 용도혼합 실측(KOSIS census, 동) — 기간 불변 주입
     const bld = layer === "building" ? buildingFor(cd) : null;
+    const cul = layer === "culture" ? cultureFor(cd) : null; // 문화 활력(시군구)
+    const pot = layer === "potential" ? potentialFor(cd) : null; // 발전가능성(쇠퇴진단, 시군구)
     const N = periods.length;
     for (let t = 0; t < periods.length; t++) {
       const s0 = series[t] ?? series[series.length - 1];
@@ -80,6 +82,10 @@ export function GET(req: NextRequest) {
       } else if (layer === "real") {
         const rc = realComposite(cd, s0); // 실데이터 합성(상권·건축물·인구·빈집), 2축 미만이면 null
         s = { ...s0, realScore: rc?.score ?? -1, realCov: rc?.coverage ?? 0 } as typeof s0;
+      } else if (layer === "culture") {
+        s = { ...s0, cultureEvents: cul?.events ?? -1 } as typeof s0;
+      } else if (layer === "potential") {
+        s = { ...s0, potentialGrade: pot?.grade ?? -1 } as typeof s0;
       }
       c.push(narrColor ?? colorForLayer(layer, s));
       l.push(narrLabel ?? displayForLayer(layer, s));

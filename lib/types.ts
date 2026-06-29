@@ -24,7 +24,9 @@ export type LayerId =
   | "commerce"
   | "vacant"
   | "building"
-  | "real";
+  | "real"
+  | "culture"
+  | "potential";
 
 export interface DistrictProps {
   admCd2: string;

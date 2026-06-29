@@ -155,6 +155,24 @@ export function colorForLayer(
       rgb = GRADE_RGB[gradeOf(r)];
       break;
     }
+    case "culture": {
+      // 문화 활력(공연·전시·축제 수) — 네이비 → 앰버(D4 문화). 데이터 없으면(-1) 베이스.
+      const e = (s as unknown as Record<string, number>).cultureEvents ?? -1;
+      if (e < 0) { rgb = [44, 58, 86]; alpha = 90; break; }
+      const t = Math.min(Math.log(e + 1) / Math.log(600), 1);
+      rgb = mix([40, 50, 90], [226, 138, 58], Math.pow(t, 0.7));
+      alpha = 150 + Math.round(t * 95);
+      break;
+    }
+    case "potential": {
+      // 발전가능성(쇠퇴진단 등급 1~10) — 낮음(쇠퇴)=주황 → 높음(양호)=블루. 데이터 없으면(-1) 베이스.
+      const g = (s as unknown as Record<string, number>).potentialGrade ?? -1;
+      if (g < 0) { rgb = [44, 58, 86]; alpha = 90; break; }
+      const t = Math.min(Math.max((g - 1) / 9, 0), 1);
+      rgb = mix([206, 96, 64], [40, 120, 200], t);
+      alpha = 160 + Math.round(t * 70);
+      break;
+    }
     default:
       rgb = SLATE;
   }
@@ -215,6 +233,14 @@ export function elevationForLayer(layer: LayerId, s: PlaceScore): number {
     case "real": {
       const r = (s as unknown as Record<string, number>).realScore ?? -1;
       return r < 0 ? 0 : clamp01(r);
+    }
+    case "culture": {
+      const e = (s as unknown as Record<string, number>).cultureEvents ?? -1;
+      return e < 0 ? 0 : clamp01((Math.log(e + 1) / Math.log(600)) * 100);
+    }
+    case "potential": {
+      const g = (s as unknown as Record<string, number>).potentialGrade ?? -1;
+      return g < 0 ? 0 : clamp01((g / 10) * 100);
     }
     default:
       return clamp01(s.klai);
@@ -291,6 +317,14 @@ export function displayForLayer(layer: LayerId, s: PlaceScore): string {
       const r = s as unknown as Record<string, number>;
       const v = r.realScore ?? -1;
       return v < 0 ? "실측 데이터 부족(2축+ 필요)" : `실측 매력도 ${v} · ${gradeOf(v)}등급 (실${r.realCov ?? 0}축)`;
+    }
+    case "culture": {
+      const e = (s as unknown as Record<string, number>).cultureEvents ?? -1;
+      return e < 0 ? "문화 데이터 없음" : `문화행사 ${e.toLocaleString()}건`;
+    }
+    case "potential": {
+      const g = (s as unknown as Record<string, number>).potentialGrade ?? -1;
+      return g < 0 ? "쇠퇴진단 없음" : `발전가능성 ${g}/10 (국토부 쇠퇴진단)`;
     }
     default:
       return `${s.klai}`;
