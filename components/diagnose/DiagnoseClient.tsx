@@ -86,7 +86,7 @@ interface DiagnoseResult {
   building?: { houses: number | null; typeMix: number | null; oldRatio: number | null; types: Record<string, number> | null } | null;
   cultureReal?: { events: number; topRealms: { name: string; count: number }[] } | null;
   potential?: { grade: number; indicators: Record<string, number> } | null;
-  realScore?: { score: number; coverage: number; d1r: number | null; d2r: number | null; d3r: number | null; d4c: number | null; policy: number } | null;
+  realScore?: { score: number; coverage: number; d1r: number | null; d2r: number | null; d3r: number | null; d4c: number | null; policy: number; vacantPenalty?: number } | null;
   programs?: { key: string; label: string; agency: string }[];
   devStrategy?: { conclusion: string; stage: string; strategies: { title: string; detail: string; basis: string }[]; alternatives: string[] } | null;
   narrativeDurability?: { mode: string; score: number; total: number; factors: { factor: string; has: boolean; detail: string }[]; why: string; alternatives: string[] } | null;
@@ -479,6 +479,37 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd, mode = "parcel
                   </div>
                 )}
               </div>
+              {result.realScore && (() => {
+                const rs = result.realScore!;
+                const axes = ([
+                  { v: rs.d1r, label: "D1 인구 지속성", src: "KOSIS 인구변화" },
+                  { v: rs.d2r, label: "D2 상권", src: "소진공 밀도+다양성" },
+                  { v: rs.d3r, label: "D3 공간 용도혼합", src: "KOSIS 주택종류" },
+                  { v: rs.d4c, label: "D4 문화 활력", src: "문화정보원 행사" },
+                ].filter((a) => a.v != null)) as { v: number; label: string; src: string }[];
+                const avg = axes.length ? Math.round(axes.reduce((s, a) => s + a.v, 0) / axes.length) : 0;
+                const vp = rs.vacantPenalty ?? 1;
+                return (
+                  <div className="mt-2.5 rounded-lg border border-line bg-card2/40 p-3.5">
+                    <div className="mb-2 text-[12px] font-bold text-ink">🟢 실측 매력도 산출 근거 <span className="font-normal text-muted2">· 실데이터 {axes.length}축 합성</span></div>
+                    <div className="space-y-1.5">
+                      {axes.map((a, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <span className="w-[92px] shrink-0 text-[11px] text-muted">{a.label}</span>
+                          <div className="h-2 flex-1 overflow-hidden rounded-full bg-navy2/50"><div className="h-full rounded-full" style={{ width: `${a.v}%`, background: "#3e9aa8" }} /></div>
+                          <span className="w-6 text-right text-[11px] font-bold tabular-nums text-ink">{a.v}</span>
+                          <span className="hidden w-[116px] shrink-0 text-[9.5px] text-muted2 sm:block">{a.src}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-2 rounded-md bg-navy2/50 px-2.5 py-1.5 text-[11px]">
+                      <span className="font-bold text-muted2">산출식 </span>
+                      <span className="text-ink" style={{ fontFamily: "ui-monospace, SFMono-Regular, monospace" }}>({axes.length}축 평균 {avg}) × 빈집보정 {vp}{rs.policy ? ` + 정책 ${rs.policy}` : ""} = {rs.score}</span>
+                    </div>
+                    <p className="mt-1.5 text-[10.5px] leading-snug text-muted2">샘플 KLAI({result.latest.klai})와 별개 — 수집 실데이터만으로 합성. 빈집비율↑ 감점·정부 지정사업 가산. 실측 2축 미만이면 산출 보류.</p>
+                  </div>
+                );
+              })()}
               {result.programs && result.programs.length > 0 && (
                 <div className="mt-2.5 rounded-lg border border-[#0F6E5C]/30 bg-[#0F6E5C]/10 px-3 py-2">
                   <span className="text-[12px] font-bold text-[#0F6E5C]">🏛 정부 지역활성화 사업 지정: </span>
@@ -543,13 +574,13 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd, mode = "parcel
                 <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink">{result.devStrategy.conclusion}</p>
               </div>
               {(() => {
-                const profile: { label: string; v: number }[] = [];
-                if (result.realScore) profile.push({ label: "실측 매력도", v: result.realScore.score });
-                if (result.potential) profile.push({ label: "발전가능성", v: result.potential.grade * 10 });
-                if (result.commerceReal) profile.push({ label: "상권 다양성", v: Math.round(result.commerceReal.diversity * 100) });
-                if (result.building?.typeMix != null) profile.push({ label: "용도 혼합", v: Math.round(result.building.typeMix * 100) });
-                if (result.cultureReal) profile.push({ label: "문화 활력", v: Math.min(100, Math.round(result.cultureReal.events / 5)) });
-                if (result.vacant?.ratio != null) profile.push({ label: "주거 안정도", v: Math.max(0, Math.round(100 - result.vacant.ratio * 3)) });
+                const profile: { label: string; v: number; note: string }[] = [];
+                if (result.realScore) profile.push({ label: "실측 매력도", v: result.realScore.score, note: `실데이터 ${result.realScore.coverage}축 평균 × 빈집보정 + 정책` });
+                if (result.potential) profile.push({ label: "발전가능성", v: result.potential.grade * 10, note: `국토부 쇠퇴진단 ${result.potential.grade}/10 × 10` });
+                if (result.commerceReal) profile.push({ label: "상권 다양성", v: Math.round(result.commerceReal.diversity * 100), note: `업종 Shannon 다양성 (소진공 상권)` });
+                if (result.building?.typeMix != null) profile.push({ label: "용도 혼합", v: Math.round(result.building.typeMix * 100), note: `주택종류 다양성 ×100 (KOSIS)` });
+                if (result.cultureReal) profile.push({ label: "문화 활력", v: Math.min(100, Math.round(result.cultureReal.events / 5)), note: `문화행사 ${result.cultureReal.events.toLocaleString()}건 ÷ 5 (상한 100)` });
+                if (result.vacant?.ratio != null) profile.push({ label: "주거 안정도", v: Math.max(0, Math.round(100 - result.vacant.ratio * 3)), note: `100 − 빈집 ${result.vacant.ratio}% × 3` });
                 if (profile.length < 3) return null;
                 return (
                   <div className="mt-3.5 rounded-lg border border-line bg-card2 px-3.5 py-3">
@@ -558,13 +589,16 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd, mode = "parcel
                       {profile.map((p) => {
                         const col = p.v >= 60 ? "var(--green)" : p.v >= 40 ? "#d4861e" : "var(--warn)";
                         return (
-                          <div key={p.label} className="flex items-center gap-2">
-                            <span className="w-[64px] shrink-0 text-[11px] text-muted">{p.label}</span>
-                            <div className="relative h-3.5 flex-1 overflow-hidden rounded-full bg-navy2/50">
-                              <div className="absolute inset-y-0 left-[60%] w-px bg-line/60" />
-                              <div className="h-full rounded-full transition-all" style={{ width: `${p.v}%`, background: col }} />
+                          <div key={p.label}>
+                            <div className="flex items-center gap-2">
+                              <span className="w-[64px] shrink-0 text-[11px] text-muted">{p.label}</span>
+                              <div className="relative h-3.5 flex-1 overflow-hidden rounded-full bg-navy2/50">
+                                <div className="absolute inset-y-0 left-[60%] w-px bg-line/60" />
+                                <div className="h-full rounded-full transition-all" style={{ width: `${p.v}%`, background: col }} />
+                              </div>
+                              <span className="w-7 shrink-0 text-right text-[11px] font-extrabold tabular-nums" style={{ color: col }}>{p.v}</span>
                             </div>
-                            <span className="w-7 shrink-0 text-right text-[11px] font-extrabold tabular-nums" style={{ color: col }}>{p.v}</span>
+                            <div className="ml-[72px] text-[9.5px] text-muted2" style={{ fontFamily: "ui-monospace, SFMono-Regular, monospace" }}>{p.note}</div>
                           </div>
                         );
                       })}
