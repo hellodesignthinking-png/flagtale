@@ -3,6 +3,8 @@ import { getPlace, geocodeToPlace, cultureFor, commerceFor, buildingFor, potenti
 import { geocodeToDistrict } from "@/lib/geocode";
 import { programsFor } from "@/lib/programs";
 import { cultureImpact } from "@/lib/cultureImpact";
+import { localVenues } from "@/lib/connectors/venues";
+import { searchName } from "@/lib/corrected";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +23,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "geocode_failed", message: "주소·지번·동명을 행정동에 매핑하지 못했습니다." }, { status: 422 });
   }
 
+  // 문화시설(갤러리·도서관·공연장·책방·공원) — 문화접근권·표현권·Cultural Vitality Presence
+  const venues = await localVenues(searchName(place.name), { lng: place.centroidLng, lat: place.centroidLat }, 1500).catch(() => null);
+
   const ci = cultureImpact({
     culture: cultureFor(place.admCd2),
     commerce: commerceFor(place.admCd2),
@@ -29,6 +34,7 @@ export async function GET(req: NextRequest) {
     potential: potentialFor(place.admCd2),
     nabis: nabisForSido(place.sido), // 시도 공식 지수(발전·혁신·창조잠재력)
     specialStreet: specialStreetFor(place.admCd2), // 동 특화거리
+    venues: venues ? { cultureScore: venues.cultureScore, total: venues.total, byKind: venues.byKind } : null,
     sido: place.sido,
   });
 

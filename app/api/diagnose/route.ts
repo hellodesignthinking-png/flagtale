@@ -212,6 +212,7 @@ export async function POST(req: NextRequest) {
       potential: potentialFor(place.admCd2),
       nabis: nabisForSido(bundle.props.sido),
       specialStreet: specialStreetFor(place.admCd2),
+      venues: venues ? { cultureScore: venues.cultureScore, total: venues.total, byKind: venues.byKind } : null,
       sido: bundle.props.sido,
     }),
     periods: bundle.series.map((s) => s.period),

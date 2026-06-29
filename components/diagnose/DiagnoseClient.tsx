@@ -92,7 +92,7 @@ interface DiagnoseResult {
   narrativeDurability?: { mode: string; score: number; total: number; factors: { factor: string; has: boolean; detail: string }[]; why: string; alternatives: string[] } | null;
   cultureImpact?: {
     total: number | null; grade: string; coverage: number;
-    indicators: { key: string; label: string; score: number | null; confidence: string }[];
+    indicators: { key: string; label: string; score: number | null }[];
     regional: { develop: number | null; innovate: number | null; creative: number | null; year: string | null } | null;
     streets: { count: number; totalStores: number; names: string[] } | null;
   } | null;

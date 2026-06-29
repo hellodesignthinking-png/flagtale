@@ -13,15 +13,14 @@ const RADAR_ORDER = [
 ];
 
 interface CIInput { label: string; value: string; source: string }
+interface CISub { key: string; label: string; score: number | null; confidence: "높음" | "중간" | "근사"; inputs: CIInput[]; formula: string }
 interface Indicator {
   key: string;
   area: "문화기본권" | "문화정체성" | "문화발전";
   label: string;
+  concept: string;
   score: number | null;
-  confidence: "높음" | "중간" | "근사";
-  basis: string;
-  inputs: CIInput[];
-  formula: string;
+  subs: CISub[];
   interpret: string;
 }
 interface Result {
@@ -30,10 +29,13 @@ interface Result {
     total: number | null;
     grade: "우수" | "양호" | "보통" | "취약";
     indicators: Indicator[];
-    alternatives: string[];
     coverage: number;
+    vitality: { presence: number | null; participation: number | null; support: number | null };
+    venues: { total: number; cultureScore: number; byKind: { label: string; count: number }[] } | null;
     regional: { sido: string; develop: number | null; innovate: number | null; creative: number | null; year: string | null } | null;
     streets: { count: number; totalStores: number; names: string[] } | null;
+    alternatives: string[];
+    frameworks: { name: string; scope: string; url: string }[];
   };
 }
 
@@ -132,6 +134,29 @@ export function CultureImpactClient({ initialQuery = "" }: { initialQuery?: stri
             <div className="mx-auto max-w-[380px]"><CIRadar points={RADAR_ORDER.map((o) => ({ label: o.label, value: ci.indicators.find((x) => x.key === o.key)?.score ?? 0 }))} /></div>
           </div>
 
+          {/* Cultural Vitality(Urban Institute) — Presence·Participation·Support 교차 3영역 */}
+          <div className="klai-panel p-5">
+            <div className="mb-1 flex items-center gap-2">
+              <span className="h-4 w-1 rounded bg-grade-b" />
+              <h3 className="text-[15px] font-extrabold text-ink">문화 활력(Cultural Vitality) <span className="text-[11px] font-normal text-muted2">· Urban Institute 국제 프레임워크</span></h3>
+            </div>
+            <p className="mb-3 text-[11.5px] text-muted2">일상 속 예술·문화의 <b className="text-muted">존재·참여·지원</b> 3영역 — 위 6지표를 국제 기준으로 재구성한 교차 진단.</p>
+            <div className="grid grid-cols-3 gap-2.5">
+              {[
+                { l: "Presence", ko: "존재", v: ci.vitality.presence, d: "시설·행사·거리" },
+                { l: "Participation", ko: "참여", v: ci.vitality.participation, d: "향유·참여·상권활력" },
+                { l: "Support", ko: "지원", v: ci.vitality.support, d: "정책·창조·발전" },
+              ].map((x) => (
+                <div key={x.l} className="rounded-lg border border-line bg-card2 px-2.5 py-3 text-center">
+                  <div className="text-[11.5px] font-bold text-ink">{x.ko}</div>
+                  <div className="text-[9px] text-muted2">{x.l}</div>
+                  <div className="my-1 text-[22px] font-black tabular-nums" style={{ color: x.v != null ? scoreColor(x.v) : "var(--muted2)" }}>{x.v ?? "—"}</div>
+                  <div className="text-[9.5px] text-muted2">{x.d}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* 시도 공식 지수(NABIS) + 지역특화거리 */}
           {(ci.regional || ci.streets) && (
             <div className="klai-panel p-5">
@@ -163,7 +188,15 @@ export function CultureImpactClient({ initialQuery = "" }: { initialQuery?: stri
                   </div>
                 </div>
               )}
-              <p className="mt-2 text-[11px] leading-snug text-muted2">시도 공식 지수는 행정동별로 소속 시도값 공유(컨텍스트). <b className="text-ink">창조잠재력은 위 &lsquo;창의성&rsquo; 지표에 공식 반영</b>됩니다.</p>
+              {ci.venues && ci.venues.byKind.length > 0 && (
+                <div className={ci.regional || ci.streets ? "mt-3 border-t border-line pt-3" : ""}>
+                  <div className="text-[12px] font-bold text-ink">🏛 문화시설 {ci.venues.total}개 <span className="font-normal text-muted2">· 인프라 강도 {ci.venues.cultureScore}/100 · 네이버 지역검색(반경 1.5km)</span></div>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {ci.venues.byKind.map((k, i) => (<span key={i} className="rounded-full bg-card2 px-2 py-0.5 text-[11px] text-muted">{k.label} {k.count}</span>))}
+                  </div>
+                </div>
+              )}
+              <p className="mt-2 text-[11px] leading-snug text-muted2">시도 공식 지수는 행정동별로 소속 시도값 공유(컨텍스트). <b className="text-ink">창조잠재력은 위 &lsquo;창의성&rsquo; 지표에 공식 반영</b>, 문화시설은 <b className="text-ink">접근권·표현권</b>에 반영됩니다.</p>
             </div>
           )}
 
@@ -180,32 +213,37 @@ export function CultureImpactClient({ initialQuery = "" }: { initialQuery?: stri
                 <div className="space-y-3">
                   {items.map((ind) => (
                     <div key={ind.key} className="rounded-xl border border-line bg-card2/40 p-3.5">
-                      <div className="mb-1.5 flex items-center justify-between gap-2">
-                        <span className="text-[13.5px] font-bold text-ink">{ind.label}</span>
-                        <span className="flex shrink-0 items-center gap-1.5">
-                          <span className="rounded-full px-1.5 py-0.5 text-[9.5px] font-bold" style={{ color: confColor(ind.confidence), border: `1px solid ${confColor(ind.confidence)}` }}>{ind.confidence}</span>
-                          <span className="w-8 text-right text-[17px] font-extrabold tabular-nums" style={{ color: ind.score != null ? scoreColor(ind.score) : "var(--muted2)" }}>{ind.score ?? "—"}</span>
-                        </span>
+                      <div className="mb-1 flex items-center justify-between gap-2">
+                        <span className="text-[14px] font-extrabold text-ink">{ind.label}</span>
+                        <span className="w-9 text-right text-[19px] font-black tabular-nums" style={{ color: ind.score != null ? scoreColor(ind.score) : "var(--muted2)" }}>{ind.score ?? "—"}</span>
                       </div>
-                      <div className="h-2.5 overflow-hidden rounded-full bg-navy2/60">
-                        {ind.score != null && <div className="h-full rounded-full transition-all" style={{ width: `${ind.score}%`, background: scoreColor(ind.score) }} />}
-                      </div>
-                      {ind.inputs.length > 0 && (
-                        <div className="mt-2.5 space-y-1">
-                          <div className="text-[10px] font-bold uppercase tracking-wide text-muted2">근거 데이터</div>
-                          {ind.inputs.map((inp, i) => (
-                            <div key={i} className="flex items-baseline justify-between gap-2 border-b border-line/50 pb-0.5 text-[11.5px] last:border-0">
-                              <span className="text-muted">{inp.label}</span>
-                              <span className="flex items-baseline gap-1.5 text-right"><b className="text-ink">{inp.value}</b><span className="shrink-0 text-[9.5px] text-muted2">{inp.source}</span></span>
+                      <div className="mb-1.5 h-2 overflow-hidden rounded-full bg-navy2/60">{ind.score != null && <div className="h-full rounded-full transition-all" style={{ width: `${ind.score}%`, background: scoreColor(ind.score) }} />}</div>
+                      <p className="mb-2.5 text-[11px] leading-snug text-muted2"><b className="text-muted">{ind.concept}.</b> {ind.interpret}</p>
+                      <div className="space-y-2">
+                        {ind.subs.map((sub) => (
+                          <div key={sub.key} className="rounded-lg border border-line/70 bg-card px-3 py-2">
+                            <div className="mb-1 flex items-center justify-between gap-2">
+                              <span className="text-[12px] font-bold text-ink">▸ {sub.label}</span>
+                              <span className="flex shrink-0 items-center gap-1.5">
+                                <span className="rounded-full px-1.5 py-0.5 text-[9px] font-bold" style={{ color: confColor(sub.confidence), border: `1px solid ${confColor(sub.confidence)}` }}>{sub.confidence}</span>
+                                <span className="w-6 text-right text-[13px] font-extrabold tabular-nums" style={{ color: sub.score != null ? scoreColor(sub.score) : "var(--muted2)" }}>{sub.score ?? "—"}</span>
+                              </span>
                             </div>
-                          ))}
-                        </div>
-                      )}
-                      <div className="mt-2 rounded-md bg-navy2/50 px-2.5 py-1.5">
-                        <span className="text-[10px] font-bold text-muted2">산출식 </span>
-                        <span className="text-[11px] text-ink" style={{ fontFamily: "ui-monospace, SFMono-Regular, monospace" }}>{ind.formula}</span>
+                            <div className="h-1.5 overflow-hidden rounded-full bg-navy2/50">{sub.score != null && <div className="h-full rounded-full" style={{ width: `${sub.score}%`, background: scoreColor(sub.score) }} />}</div>
+                            {sub.inputs.length > 0 && (
+                              <div className="mt-1.5 space-y-0.5">
+                                {sub.inputs.map((inp, i) => (
+                                  <div key={i} className="flex items-baseline justify-between gap-2 text-[11px]">
+                                    <span className="text-muted2">{inp.label}</span>
+                                    <span className="flex items-baseline gap-1.5 text-right"><b className="text-muted">{inp.value}</b><span className="shrink-0 text-[9px] text-muted2">{inp.source}</span></span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <div className="mt-1 text-[10px] text-muted2" style={{ fontFamily: "ui-monospace, SFMono-Regular, monospace" }}>= {sub.formula}</div>
+                          </div>
+                        ))}
                       </div>
-                      <p className="mt-1.5 text-[11.5px] leading-relaxed text-muted">{ind.interpret}</p>
                     </div>
                   ))}
                 </div>
@@ -228,9 +266,17 @@ export function CultureImpactClient({ initialQuery = "" }: { initialQuery?: stri
                 </li>
               ))}
             </ul>
-            <p className="mt-3 border-t border-line pt-2 text-[11px] leading-snug text-muted2">
-              근거: 한국문화정보원(문화행사)·소상공인 상권정보(업종 다양성)·행안부/문체부 문화·청년 사업·통계청 건축. 「문화기본법」 제5조 4항. 국가유산 지표는 직접 데이터 부재로 노후건축물 비중을 역사·근대 자산 잠재의 <b className="text-muted">근사</b>로 사용합니다.
-            </p>
+            <div className="mt-3 border-t border-line pt-3">
+              <div className="mb-1.5 text-[11px] font-bold text-muted">방법론 · 준거 프레임워크 (국내외 검토)</div>
+              <ul className="space-y-1.5">
+                {ci.frameworks.map((f, i) => (
+                  <li key={i} className="text-[11px] leading-snug text-muted2">
+                    <a href={f.url} target="_blank" rel="noreferrer" className="font-semibold text-blue-l hover:underline">{f.name}</a> — {f.scope}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-[10.5px] leading-snug text-muted2">데이터: 한국문화정보원·소상공인 상권정보·통계청 인구주택총조사·행안부/문체부 사업·NABIS 산업연구원·네이버 문화시설·공공데이터포털. <b className="text-muted">국가유산</b> 지표는 직접 유산 데이터 부재로 노후건축·박물관 시설로 근사(추후 국가유산청 데이터 연동 예정).</p>
+            </div>
           </div>
         </>
       )}
