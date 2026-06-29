@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getPeerAvg, getPlace, getRegionComparison, nationalSignalAverage, populationMeta } from "@/lib/data";
+import { commerceFor, getPeerAvg, getPlace, getRegionComparison, nationalSignalAverage, populationMeta } from "@/lib/data";
 import { NaverPanel } from "@/components/analysis/NaverPanel";
 import { PageShell } from "@/components/page-shell";
 import { Button, MomentumChip, Panel, Pill, ProvisionalBadge, SectionHead, Stat } from "@/components/ui";
@@ -61,6 +61,7 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
   // 동네 공급 밀도 — 등록된 플래그테일 공간·프로그램이 많을수록 매력도↑(네트워크 효과).
   const supply = supplyFor(props.admCd2);
   const sBoost = supplyBoost(props.admCd2); // 공급: 등록 콘텐츠 밀도
+  const commerce = commerceFor(props.admCd2); // 상권 실측(상가수·업종 다양성) — data.go.kr 인제스트 시에만 존재
   const bBoost = buzzBoost(ig?.postsCount); // 수요: 인스타 검색량(버즈)
   const totalBoost = Math.round((sBoost + bBoost) * 10) / 10;
   const klaiUp = totalBoost ? Math.min(100, Math.round((latest.klai + totalBoost) * 10) / 10) : latest.klai;
@@ -274,6 +275,32 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
           </div>
         </Panel>
       </div>
+
+      {/* 상권 실측 — 소상공인시장진흥공단 상가정보(data.go.kr). commerce.json 인제스트 시에만 노출(실데이터) */}
+      {commerce && (
+        <Panel className="mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <SectionHead title="🏪 상권 실측 — 등록 상가" desc="소상공인시장진흥공단 상가정보 · data.go.kr" />
+            <span className="rounded-full bg-[#0F6E5C]/15 px-2.5 py-1 text-[10.5px] font-extrabold text-[#0F6E5C] ring-1 ring-[#0F6E5C]/30">● 실데이터</span>
+          </div>
+          <div className="mt-3 flex flex-wrap items-end gap-6">
+            <Stat label="등록 상가수" value={`${commerce.stores.toLocaleString()}개`} accent="blue" />
+            <Stat label="업종 다양성" value={`${Math.round(commerce.diversity * 100)}/100`} sub="업종 대분류 Shannon" />
+          </div>
+          {commerce.topCategories?.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {commerce.topCategories.map(([name, n]) => (
+                <span key={name} className="rounded-full border border-line bg-card2/50 px-2.5 py-1 text-[12px] text-muted">
+                  {name} <b className="text-ink">{n.toLocaleString()}</b>
+                </span>
+              ))}
+            </div>
+          )}
+          <p className="mt-3 text-[11px] leading-snug text-muted2">
+            행정동 등록 상가 {commerce.sampled.toLocaleString()}개 표본 기준 업종 다양성(Shannon, 0~100). 위 매력도 점수(샘플·잠정)와 별개의 <b className="text-ink">실측 지표</b>입니다.
+          </p>
+        </Panel>
+      )}
 
       {/* 신호 동조 분석 — 검색·기사·인구·임대료·매물 · 접이식 */}
       {signals && (

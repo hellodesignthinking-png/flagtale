@@ -63,20 +63,42 @@ async function population() {
 }
 
 // ── 공공조달 (조달청 나라장터) ────────────────────────────────
+// G2B 키 검증 + 실 입찰공고 표본 → data/procurement.real.json (검수용).
+// 주의: 공고→행정동(adm_cd2) 귀속은 수요기관 주소 지오코딩이 필요 → 다음 단계.
+//   (그 전까지 앱이 읽는 procurement.json[seed]은 덮어쓰지 않음 — 잘못된 귀속으로 앱 훼손 방지)
 async function procurement() {
   const key = process.env.G2B_API_KEY;
-  if (!key) return log("조달: G2B_API_KEY(serviceKey) 없음 → 미연동 (data.go.kr 에서 발급)");
-  log("조달: 나라장터 입찰공고 조회…");
-  const y = new Date().getFullYear ? null : null; // (날짜는 인자로) — 연도 루프는 구현 시 추가
+  if (!key) return log("조달: G2B_API_KEY(serviceKey) 없음 → 미연동 (data.go.kr '나라장터 입찰공고정보' 활용신청)");
+  log("조달: 나라장터 입찰공고 표본 조회…");
+  const pad = (n) => String(n).padStart(2, "0");
+  const now = new Date();
+  const ago = new Date(now.getTime() - 7 * 864e5);
+  const fmt = (d) => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}0000`;
   const url =
     `https://apis.data.go.kr/1230000/BidPublicInfoService05/getBidPblancListInfoServc` +
-    `?serviceKey=${encodeURIComponent(key)}&pageNo=1&numOfRows=100&type=json&inqryDiv=1`;
-  void y;
+    `?serviceKey=${encodeURIComponent(key)}&pageNo=1&numOfRows=50&type=json&inqryDiv=1` +
+    `&inqryBgnDt=${fmt(ago)}&inqryEndDt=${fmt(now)}`;
   try {
     const res = await fetch(url);
-    const j = await res.json();
-    const items = j?.response?.body?.items ?? [];
-    log(`조달: ${items.length ?? 0}건 수신. 기관주소→adm_cd2 지오코딩 후 procurement.json 기록(구현 단계).`);
+    const text = await res.text();
+    let j;
+    try { j = JSON.parse(text); }
+    catch {
+      const code = text.match(/<returnReasonCode>(\d+)<\/returnReasonCode>/)?.[1];
+      const msg = text.match(/<returnAuthMsg>([^<]+)<\/returnAuthMsg>/)?.[1] || text.slice(0, 120);
+      return log(`조달: XML 오류(코드 ${code ?? "?"}: ${msg}) — G2B_API_KEY=일반인증키(Decoding)·활용신청 승인 확인.`);
+    }
+    const body = (j.response ?? j).body ?? {};
+    let items = body.items ?? [];
+    if (items && items.item) items = items.item;
+    if (!Array.isArray(items)) items = items ? [items] : [];
+    if (!items.length) return log(`조달: 0건(최근 7일). 헤더=${JSON.stringify((j.response ?? j).header ?? {})}`);
+    log(`조달: 전체 ${body.totalCount ?? "?"}건 중 ${items.length}건 표본 수신. 필드=${Object.keys(items[0]).slice(0, 10).join(",")}`);
+    fs.writeFileSync(
+      path.join(DATA, "procurement.real.json"),
+      JSON.stringify({ fetchedAt: now.toISOString().slice(0, 10), totalCount: body.totalCount, sample: items.slice(0, 10) }, null, 2)
+    );
+    log("조달: 표본 → data/procurement.real.json. 다음 단계: 수요기관(dminsttNm/주소)→adm_cd2 귀속 후 연도 집계.");
   } catch (e) {
     log(`조달: 조회 실패 ${e.message}`);
   }

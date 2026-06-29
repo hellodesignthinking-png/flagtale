@@ -204,6 +204,19 @@ export interface ProcurementFile {
   byPlace: Record<string, ProcurementPlace>;
 }
 
+// ── 상권(상가업소) 실측 — 소상공인시장진흥공단 상가정보(data.go.kr) ──
+export interface CommercePlace {
+  stores: number;              // 동별 등록 상가수(totalCount)
+  sampled: number;             // 다양성 계산 표본 수
+  diversity: number;           // 업종 대분류 Shannon 정규화(0~1)
+  topCategories: [string, number][]; // [업종명, 개수] 상위
+}
+export interface CommerceFile {
+  source: string;
+  fetchedAt: string;
+  byPlace: Record<string, CommercePlace>;
+}
+
 // ── 지역 신호 (검색·기사·인구·임대료·매물) ──────────────────
 export type SignalKey = "search" | "news" | "population" | "rent" | "listings";
 export type SignalSeries = Record<SignalKey, number[]>;

@@ -3,6 +3,8 @@ import path from "node:path";
 import { BOUNDARY_SOURCE } from "./config";
 import { buildSignalSeries } from "./signalGen";
 import type {
+  CommerceFile,
+  CommercePlace,
   DemographicsFile,
   DemographicYear,
   Diagnosis,
@@ -94,6 +96,23 @@ export function loadProcurement(): ProcurementFile {
 }
 export function loadSignals(): SignalsFile {
   return (_signals ??= readJson<SignalsFile>("signals.json"));
+}
+
+// 상권 실측(commerce.json) — 인제스트(`npm run ingest:commerce`) 전에는 파일이 없으므로 안전 폴백
+let _commerce: CommerceFile | null | undefined;
+export function loadCommerce(): CommerceFile | null {
+  if (_commerce !== undefined) return _commerce;
+  const p = path.join(DATA_DIR, "commerce.json");
+  if (!fs.existsSync(p)) return (_commerce = null);
+  try {
+    return (_commerce = JSON.parse(fs.readFileSync(p, "utf-8")) as CommerceFile);
+  } catch {
+    return (_commerce = null);
+  }
+}
+/** 동별 실측 상권(상가수·업종 다양성) — 실데이터 인제스트 시에만 존재, 없으면 null */
+export function commerceFor(admCd2: string): CommercePlace | null {
+  return loadCommerce()?.byPlace?.[admCd2] ?? null;
 }
 
 export function listPlaces(): DistrictProps[] {
