@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { commerceFor, vacantFor, buildingFor, potentialFor, getPeerAvg, getPlace, getRegionComparison, nationalSignalAverage, populationMeta } from "@/lib/data";
+import { commerceFor, vacantFor, buildingFor, cultureFor, potentialFor, getPeerAvg, getPlace, getRegionComparison, nationalSignalAverage, populationMeta } from "@/lib/data";
 import { NaverPanel } from "@/components/analysis/NaverPanel";
 import { PageShell } from "@/components/page-shell";
 import { Button, MomentumChip, Panel, Pill, ProvisionalBadge, SectionHead, Stat } from "@/components/ui";
@@ -69,6 +69,7 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
   const real = realComposite(props.admCd2, latest); // 실측 매력도 — 실데이터(상권·건축물·인구·빈집) 합성, 2축 미만이면 null
   const programs = programsFor(props.admCd2); // 정부 지역활성화 사업 지정(청년마을·문화도시 등)
   const potential = potentialFor(props.admCd2); // 발전가능성 — 국토부 도시재생 쇠퇴진단 등급(시군구)
+  const culture = cultureFor(props.admCd2); // 문화 활력 — 공연·전시·축제 수(시군구)
   const bBoost = buzzBoost(ig?.postsCount); // 수요: 인스타 검색량(버즈)
   const totalBoost = Math.round((sBoost + bBoost) * 10) / 10;
   const klaiUp = totalBoost ? Math.min(100, Math.round((latest.klai + totalBoost) * 10) / 10) : latest.klai;
@@ -382,6 +383,29 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
           )}
           <p className="mt-3 text-[11px] leading-snug text-muted2">
             용도혼합(주택종류 다양성)·노후도 <b className="text-ink">실측</b>(인구주택총조사). 혼합↑·노후↓일수록 D3 공간 매력 양호 · 용도혼합=동, 노후=시군구.
+          </p>
+        </Panel>
+      )}
+
+      {/* 문화 활력 — 공연·전시·축제(한국문화정보원, 시군구). culture.json 인제스트 시 노출 */}
+      {culture && (
+        <Panel className="mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <SectionHead title="🎭 문화 활력 — 공연·전시·축제" desc="한국문화정보원 · 시군구" />
+            <span className="rounded-full bg-[#D4861E]/15 px-2.5 py-1 text-[10.5px] font-extrabold text-[#D4861E] ring-1 ring-[#D4861E]/30">● 실데이터</span>
+          </div>
+          <div className="mt-3 flex flex-wrap items-end gap-x-6 gap-y-3">
+            <Stat label="문화행사 수" value={`${culture.events.toLocaleString()}건`} accent="amber" sub="공연·전시·축제(시군구)" />
+          </div>
+          {culture.topRealms?.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {culture.topRealms.map((r) => (
+                <span key={r.name} className="rounded-full border border-line bg-card2/50 px-2.5 py-1 text-[12px] text-muted">{r.name} <b className="text-ink">{r.count}</b></span>
+              ))}
+            </div>
+          )}
+          <p className="mt-3 text-[11px] leading-snug text-muted2">
+            한국문화정보원 문화행사(공연·전시·축제) 수 — 문화 매력·활력 실측(실측 매력도 문화 축 반영). 시군구 단위.
           </p>
         </Panel>
       )}
