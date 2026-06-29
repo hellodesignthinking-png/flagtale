@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { commerceFor, vacantFor, loadDistricts, loadScores } from "@/lib/data";
+import { commerceFor, vacantFor, buildingFor, loadDistricts, loadScores } from "@/lib/data";
 import { colorForLayer, displayForLayer, elevationForLayer, isPulseAlert, gradeOf } from "@/lib/scoring";
 import { narrativeForPlace, STAGE_META } from "@/lib/narratives";
 import { supplyBoost, authenticityGap } from "@/lib/supply";
@@ -55,6 +55,8 @@ export function GET(req: NextRequest) {
     const cm = layer === "commerce" ? commerceFor(cd) : null;
     // 빈집 실측(KOSIS, 시군구) — 기간 불변 주입
     const vac = layer === "vacant" ? vacantFor(cd) : null;
+    // 건축물 용도혼합 실측(KOSIS census, 동) — 기간 불변 주입
+    const bld = layer === "building" ? buildingFor(cd) : null;
     const N = periods.length;
     for (let t = 0; t < periods.length; t++) {
       const s0 = series[t] ?? series[series.length - 1];
@@ -72,6 +74,8 @@ export function GET(req: NextRequest) {
         s = { ...s0, commerceStores: cm?.stores ?? 0, commerceDiv: cm?.diversity ?? 0 } as typeof s0;
       } else if (layer === "vacant") {
         s = { ...s0, vacantRatio: vac?.ratio ?? -1, vacantCount: vac?.count ?? 0 } as typeof s0;
+      } else if (layer === "building") {
+        s = { ...s0, buildingMix: bld?.typeMix ?? -1, buildingOld: bld?.oldRatio ?? 0 } as typeof s0;
       }
       c.push(narrColor ?? colorForLayer(layer, s));
       l.push(narrLabel ?? displayForLayer(layer, s));

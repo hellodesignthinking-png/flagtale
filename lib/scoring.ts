@@ -139,6 +139,15 @@ export function colorForLayer(
       alpha = 150 + Math.round(t * 95);
       break;
     }
+    case "building": {
+      // 용도혼합(주택종류 다양성) 실측 — 단일 → 다양(네이비 → 바이올렛 D3). 데이터 없으면(-1) 베이스.
+      const m = (s as unknown as Record<string, number>).buildingMix ?? -1;
+      if (m < 0) { rgb = [44, 58, 86]; alpha = 90; break; }
+      const t = Math.min(m, 1);
+      rgb = mix([40, 50, 90], [139, 110, 246], Math.pow(t, 0.8));
+      alpha = 150 + Math.round(t * 95);
+      break;
+    }
     default:
       rgb = SLATE;
   }
@@ -191,6 +200,10 @@ export function elevationForLayer(layer: LayerId, s: PlaceScore): number {
     case "vacant": {
       const r = (s as unknown as Record<string, number>).vacantRatio ?? -1;
       return r < 0 ? 0 : clamp01((r / 20) * 100);
+    }
+    case "building": {
+      const m = (s as unknown as Record<string, number>).buildingMix ?? -1;
+      return m < 0 ? 0 : clamp01(m * 100);
     }
     default:
       return clamp01(s.klai);
@@ -257,6 +270,11 @@ export function displayForLayer(layer: LayerId, s: PlaceScore): string {
       const r = s as unknown as Record<string, number>;
       const v = r.vacantRatio ?? -1;
       return v < 0 ? "빈집 데이터 없음" : `빈집 ${v}%${r.vacantCount ? ` · ${r.vacantCount.toLocaleString()}호` : ""}`;
+    }
+    case "building": {
+      const r = s as unknown as Record<string, number>;
+      const m = r.buildingMix ?? -1;
+      return m < 0 ? "건물 데이터 없음" : `용도혼합 ${Math.round(m * 100)}${r.buildingOld ? ` · 노후 ${r.buildingOld}%` : ""}`;
     }
     default:
       return `${s.klai}`;

@@ -22,7 +22,8 @@ export type LayerId =
   | "vitality"
   | "authgap"
   | "commerce"
-  | "vacant";
+  | "vacant"
+  | "building";
 
 export interface DistrictProps {
   admCd2: string;
@@ -234,6 +235,21 @@ export interface VacantFile {
   year: number;
   censusYear?: number | null; // 총주택수 census 연도
   byPlace: Record<string, VacantPlace>;
+}
+
+// ── D3 건축물(주택) 실측 — 통계청 인구주택총조사(KOSIS) ──
+export interface BuildingPlace {
+  houses: number | null; // 동 총주택수(밀도)
+  typeMix: number | null; // 주택종류 다양성(용도혼합) 0~1 — 동단위
+  types: { 단독: number; 아파트: number; 연립: number; 다세대: number; 비주거: number } | null;
+  oldRatio: number | null; // 30년이상 노후 비율(%) — 시군구
+  year: number | null;
+}
+export interface BuildingFile {
+  source: string;
+  fetchedAt: string;
+  censusYear?: number | null;
+  byPlace: Record<string, BuildingPlace>;
 }
 
 // ── 지역 신호 (검색·기사·인구·임대료·매물) ──────────────────

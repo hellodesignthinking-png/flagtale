@@ -7,6 +7,8 @@ import type {
   CommercePlace,
   VacantFile,
   VacantPlace,
+  BuildingFile,
+  BuildingPlace,
   DemographicsFile,
   DemographicYear,
   Diagnosis,
@@ -132,6 +134,23 @@ export function loadVacant(): VacantFile | null {
 /** 동별 빈집비율·빈집수(시군구 단위 KOSIS) — 인제스트 시에만 존재, 없으면 null */
 export function vacantFor(admCd2: string): VacantPlace | null {
   return loadVacant()?.byPlace?.[admCd2] ?? null;
+}
+
+// D3 건축물(주택) 실측(building.json) — `npm run ingest:building`(KOSIS census) 전엔 없으므로 폴백
+let _building: BuildingFile | null | undefined;
+export function loadBuilding(): BuildingFile | null {
+  if (_building !== undefined) return _building;
+  const p = path.join(DATA_DIR, "building.json");
+  if (!fs.existsSync(p)) return (_building = null);
+  try {
+    return (_building = JSON.parse(fs.readFileSync(p, "utf-8")) as BuildingFile);
+  } catch {
+    return (_building = null);
+  }
+}
+/** 동별 주택 용도혼합·노후·밀도(KOSIS 인구주택총조사) — 인제스트 시에만 존재, 없으면 null */
+export function buildingFor(admCd2: string): BuildingPlace | null {
+  return loadBuilding()?.byPlace?.[admCd2] ?? null;
 }
 
 export function listPlaces(): DistrictProps[] {

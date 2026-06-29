@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { commerceFor, vacantFor, getPeerAvg, getPlace, getRegionComparison, nationalSignalAverage, populationMeta } from "@/lib/data";
+import { commerceFor, vacantFor, buildingFor, getPeerAvg, getPlace, getRegionComparison, nationalSignalAverage, populationMeta } from "@/lib/data";
 import { NaverPanel } from "@/components/analysis/NaverPanel";
 import { PageShell } from "@/components/page-shell";
 import { Button, MomentumChip, Panel, Pill, ProvisionalBadge, SectionHead, Stat } from "@/components/ui";
@@ -63,6 +63,7 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
   const sBoost = supplyBoost(props.admCd2); // 공급: 등록 콘텐츠 밀도
   const commerce = commerceFor(props.admCd2); // 상권 실측(상가수·업종 다양성) — data.go.kr 인제스트 시에만 존재
   const vacant = vacantFor(props.admCd2); // 빈집비율 실측(KOSIS 시군구) — 소멸/공실 신호
+  const building = buildingFor(props.admCd2); // D3 건축물 실측(용도혼합·노후·밀도) — KOSIS 인구주택총조사
   const bBoost = buzzBoost(ig?.postsCount); // 수요: 인스타 검색량(버즈)
   const totalBoost = Math.round((sBoost + bBoost) * 10) / 10;
   const klaiUp = totalBoost ? Math.min(100, Math.round((latest.klai + totalBoost) * 10) / 10) : latest.klai;
@@ -317,6 +318,31 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
           </div>
           <p className="mt-3 text-[11px] leading-snug text-muted2">
             미거주 주택(빈집) — <b className="text-ink">{vacant.ratio >= 12 ? "전국 평균(8%)보다 높아 소멸·공실 주의" : vacant.ratio >= 8 ? "전국 평균 수준" : "전국 평균보다 낮음"}</b>. 비율은 <b className="text-ink">시군구</b> 실측, {vacant.houses != null ? "동 주택수(읍면동 인구주택총조사)로 추정 빈집호수를 동별 정밀화" : "인구주택총조사"}.
+          </p>
+        </Panel>
+      )}
+
+      {/* 건축물 D3 — 용도혼합(동)·노후(시군구)·밀도. 통계청 인구주택총조사 실데이터 */}
+      {building && (building.typeMix != null || building.oldRatio != null) && (
+        <Panel className="mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <SectionHead title="🏘 건축물 — 용도혼합·노후 (D3 공간·물리)" desc="통계청 인구주택총조사 · 주택종류·노후기간" />
+            <span className="rounded-full bg-[#8B6EF6]/15 px-2.5 py-1 text-[10.5px] font-extrabold text-[#8B6EF6] ring-1 ring-[#8B6EF6]/30">● 실데이터</span>
+          </div>
+          <div className="mt-3 flex flex-wrap items-end gap-x-6 gap-y-3">
+            {building.typeMix != null && <Stat label="용도혼합" value={`${Math.round(building.typeMix * 100)}/100`} sub="주택종류 다양성(동)" />}
+            {building.oldRatio != null && <Stat label="노후 30년+" value={`${building.oldRatio}%`} accent={building.oldRatio >= 50 ? "warn" : "blue"} sub="시군구" />}
+            {building.houses != null && <Stat label="총 주택" value={`${building.houses.toLocaleString()}호`} sub="동" />}
+          </div>
+          {building.types && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {Object.entries(building.types).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]).map(([k, n]) => (
+                <span key={k} className="rounded-full border border-line bg-card2/50 px-2.5 py-1 text-[12px] text-muted">{k} <b className="text-ink">{n.toLocaleString()}</b></span>
+              ))}
+            </div>
+          )}
+          <p className="mt-3 text-[11px] leading-snug text-muted2">
+            용도혼합(주택종류 다양성)·노후도 <b className="text-ink">실측</b>(인구주택총조사). 혼합↑·노후↓일수록 D3 공간 매력 양호 · 용도혼합=동, 노후=시군구.
           </p>
         </Panel>
       )}

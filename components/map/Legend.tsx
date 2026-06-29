@@ -61,6 +61,12 @@ export function Legend({ layer }: { layer: LayerId }) {
         { color: "#1a8a5e", label: "중간" },
         { color: "#18B460", label: "상가 밀집" },
       ];
+    if (layer === "building")
+      return [
+        { color: "#28325a", label: "용도 단일" },
+        { color: "#6a5cc0", label: "중간" },
+        { color: "#8B6EF6", label: "용도 다양(혼합)" },
+      ];
     if (layer === "vacant")
       return [
         { color: "#2e4e60", label: "빈집 적음" },

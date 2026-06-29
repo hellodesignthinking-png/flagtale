@@ -108,6 +108,7 @@ export const LAYERS: LayerDef[] = [
   { id: "d2", label: "D2 경제·상권", desc: "창업·다양성·매출·공실 (30%)", kind: "grade", group: "매력 4축" },
   { id: "d3", label: "D3 공간·물리", desc: "용도혼합·보행·노후·자산 (20%)", kind: "grade", group: "매력 4축" },
   { id: "d4", label: "D4 인식·감성", desc: "감성×인기×확산 (30%)", kind: "grade", group: "매력 4축" },
+  { id: "building", label: "🏘 용도혼합(실측)", desc: "주택종류 다양성(단독·아파트·연립·다세대) · 통계청 인구주택총조사 실데이터(동)", kind: "sequential", group: "매력 4축", real: true },
   { id: "popchange", label: "인구 변화", desc: "증가=청록 · 감소=주황 · 시군구 단위 KOSIS 실데이터", kind: "diverging", group: "변화·동학", real: true },
   { id: "momentum", label: "모멘텀", desc: "상승=청록 · 하락=주황 (분기 변화율)", kind: "diverging", group: "변화·동학" },
   { id: "gentri", label: "젠트리 경보", desc: "경보 동에 주황 펄스 외곽선", kind: "alert", group: "위기 신호" },
