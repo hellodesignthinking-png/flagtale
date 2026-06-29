@@ -195,11 +195,11 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
               <span className="shrink-0 rounded-full bg-card px-2 py-0.5 text-[10px] font-bold text-muted2">Apify 수집·잠정 →</span>
             </a>
           )}
-          {gi && (
+          {gi && !gi.sample && (
             <div className="mt-3 rounded-[14px] border border-line bg-card2/40 px-3.5 py-3">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[12.5px] font-bold text-ink">🌐 글로벌 검색 관심 <span className="text-blue-l">구글 트렌드</span></span>
-                <span className="shrink-0 rounded-full bg-card px-2 py-0.5 text-[10px] font-bold text-muted2">{gi.sample ? "샘플 · SerpApi 미수집" : "SerpApi 수집"}</span>
+                <span className="shrink-0 rounded-full bg-card px-2 py-0.5 text-[10px] font-bold text-muted2">SerpApi 수집</span>
               </div>
               <p className="mt-1 text-[12px] text-muted">이 지역을 검색하는 나라 · 해외 관심 <b className="text-amber-d">{gi.foreignShare}%</b>{gi.foreignTop[0] ? ` · 해외 1위 ${countryKo(gi.foreignTop[0].name)}` : ""}</p>
               <div className="mt-2.5 space-y-1.5">

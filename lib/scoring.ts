@@ -121,6 +121,15 @@ export function colorForLayer(
       alpha = 215;
       break;
     }
+    case "commerce": {
+      // 상권 실측 — 동별 등록 상가수(밀도) → 네이비 → 그린(D2). 데이터 없으면 베이스.
+      const n = (s as unknown as Record<string, number>).commerceStores ?? 0;
+      if (n <= 0) { rgb = [44, 58, 86]; alpha = 90; break; }
+      const t = Math.min(Math.log(n + 1) / Math.log(3000), 1);
+      rgb = mix([40, 60, 95], [24, 180, 96], Math.pow(t, 0.7));
+      alpha = 150 + Math.round(t * 95);
+      break;
+    }
     default:
       rgb = SLATE;
   }
@@ -166,6 +175,10 @@ export function elevationForLayer(layer: LayerId, s: PlaceScore): number {
       return clamp01((((s as unknown as Record<string, number>).vitalityBoost ?? 0) / 12) * 100);
     case "authgap":
       return clamp01((Math.abs((s as unknown as Record<string, number>).authGap ?? 0) / 0.8) * 100);
+    case "commerce": {
+      const n = (s as unknown as Record<string, number>).commerceStores ?? 0;
+      return n > 0 ? clamp01((Math.log(n + 1) / Math.log(3000)) * 100) : 0;
+    }
     default:
       return clamp01(s.klai);
   }
@@ -221,6 +234,11 @@ export function displayForLayer(layer: LayerId, s: PlaceScore): string {
       if (r.authGap >= 0.3) return `과열·거품 +${r.authGap}`;
       if (r.authGap <= -0.3) return `미발견 강세 ${r.authGap}`;
       return `균형 (갭 ${r.authGap > 0 ? "+" : ""}${r.authGap})`;
+    }
+    case "commerce": {
+      const r = s as unknown as Record<string, number>;
+      const n = r.commerceStores ?? 0;
+      return n > 0 ? `${n.toLocaleString()} 상가 · 다양성 ${Math.round((r.commerceDiv ?? 0) * 100)}` : "상권 데이터 없음";
     }
     default:
       return `${s.klai}`;

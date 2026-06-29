@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { loadDistricts, loadScores } from "@/lib/data";
+import { commerceFor, loadDistricts, loadScores } from "@/lib/data";
 import { colorForLayer, displayForLayer, elevationForLayer, isPulseAlert, gradeOf } from "@/lib/scoring";
 import { narrativeForPlace, STAGE_META } from "@/lib/narratives";
 import { supplyBoost, authenticityGap } from "@/lib/supply";
@@ -51,6 +51,8 @@ export function GET(req: NextRequest) {
       const g = authenticityGap(supplyBoost(cd), buzzBoost(nb ? instagramFor(nb.name)?.postsCount : null));
       authG = { gap: g.gap, signal: g.verdict === "none" ? 0 : 1 };
     }
+    // 상권 실측(data.go.kr) — 동별 1회 조회, 기간 불변 주입
+    const cm = layer === "commerce" ? commerceFor(cd) : null;
     const N = periods.length;
     for (let t = 0; t < periods.length; t++) {
       const s0 = series[t] ?? series[series.length - 1];
@@ -64,6 +66,8 @@ export function GET(req: NextRequest) {
         s = { ...s0, vitalityBoost: 0 } as typeof s0;
       } else if (layer === "authgap") {
         s = { ...s0, authGap: authG!.gap, authSignal: authG!.signal } as typeof s0;
+      } else if (layer === "commerce") {
+        s = { ...s0, commerceStores: cm?.stores ?? 0, commerceDiv: cm?.diversity ?? 0 } as typeof s0;
       }
       c.push(narrColor ?? colorForLayer(layer, s));
       l.push(narrLabel ?? displayForLayer(layer, s));

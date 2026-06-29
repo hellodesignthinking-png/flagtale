@@ -55,6 +55,12 @@ export function Legend({ layer }: { layer: LayerId }) {
         { color: "#5b6470", label: "균형 / 무신호" },
         { color: "#24A86C", label: "미발견 (등록≫검색)" },
       ];
+    if (layer === "commerce")
+      return [
+        { color: "#28405f", label: "상가 적음" },
+        { color: "#1a8a5e", label: "중간" },
+        { color: "#18B460", label: "상가 밀집" },
+      ];
     if (layer === "gentri")
       return [
         { color: "#2e456b", label: "정상" },
