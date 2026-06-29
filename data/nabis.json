@@ -1,0 +1,142 @@
+{
+"source": "NABIS 국가균형발전종합정보시스템 · 산업연구원",
+"scope": "시도 단위(동별 broadcast)",
+"bySido": {
+"부산": {
+"develop": 5.7456,
+"devYear": "2023",
+"innovate": 0.1761,
+"innYear": "2023",
+"creative": 0.245,
+"creYear": "2023"
+},
+"충북": {
+"develop": 6.4486,
+"devYear": "2023",
+"innovate": 0.1603,
+"innYear": "2023",
+"creative": 0.2948,
+"creYear": "2023"
+},
+"강원": {
+"develop": 5.7035,
+"devYear": "2023",
+"innovate": 0.1972,
+"innYear": "2023",
+"creative": 0.2423,
+"creYear": "2023"
+},
+"광주": {
+"develop": 6.0928,
+"devYear": "2023",
+"innovate": 0.202,
+"innYear": "2023",
+"creative": 0.3397,
+"creYear": "2023"
+},
+"경기": {
+"develop": 6.4505,
+"devYear": "2023",
+"innovate": 0.4621,
+"innYear": "2023",
+"creative": 0.3924,
+"creYear": "2023"
+},
+"울산": {
+"develop": 6.3209,
+"devYear": "2023",
+"innovate": 0.1736,
+"innYear": "2023",
+"creative": 0.211,
+"creYear": "2023"
+},
+"경남": {
+"develop": 5.9722,
+"devYear": "2023",
+"innovate": 0.2584,
+"innYear": "2023",
+"creative": 0.2415,
+"creYear": "2023"
+},
+"대구": {
+"develop": 5.8594,
+"devYear": "2023",
+"innovate": 0.1934,
+"innYear": "2023",
+"creative": 0.2102,
+"creYear": "2023"
+},
+"전북": {
+"develop": 5.8548,
+"devYear": "2023",
+"innovate": 0.3569,
+"innYear": "2023",
+"creative": 0.2628,
+"creYear": "2023"
+},
+"충남": {
+"develop": 6.4613,
+"devYear": "2023",
+"innovate": 0.3352,
+"innYear": "2023",
+"creative": 0.3504,
+"creYear": "2023"
+},
+"대전": {
+"develop": 6.5795,
+"devYear": "2023",
+"innovate": 0.718,
+"innYear": "2023",
+"creative": 0.5013,
+"creYear": "2023"
+},
+"경북": {
+"develop": 5.9436,
+"devYear": "2023",
+"innovate": 0.105,
+"innYear": "2023",
+"creative": 0.2618,
+"creYear": "2023"
+},
+"인천": {
+"develop": 6.0814,
+"devYear": "2023",
+"innovate": 0.3611,
+"innYear": "2023",
+"creative": 0.2933,
+"creYear": "2023"
+},
+"제주": {
+"develop": 5.7887,
+"devYear": "2023",
+"innovate": 0.2178,
+"innYear": "2023",
+"creative": 0.3393,
+"creYear": "2023"
+},
+"서울": {
+"develop": 6.8472,
+"devYear": "2023",
+"innovate": 0.5389,
+"innYear": "2023",
+"creative": 0.5878,
+"creYear": "2023"
+},
+"전남": {
+"develop": 6.0312,
+"devYear": "2023",
+"innovate": 0.1718,
+"innYear": "2023",
+"creative": 0.2321,
+"creYear": "2023"
+},
+"세종": {
+"develop": 7.0155,
+"devYear": "2023",
+"innovate": null,
+"innYear": null,
+"creative": 0.2825,
+"creYear": "2023"
+}
+}
+}

@@ -18,6 +18,8 @@ interface Result {
     indicators: Indicator[];
     alternatives: string[];
     coverage: number;
+    regional: { sido: string; develop: number | null; innovate: number | null; creative: number | null; year: string | null } | null;
+    streets: { count: number; totalStores: number; names: string[] } | null;
   };
 }
 
@@ -106,6 +108,41 @@ export function CultureImpactClient({ initialQuery = "" }: { initialQuery?: stri
               </div>
             </div>
           </div>
+
+          {/* 시도 공식 지수(NABIS) + 지역특화거리 */}
+          {(ci.regional || ci.streets) && (
+            <div className="klai-panel p-5">
+              {ci.regional && (
+                <>
+                  <div className="mb-1 flex items-center gap-2">
+                    <span className="h-4 w-1 rounded bg-grade-b" />
+                    <h3 className="text-[15px] font-extrabold text-ink">시도 공식 지수 <span className="text-[11px] font-normal text-muted2">· NABIS 산업연구원 {ci.regional.year} · {result.place.sido}</span></h3>
+                  </div>
+                  <div className="mb-3 grid grid-cols-3 gap-2">
+                    {[
+                      { l: "지역발전지수", v: ci.regional.develop },
+                      { l: "지역혁신지수", v: ci.regional.innovate },
+                      { l: "창조잠재력지수", v: ci.regional.creative },
+                    ].map((x) => (
+                      <div key={x.l} className="rounded-lg border border-line bg-card2 px-2.5 py-2 text-center">
+                        <div className="text-[10.5px] text-muted2">{x.l}</div>
+                        <div className="text-[17px] font-extrabold tabular-nums text-ink">{x.v ?? "—"}</div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+              {ci.streets && (
+                <div className={ci.regional ? "border-t border-line pt-3" : ""}>
+                  <div className="text-[12px] font-bold text-ink">🛍 지역특화거리 {ci.streets.count}개 <span className="font-normal text-muted2">· 점포 {ci.streets.totalStores.toLocaleString()} · 공공데이터포털 표준데이터</span></div>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {ci.streets.names.map((n, i) => (<span key={i} className="rounded-full bg-card2 px-2 py-0.5 text-[11px] text-muted">{n}</span>))}
+                  </div>
+                </div>
+              )}
+              <p className="mt-2 text-[11px] leading-snug text-muted2">시도 공식 지수는 행정동별로 소속 시도값 공유(컨텍스트). <b className="text-ink">창조잠재력은 위 &lsquo;창의성&rsquo; 지표에 공식 반영</b>됩니다.</p>
+            </div>
+          )}
 
           {/* 영역별 지표 */}
           {AREAS.map((area) => {

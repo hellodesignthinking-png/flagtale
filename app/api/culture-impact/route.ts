@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPlace, geocodeToPlace, cultureFor, commerceFor, buildingFor, potentialFor } from "@/lib/data";
+import { getPlace, geocodeToPlace, cultureFor, commerceFor, buildingFor, potentialFor, nabisForSido, specialStreetFor } from "@/lib/data";
 import { geocodeToDistrict } from "@/lib/geocode";
 import { programsFor } from "@/lib/programs";
 import { cultureImpact } from "@/lib/cultureImpact";
@@ -27,6 +27,9 @@ export async function GET(req: NextRequest) {
     building: buildingFor(place.admCd2),
     programs: programsFor(place.admCd2),
     potential: potentialFor(place.admCd2),
+    nabis: nabisForSido(place.sido), // 시도 공식 지수(발전·혁신·창조잠재력)
+    specialStreet: specialStreetFor(place.admCd2), // 동 특화거리
+    sido: place.sido,
   });
 
   return NextResponse.json({

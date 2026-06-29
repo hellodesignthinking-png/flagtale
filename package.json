@@ -19,7 +19,9 @@
     "ingest:vacant": "node scripts/ingest-vacant.mjs",
     "ingest:building": "node scripts/ingest-building.mjs",
     "ingest:culture": "node scripts/ingest-culture.mjs",
-    "ingest:decline": "node scripts/ingest-decline.mjs"
+    "ingest:decline": "node scripts/ingest-decline.mjs",
+    "ingest:nabis": "python3 scripts/ingest-nabis.py",
+    "ingest:street": "node scripts/ingest-specialstreet.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",

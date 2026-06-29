@@ -191,6 +191,45 @@ export function potentialFor(admCd2: string): PotentialPlace | null {
   return loadPotential()?.byPlace?.[admCd2] ?? null;
 }
 
+// NABIS 시도 지수(nabis.json) — 발전·혁신·창조잠재력(시도, 산업연구원 2023). `npm run ingest:nabis`(수동 xlsx)
+export interface NabisSido {
+  develop: number | null; devYear: string | null;
+  innovate: number | null; innYear: string | null;
+  creative: number | null; creYear: string | null;
+}
+interface NabisFile { source: string; bySido: Record<string, NabisSido> }
+let _nabis: NabisFile | null | undefined;
+function loadNabis(): NabisFile | null {
+  if (_nabis !== undefined) return _nabis;
+  const p = path.join(DATA_DIR, "nabis.json");
+  if (!fs.existsSync(p)) return (_nabis = null);
+  try { return (_nabis = JSON.parse(fs.readFileSync(p, "utf-8")) as NabisFile); } catch { return (_nabis = null); }
+}
+function nabisSidoCore(s: string): string {
+  const t: Record<string, string> = { "경기도": "경기", "강원도": "강원", "강원특별자치도": "강원", "충청북도": "충북", "충청남도": "충남", "전라북도": "전북", "전북특별자치도": "전북", "전라남도": "전남", "경상북도": "경북", "경상남도": "경남", "제주특별자치도": "제주", "제주도": "제주", "세종특별자치시": "세종", "세종시": "세종" };
+  if (t[s]) return t[s];
+  return s.replace(/(특별자치도|특별자치시|특별시|광역시)/, "").slice(0, 2);
+}
+/** 시도 단위 NABIS 지수(발전·혁신·창조잠재력) — 동별 broadcast, 없으면 null */
+export function nabisForSido(sido: string): NabisSido | null {
+  return loadNabis()?.bySido?.[nabisSidoCore(sido)] ?? null;
+}
+
+// 지역특화거리(specialstreet.json) — 동별(공공데이터포털 표준데이터 15017322). `npm run ingest:street`
+export interface SpecialStreetPlace { streets: { name: string; stores: number; year: string; type: string }[]; count: number; totalStores: number }
+interface SpecialStreetFile { source: string; byPlace: Record<string, SpecialStreetPlace> }
+let _ss: SpecialStreetFile | null | undefined;
+function loadSpecialStreet(): SpecialStreetFile | null {
+  if (_ss !== undefined) return _ss;
+  const p = path.join(DATA_DIR, "specialstreet.json");
+  if (!fs.existsSync(p)) return (_ss = null);
+  try { return (_ss = JSON.parse(fs.readFileSync(p, "utf-8")) as SpecialStreetFile); } catch { return (_ss = null); }
+}
+/** 동별 지역특화거리(문화·상권 거리) — 없으면 null */
+export function specialStreetFor(admCd2: string): SpecialStreetPlace | null {
+  return loadSpecialStreet()?.byPlace?.[admCd2] ?? null;
+}
+
 export function listPlaces(): DistrictProps[] {
   return loadDistricts().features.map((f) => f.properties);
 }

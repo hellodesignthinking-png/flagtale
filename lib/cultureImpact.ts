@@ -2,6 +2,7 @@
 //   문화기본권(문화향유·표현참여) / 문화정체성(국가유산·공동체) / 문화발전(문화다양성·창의성)
 // 각 지표를 0~100으로 추정 + 신뢰도(높음/중간/근사) + 대안 제시(제도의 목적=대안 제시).
 import "server-only";
+import type { NabisSido, SpecialStreetPlace } from "@/lib/data";
 
 export interface CIIndicator {
   key: string;
@@ -17,6 +18,10 @@ export interface CultureImpact {
   indicators: CIIndicator[];
   alternatives: string[];
   coverage: number; // 데이터로 산출된 지표 수
+  // 시도 공식 지수(NABIS 산업연구원) — 동별 broadcast 컨텍스트
+  regional: { sido: string; develop: number | null; innovate: number | null; creative: number | null; year: string | null } | null;
+  // 지역특화거리(동) — 문화·표현 앵커
+  streets: { count: number; totalStores: number; names: string[] } | null;
 }
 
 export function cultureImpact(d: {
@@ -25,12 +30,17 @@ export function cultureImpact(d: {
   building: { oldRatio: number | null } | null;
   programs: { label: string }[];
   potential: { grade: number } | null;
+  nabis?: NabisSido | null; // 시도 공식 지수
+  specialStreet?: SpecialStreetPlace | null; // 동 특화거리
+  sido?: string;
 }): CultureImpact {
   const events = d.culture?.events ?? null;
   const realms = d.culture?.topRealms?.length ?? 0;
   const div = d.commerce ? Math.round(d.commerce.diversity * 100) : null;
   const old = d.building?.oldRatio ?? null;
   const progN = d.programs.length;
+  const streetCount = d.specialStreet?.count ?? 0;
+  const cre = d.nabis?.creative ?? null; // NABIS 창조잠재력(시도, 0~1)
   const cap = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
 
   const ind: CIIndicator[] = [
@@ -41,8 +51,8 @@ export function cultureImpact(d: {
     },
     {
       key: "pyohyeon", area: "문화기본권", label: "표현·참여 — 주체적 표현·참여 기회",
-      score: events != null ? cap(realms * 14 + (progN ? 16 : 0)) : null, confidence: "중간",
-      basis: `문화 분야 ${realms}종${progN ? ` + 정책참여 사업 ${progN}` : ""}`,
+      score: events != null || streetCount ? cap(realms * 14 + (progN ? 16 : 0) + Math.min(streetCount * 9, 27)) : null, confidence: "중간",
+      basis: `문화 분야 ${realms}종${progN ? ` + 정책사업 ${progN}` : ""}${streetCount ? ` + 특화거리 ${streetCount}` : ""}`,
     },
     {
       key: "yusan", area: "문화정체성", label: "국가유산 — 역사·근대 자산(근사)",
@@ -61,8 +71,13 @@ export function cultureImpact(d: {
     },
     {
       key: "changui", area: "문화발전", label: "창의성 — 창의인재·혁신 기반",
-      score: div != null || progN ? cap(progN * 18 + (div != null ? div * 0.4 : 0)) : null, confidence: "중간",
-      basis: `창의기반 사업(청년마을·문화도시) ${progN}${div != null ? ` + 다양성 ${div}` : ""}`,
+      score: cre != null
+        ? cap(cre * 100 * 0.55 + (progN * 18 + (div != null ? div * 0.4 : 0)) * 0.45)
+        : (div != null || progN ? cap(progN * 18 + (div != null ? div * 0.4 : 0)) : null),
+      confidence: cre != null ? "높음" : "중간",
+      basis: cre != null
+        ? `NABIS 창조잠재력 ${cre}(시도·공식) + 정책사업 ${progN}${div != null ? `·다양성 ${div}` : ""}`
+        : `창의기반 사업(청년마을·문화도시) ${progN}${div != null ? ` + 다양성 ${div}` : ""}`,
     },
   ];
 
@@ -81,5 +96,12 @@ export function cultureImpact(d: {
   if (old != null && old >= 50) alternatives.push("높은 노후건축 비중 → 근대건축·역사자산 보전·문화재생 활용");
   if (!alternatives.length) alternatives.push("현 문화 기반이 양호 — 고유성 보전 + 임대·젠트리 관리로 지속");
 
-  return { total, grade, indicators: ind, alternatives, coverage: vals.length };
+  const regional = d.nabis
+    ? { sido: d.sido ?? "", develop: d.nabis.develop, innovate: d.nabis.innovate, creative: d.nabis.creative, year: d.nabis.creYear ?? d.nabis.devYear }
+    : null;
+  const streets = d.specialStreet && d.specialStreet.count
+    ? { count: d.specialStreet.count, totalStores: d.specialStreet.totalStores, names: d.specialStreet.streets.map((s) => s.name).slice(0, 6) }
+    : null;
+
+  return { total, grade, indicators: ind, alternatives, coverage: vals.length, regional, streets };
 }
