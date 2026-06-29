@@ -8,18 +8,30 @@ import { GameChip } from "@/components/flagtale/GameChip";
 import { NotifBell } from "@/components/board/NotifBell";
 import { cn } from "@/lib/utils";
 
-const NAV = [
-  { href: "/", label: "발견·경험" },
-  { href: "/board", label: "게시판" }, // 우선 노출
-  { href: "/map-tale", label: "플래그맵" },
-  { href: "/hub", label: "허브" },
-  { href: "/lab", label: "플래그테일랩" },
-  { href: "/reports", label: "리포트" },
-  { href: "/diagnose", label: "진단" },
-  { href: "/culture-impact", label: "문화영향평가" },
+// 2대 카테고리 — 지역여행(발견·경험) / 지역연구(탐구·학습)
+type NavItem = { href: string; label: string };
+const GROUPS: { label: string; sub: string; items: NavItem[] }[] = [
+  {
+    label: "발견·경험", sub: "지역여행",
+    items: [
+      { href: "/discover", label: "발견경험" },
+      { href: "/board", label: "게시판" },
+      { href: "/map-tale", label: "플래그맵" },
+      { href: "/hub", label: "허브" },
+    ],
+  },
+  {
+    label: "탐구·학습", sub: "지역연구",
+    items: [
+      { href: "/lab", label: "플래그테일랩" },
+      { href: "/reports", label: "리포트" },
+      { href: "/diagnose", label: "지역진단" },
+      { href: "/culture-impact", label: "문화영향평가" },
+    ],
+  },
 ];
-// 호스트 등록 — 일반 메뉴에서 숨김, 로그인한 호스트에게만 노출
-const HOST_NAV = { href: "/host", label: "🏪 호스트 등록" };
+// 호스트 등록 — 로그인한 호스트에게만 발견·경험 그룹에 노출
+const HOST_NAV: NavItem = { href: "/host", label: "🏪 호스트 등록" };
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -34,8 +46,11 @@ export function SiteHeader() {
     return () => data.subscription.unsubscribe();
   }, []);
   useEffect(() => setMenuOpen(false), [pathname]); // 라우트 이동 시 모바일 메뉴 닫기
-  // 호스트 등록은 로그인(호스트)일 때만 메뉴에 노출 — '게시판' 다음에 삽입
-  const visibleNav = email ? [NAV[0], NAV[1], HOST_NAV, ...NAV.slice(2)] : NAV;
+  // 호스트 등록은 로그인(호스트)일 때만 발견·경험 그룹 '게시판' 다음에 삽입
+  const groups = GROUPS.map((g, gi) =>
+    gi === 0 && email ? { ...g, items: [...g.items.slice(0, 2), HOST_NAV, ...g.items.slice(2)] } : g
+  );
+  const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
   return (
     <header
@@ -61,19 +76,38 @@ export function SiteHeader() {
         </Link>
 
         <nav className="ml-2 hidden items-center gap-1 md:flex">
-          {visibleNav.map((n) => {
-            const active = pathname === n.href || pathname.startsWith(n.href + "/");
+          {groups.map((g) => {
+            const groupActive = g.items.some((it) => isActive(it.href));
             return (
-              <Link
-                key={n.href}
-                href={n.href}
-                className={cn(
-                  "rounded-lg px-3 py-1.5 text-[13.5px] font-medium transition-all",
-                  active ? "bg-amber/12 text-ink ring-1 ring-amber/30" : "text-muted hover:bg-card2/70 hover:text-ink"
-                )}
-              >
-                {n.label}
-              </Link>
+              <div key={g.label} className="group relative">
+                <button
+                  type="button"
+                  className={cn(
+                    "flex items-center gap-1 rounded-lg px-3 py-1.5 text-[13.5px] font-semibold transition-all",
+                    groupActive ? "bg-amber/12 text-ink ring-1 ring-amber/30" : "text-muted hover:bg-card2/70 hover:text-ink"
+                  )}
+                >
+                  {g.label}
+                  <span className="text-[8px] opacity-60 transition-transform group-hover:rotate-180">▾</span>
+                </button>
+                <div className="absolute left-0 top-full hidden min-w-[176px] pt-1.5 group-hover:block">
+                  <div className={cn("overflow-hidden rounded-xl border shadow-xl", onMap ? "border-line/40 bg-card" : "theme-light border-line bg-card")}>
+                    <div className="border-b border-line/60 px-3.5 pb-1.5 pt-2 text-[10px] font-bold uppercase tracking-wider text-muted2">{g.sub}</div>
+                    {g.items.map((it) => (
+                      <Link
+                        key={it.href}
+                        href={it.href}
+                        className={cn(
+                          "block px-3.5 py-2.5 text-[13.5px] font-medium transition-colors",
+                          isActive(it.href) ? "bg-amber/12 text-ink" : "text-muted hover:bg-card2/70 hover:text-ink"
+                        )}
+                      >
+                        {it.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </div>
             );
           })}
         </nav>
@@ -114,22 +148,24 @@ export function SiteHeader() {
       {/* 모바일 내비 드롭다운 */}
       {menuOpen && (
         <div className={cn("absolute inset-x-0 top-14 border-b shadow-xl md:hidden", onMap ? "border-line/40 bg-card" : "theme-light border-line bg-card")}>
-          <nav className="mx-auto grid max-w-[1400px] gap-0.5 px-3 py-2">
-            {visibleNav.map((n) => {
-              const active = pathname === n.href || pathname.startsWith(n.href + "/");
-              return (
-                <Link
-                  key={n.href}
-                  href={n.href}
-                  className={cn(
-                    "rounded-lg px-3 py-2.5 text-[14.5px] font-bold transition-colors",
-                    active ? "bg-amber/12 text-ink ring-1 ring-amber/30" : "text-muted hover:bg-card2/70 hover:text-ink"
-                  )}
-                >
-                  {n.label}
-                </Link>
-              );
-            })}
+          <nav className="mx-auto grid max-w-[1400px] gap-1 px-3 py-2">
+            {groups.map((g) => (
+              <div key={g.label}>
+                <div className="px-3 pb-1 pt-2 text-[11px] font-bold uppercase tracking-wider text-muted2">{g.label} <span className="font-medium normal-case text-muted2/70">· {g.sub}</span></div>
+                {g.items.map((it) => (
+                  <Link
+                    key={it.href}
+                    href={it.href}
+                    className={cn(
+                      "block rounded-lg px-3 py-2.5 text-[14.5px] font-bold transition-colors",
+                      isActive(it.href) ? "bg-amber/12 text-ink ring-1 ring-amber/30" : "text-muted hover:bg-card2/70 hover:text-ink"
+                    )}
+                  >
+                    {it.label}
+                  </Link>
+                ))}
+              </div>
+            ))}
           </nav>
         </div>
       )}
