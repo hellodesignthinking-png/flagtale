@@ -125,6 +125,16 @@ export const SOURCES: DataSource[] = [
     note: "✅ 연동됨: 읍면동 주택종류→용도혼합(Shannon, 동단위)·총주택수(밀도) + 시군구 30년+ 노후비율. 건축HUB 인허가(신축·멸실=개발·재생 신호, data.go.kr 15134735)는 활용신청 후 후속.",
   },
   {
+    id: "culture",
+    metric: "문화 활력 (공연·전시·축제 수)",
+    axis: "D4 인식·감성 (문화)",
+    source: "한국문화정보원 한눈에보는문화정보 (data.go.kr B553457)",
+    url: "https://www.data.go.kr/data/15013106/openapi.do",
+    keyEnv: ["DATA_GO_KR_KEY"],
+    cadence: "실시간",
+    note: "✅ 연동됨: 시군구별 공연·전시·축제 수 → 실측 매력도 '문화 활력' 축. 로컬100(문체부 매력 명소)의 데이터 기반 대용.",
+  },
+  {
     id: "landprice",
     metric: "개별공시지가 (㎡당)",
     axis: "D3-5 자산가치",
