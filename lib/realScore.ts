@@ -3,15 +3,16 @@
 //   - 빈집비율(KOSIS)로 감점. 실측 축 2개 미만이면 null(합성 보류 → 지도/카드 미표시).
 // 아키텍처 step6(축별 실측 합성)의 lite 버전 — 외부 데이터 추가 없이 기존 실데이터 결합.
 import "server-only";
-import { commerceFor, buildingFor, vacantFor } from "./data";
+import { commerceFor, buildingFor, vacantFor, cultureFor } from "./data";
 import type { PlaceScore } from "./types";
 
 export interface RealComposite {
   score: number;        // 실측 매력도 0~100
-  coverage: number;     // 실측 축 수 (2~3)
+  coverage: number;     // 실측 축 수 (2~4)
   d1r: number | null;   // 인구 지속성(실)
   d2r: number | null;   // 상권(실)
   d3r: number | null;   // 공간 용도혼합(실)
+  d4c: number | null;   // 문화 활력(실 — 공연·전시·축제)
   vacantPenalty: number; // 빈집 감점 계수(0~1)
 }
 
@@ -32,8 +33,11 @@ export function realComposite(admCd2: string, score: PlaceScore): RealComposite 
   const d1r = Number.isFinite(score.popChangeRate)
     ? Math.max(0, Math.min(100, Math.round(50 + score.popChangeRate * 12)))
     : null;
+  // D4c — 문화 활력(공연·전시·축제 수, 시군구) → log 정규화 0~100
+  const cul = cultureFor(admCd2);
+  const d4c = cul && cul.events > 0 ? Math.min(100, Math.round((Math.log(cul.events + 1) / Math.log(400)) * 100)) : null;
 
-  const parts = [d1r, d2r, d3r].filter((v): v is number => v != null);
+  const parts = [d1r, d2r, d3r, d4c].filter((v): v is number => v != null);
   if (parts.length < 2) return null; // 실측 신호 부족 → 합성 보류
 
   // 빈집 감점 — 빈집비율 높을수록 매력 차감(최대 약 -25%)
@@ -42,7 +46,7 @@ export function realComposite(admCd2: string, score: PlaceScore): RealComposite 
   return {
     score: Math.max(0, Math.min(100, Math.round(base * vacantPenalty))),
     coverage: parts.length,
-    d1r, d2r, d3r,
+    d1r, d2r, d3r, d4c,
     vacantPenalty: Math.round(vacantPenalty * 100) / 100,
   };
 }

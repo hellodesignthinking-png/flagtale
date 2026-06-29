@@ -9,6 +9,8 @@ import type {
   VacantPlace,
   BuildingFile,
   BuildingPlace,
+  CultureFile,
+  CulturePlace,
   DemographicsFile,
   DemographicYear,
   Diagnosis,
@@ -151,6 +153,23 @@ export function loadBuilding(): BuildingFile | null {
 /** 동별 주택 용도혼합·노후·밀도(KOSIS 인구주택총조사) — 인제스트 시에만 존재, 없으면 null */
 export function buildingFor(admCd2: string): BuildingPlace | null {
   return loadBuilding()?.byPlace?.[admCd2] ?? null;
+}
+
+// 지역 문화 활력(culture.json) — `npm run ingest:culture`(한국문화정보원) 전엔 없으므로 폴백
+let _culture: CultureFile | null | undefined;
+export function loadCulture(): CultureFile | null {
+  if (_culture !== undefined) return _culture;
+  const p = path.join(DATA_DIR, "culture.json");
+  if (!fs.existsSync(p)) return (_culture = null);
+  try {
+    return (_culture = JSON.parse(fs.readFileSync(p, "utf-8")) as CultureFile);
+  } catch {
+    return (_culture = null);
+  }
+}
+/** 동별 문화 활력(공연·전시·축제 수, 시군구) — 인제스트 시에만 존재, 없으면 null */
+export function cultureFor(admCd2: string): CulturePlace | null {
+  return loadCulture()?.byPlace?.[admCd2] ?? null;
 }
 
 export function listPlaces(): DistrictProps[] {

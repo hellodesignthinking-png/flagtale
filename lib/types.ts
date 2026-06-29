@@ -253,6 +253,18 @@ export interface BuildingFile {
   byPlace: Record<string, BuildingPlace>;
 }
 
+// ── 지역 문화 활력 — 한국문화정보원 공연·전시·축제 (data.go.kr, 시군구) ──
+export interface CulturePlace {
+  events: number; // 공연·전시·축제 수(시군구)
+  topRealms: { name: string; count: number }[];
+}
+export interface CultureFile {
+  source: string;
+  fetchedAt: string;
+  resolution: string; // "sigungu"
+  byPlace: Record<string, CulturePlace>;
+}
+
 // ── 지역 신호 (검색·기사·인구·임대료·매물) ──────────────────
 export type SignalKey = "search" | "news" | "population" | "rent" | "listings";
 export type SignalSeries = Record<SignalKey, number[]>;

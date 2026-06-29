@@ -295,6 +295,7 @@ export default function PlacePage({ params }: { params: { admCd: string } }) {
             {real.d2r != null && <span className="rounded-full border border-line bg-card2/50 px-2.5 py-1 text-muted">상권 <b className="text-ink">{real.d2r}</b></span>}
             {real.d3r != null && <span className="rounded-full border border-line bg-card2/50 px-2.5 py-1 text-muted">용도혼합 <b className="text-ink">{real.d3r}</b></span>}
             {real.d1r != null && <span className="rounded-full border border-line bg-card2/50 px-2.5 py-1 text-muted">인구지속 <b className="text-ink">{real.d1r}</b></span>}
+            {real.d4c != null && <span className="rounded-full border border-line bg-card2/50 px-2.5 py-1 text-muted">문화활력 <b className="text-ink">{real.d4c}</b></span>}
             {real.vacantPenalty < 1 && <span className="rounded-full border border-warn/30 bg-warn/10 px-2.5 py-1 text-warn">빈집 감점 ×{real.vacantPenalty}</span>}
           </div>
           <p className="mt-3 text-[11px] leading-snug text-muted2">
