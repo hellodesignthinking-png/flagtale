@@ -79,6 +79,12 @@ interface DiagnoseResult {
   buzzBoost: number;
   authGap: AuthGap | null;
   vacant: { ratio: number | null; count: number | null; houses?: number | null; est?: number | null; year: number } | null;
+  commerceReal?: { stores: number; diversity: number; topCategories: [string, number][] } | null;
+  building?: { houses: number | null; typeMix: number | null; oldRatio: number | null; types: Record<string, number> | null } | null;
+  cultureReal?: { events: number; topRealms: { name: string; count: number }[] } | null;
+  potential?: { grade: number; indicators: Record<string, number> } | null;
+  realScore?: { score: number; coverage: number; d1r: number | null; d2r: number | null; d3r: number | null; d4c: number | null; policy: number } | null;
+  programs?: { key: string; label: string; agency: string }[];
   periods: string[];
   reportId: string;
 }
@@ -413,6 +419,63 @@ export function DiagnoseClient({ initialQuery = "", initialAdmCd, mode = "parcel
                 <span>D2 {result.corrected.d2} · D3 {result.corrected.d3} <span className="text-muted2">비교군 평균(미연동)</span></span>
               </div>
             </div>
+          )}
+
+          {/* 🟢 실측 데이터 종합 — bulk 인제스트(상권·건축물·문화·발전가능성·정책·빈집) */}
+          {(result.realScore || result.commerceReal || result.building || result.potential || result.cultureReal || (result.programs && result.programs.length > 0)) && (
+            <Section num="REAL" title="실측 데이터 종합 — 정부·공공 실데이터" tone="grade-b">
+              <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+                {result.realScore && (
+                  <div className="rounded-lg border border-line bg-card2 px-3 py-2.5">
+                    <div className="text-[11px] text-muted2">🟢 실측 매력도(실데이터 합성)</div>
+                    <div className="text-[18px] font-extrabold text-ink">{result.realScore.score}<span className="text-[12px] font-normal text-muted2">/100 · 실{result.realScore.coverage}축</span></div>
+                    <div className="mt-0.5 text-[10.5px] text-muted2">샘플 KLAI {result.latest.klai}와 별개 · 인구·상권·용도혼합·문화{result.realScore.policy ? ` +정책${result.realScore.policy}` : ""}</div>
+                  </div>
+                )}
+                {result.potential && (
+                  <div className="rounded-lg border border-line bg-card2 px-3 py-2.5">
+                    <div className="text-[11px] text-muted2">🏛 발전가능성(국토부 쇠퇴진단)</div>
+                    <div className="text-[18px] font-extrabold text-ink">{result.potential.grade}<span className="text-[12px] font-normal text-muted2">/10</span></div>
+                    <div className="mt-0.5 text-[10.5px] text-muted2">{Object.entries(result.potential.indicators).map(([k, v]) => `${k} ${v}`).join(" · ")}</div>
+                  </div>
+                )}
+                {result.commerceReal && (
+                  <div className="rounded-lg border border-line bg-card2 px-3 py-2.5">
+                    <div className="text-[11px] text-muted2">🏪 상권 실측(소진공)</div>
+                    <div className="text-[18px] font-extrabold text-ink">{result.commerceReal.stores.toLocaleString()}<span className="text-[12px] font-normal text-muted2">개 · 다양성 {Math.round(result.commerceReal.diversity * 100)}</span></div>
+                    <div className="mt-0.5 text-[10.5px] text-muted2">{result.commerceReal.topCategories.slice(0, 3).map(([n, c]) => `${n} ${c}`).join(" · ")}</div>
+                  </div>
+                )}
+                {result.building && result.building.typeMix != null && (
+                  <div className="rounded-lg border border-line bg-card2 px-3 py-2.5">
+                    <div className="text-[11px] text-muted2">🏘 건축물(KOSIS)</div>
+                    <div className="text-[18px] font-extrabold text-ink">용도혼합 {Math.round(result.building.typeMix * 100)}</div>
+                    <div className="mt-0.5 text-[10.5px] text-muted2">{result.building.oldRatio != null ? `노후30년+ ${result.building.oldRatio}% · ` : ""}{result.building.houses != null ? `주택 ${result.building.houses.toLocaleString()}호` : ""}</div>
+                  </div>
+                )}
+                {result.cultureReal && (
+                  <div className="rounded-lg border border-line bg-card2 px-3 py-2.5">
+                    <div className="text-[11px] text-muted2">🎭 문화 활력(문화정보원)</div>
+                    <div className="text-[18px] font-extrabold text-ink">{result.cultureReal.events.toLocaleString()}<span className="text-[12px] font-normal text-muted2">건</span></div>
+                    <div className="mt-0.5 text-[10.5px] text-muted2">{result.cultureReal.topRealms.slice(0, 3).map((r) => `${r.name} ${r.count}`).join(" · ")}</div>
+                  </div>
+                )}
+                {result.vacant && result.vacant.ratio != null && (
+                  <div className="rounded-lg border border-line bg-card2 px-3 py-2.5">
+                    <div className="text-[11px] text-muted2">🏚 빈집(KOSIS)</div>
+                    <div className="text-[18px] font-extrabold text-ink">{result.vacant.ratio}<span className="text-[12px] font-normal text-muted2">%{result.vacant.est != null ? ` · ~${result.vacant.est.toLocaleString()}호` : ""}</span></div>
+                    <div className="mt-0.5 text-[10.5px] text-muted2">미거주 주택 비율(시군구)</div>
+                  </div>
+                )}
+              </div>
+              {result.programs && result.programs.length > 0 && (
+                <div className="mt-2.5 rounded-lg border border-[#0F6E5C]/30 bg-[#0F6E5C]/10 px-3 py-2">
+                  <span className="text-[12px] font-bold text-[#0F6E5C]">🏛 정부 지역활성화 사업 지정: </span>
+                  {result.programs.map((p) => <span key={p.key} className="ml-1 rounded-full bg-card px-2 py-0.5 text-[11px] font-semibold text-ink">{p.label}</span>)}
+                </div>
+              )}
+              <p className="mt-2 text-[11px] leading-snug text-muted2">전부 정부·공공 <b className="text-ink">실데이터</b>(소진공 상가·KOSIS 인구주택총조사·국토부 쇠퇴진단·문화정보원). 위 샘플 점수와 별개의 실측 지표입니다.</p>
+            </Section>
           )}
 
           {/* 활성화 동인 분해 — 왜 뜨나/지나 (로컬크리에이터 vs 공공지원 vs 자본) */}

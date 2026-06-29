@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { geocodeToPlace, getPlace, getPeerAvg, getRegionComparison, nationalSignalAverage, populationMeta, vacantFor } from "@/lib/data";
+import { geocodeToPlace, getPlace, getPeerAvg, getRegionComparison, nationalSignalAverage, populationMeta, vacantFor, commerceFor, buildingFor, cultureFor, potentialFor } from "@/lib/data";
+import { realComposite } from "@/lib/realScore";
+import { programsFor } from "@/lib/programs";
 import { geocodeToDistrict, pointToDistrict } from "@/lib/geocode";
 import { naverInterest } from "@/lib/connectors/naver";
 import { anchorStores } from "@/lib/connectors/anchor";
@@ -156,6 +158,13 @@ export async function POST(req: NextRequest) {
     buzzBoost: bBoost, // 검색 수요(인스타 버즈) 가산점(0~6)
     authGap, // 진정성 갭(검색 수요 vs 등록 공급) — 과열/미발견/균형
     vacant: vacantFor(place.admCd2), // 빈집비율(시군구)·동 추정 빈집호수 — 소멸·공실 실신호(KOSIS)
+    // ── 추가 실데이터(bulk 인제스트) — /place 와 동일 소스로 진단 리포트에 반영 ──
+    commerceReal: commerceFor(place.admCd2), // 상권 실측(소진공 상가수·업종 다양성)
+    building: buildingFor(place.admCd2), // 건축물(용도혼합·노후·밀도, KOSIS 인구주택총조사)
+    cultureReal: cultureFor(place.admCd2), // 문화 활력(공연·전시·축제 수, 시군구)
+    potential: potentialFor(place.admCd2), // 발전가능성(국토부 쇠퇴진단 3부문 등급)
+    realScore: realComposite(place.admCd2, bundle.latest), // 실측 매력도(실데이터 합성)
+    programs: programsFor(place.admCd2), // 정부 지역활성화 사업 지정(청년마을·문화도시)
     periods: bundle.series.map((s) => s.period),
     entitled,
     reportId: `parcel_${place.admCd2}_${bundle.latest.period}`,
