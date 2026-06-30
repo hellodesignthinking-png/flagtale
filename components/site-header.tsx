@@ -55,11 +55,10 @@ export function SiteHeader() {
   return (
     <header
       className={cn(
-        "fixed inset-x-0 top-0 z-40 h-14 border-b",
-        onMap
-          ? "border-line/40 bg-navy/55 backdrop-blur-md"
-          : "theme-light border-line bg-navy/90 backdrop-blur"
+        "fixed inset-x-0 top-0 z-40 h-14 border-b backdrop-blur-md",
+        onMap ? "border-white/10" : "theme-light border-line"
       )}
+      style={{ background: onMap ? "rgba(11,14,21,0.94)" : "rgba(255,255,255,0.96)" }}
     >
       <div className="mx-auto flex h-full max-w-[1400px] items-center gap-6 px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2.5">
@@ -75,37 +74,35 @@ export function SiteHeader() {
           <span className="hidden text-[11px] text-muted2 sm:inline">· 가장 로컬다운 이야기로 시작하는 여행</span>
         </Link>
 
-        <nav className="ml-2 hidden items-center gap-1 md:flex">
+        <nav className="ml-2 hidden items-center md:flex">
           {groups.map((g) => {
             const groupActive = g.items.some((it) => isActive(it.href));
             return (
-              <div key={g.label} className="group relative">
+              <div key={g.label} className="group flex items-center">
                 <button
                   type="button"
                   className={cn(
-                    "flex items-center gap-1 rounded-lg px-3 py-1.5 text-[13.5px] font-semibold transition-all",
-                    groupActive ? "bg-amber/12 text-ink ring-1 ring-amber/30" : "text-muted hover:bg-card2/70 hover:text-ink"
+                    "flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg px-3 py-1.5 text-[13.5px] font-semibold transition-colors",
+                    groupActive ? "bg-amber/15 text-ink ring-1 ring-amber/30" : "text-muted hover:bg-white/10 hover:text-ink group-hover:bg-white/10 group-hover:text-ink"
                   )}
                 >
                   {g.label}
-                  <span className="text-[8px] opacity-60 transition-transform group-hover:rotate-180">▾</span>
+                  <span className="text-[9px] opacity-60 transition-transform duration-300 group-hover:rotate-90">›</span>
                 </button>
-                <div className="absolute left-0 top-full hidden min-w-[176px] pt-1.5 group-hover:block">
-                  <div className={cn("overflow-hidden rounded-xl border shadow-xl", onMap ? "border-line/40 bg-card" : "theme-light border-line bg-card")}>
-                    <div className="border-b border-line/60 px-3.5 pb-1.5 pt-2 text-[10px] font-bold uppercase tracking-wider text-muted2">{g.sub}</div>
-                    {g.items.map((it) => (
-                      <Link
-                        key={it.href}
-                        href={it.href}
-                        className={cn(
-                          "block px-3.5 py-2.5 text-[13.5px] font-medium transition-colors",
-                          isActive(it.href) ? "bg-amber/12 text-ink" : "text-muted hover:bg-card2/70 hover:text-ink"
-                        )}
-                      >
-                        {it.label}
-                      </Link>
-                    ))}
-                  </div>
+                {/* 인라인 가로 확장 — 마우스오버 시 하위 메뉴가 옆으로 펼쳐지며 다음 그룹을 밀어냄 */}
+                <div className="flex items-center overflow-hidden opacity-0 [max-width:0px] transition-all duration-[450ms] ease-out group-hover:ml-0.5 group-hover:opacity-100 group-hover:[max-width:660px]">
+                  {g.items.map((it) => (
+                    <Link
+                      key={it.href}
+                      href={it.href}
+                      className={cn(
+                        "ml-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[12.5px] font-medium transition-colors",
+                        isActive(it.href) ? "bg-amber/15 text-ink" : "text-muted hover:bg-white/10 hover:text-ink"
+                      )}
+                    >
+                      {it.label}
+                    </Link>
+                  ))}
                 </div>
               </div>
             );

@@ -591,3 +591,8 @@ h3 {
   from { opacity: 0; transform: translateY(14px); filter: blur(5px); }
   to { opacity: 1; transform: translateY(0); filter: blur(0); }
 }
+/* 인트로 배경 그라데이션 팬(여행 톤) */
+@keyframes ftBgPan {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}

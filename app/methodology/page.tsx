@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageShell } from "@/components/page-shell";
 import { Panel, Pill, SectionHead } from "@/components/ui";
+import { SOURCES as ALL_SOURCES } from "@/lib/sources";
 import { MethodologyFlow } from "@/components/diagram/MethodologyFlow";
 import { DerivedDiagrams } from "@/components/methodology/DerivedDiagrams";
 import { NarrativeShowcase } from "@/components/methodology/NarrativeShowcase";
@@ -499,9 +500,37 @@ export default function MethodologyPage() {
           <b className="text-ink">한 줄 결론</b> — Flagtale Lab은 동네의 <b className="text-ink">맥</b>을 짚고, TownOS는 <b className="text-ink">처방을 실행</b>한다. 둘을 닫힌 고리로 묶은 <b className="text-ink">Place OS</b>가 어떤 진단 지수도 못 가진 “살려내는 운영체제”다.
         </div>
         <div className="mt-4 flex flex-wrap gap-2 border-t border-line pt-4 text-[13px]">
-          <Link href="/data" className="rounded-lg border-[1.5px] border-line bg-card px-3 py-1.5 font-semibold text-ink transition-colors hover:border-ink">데이터 출처·연동 상태 →</Link>
+          <Link href="/data" className="rounded-lg border-[1.5px] border-line bg-card px-3 py-1.5 font-semibold text-ink transition-colors hover:border-ink">데이터 출처 전체 →</Link>
           <Link href="/diagnose" className="rounded-lg bg-amber px-3 py-1.5 font-bold text-onaccent transition-colors hover:bg-[#c4f000]">진단 리포트 보기 →</Link>
         </div>
+      </Panel>
+
+      {/* 데이터 출처 — 방법론의 근거 데이터 전체 */}
+      <Panel className="mb-5 overflow-hidden">
+        <SectionHead no="출처" title="데이터 출처" desc={`이 방법론이 근거하는 공신력 있는 공공·실측 데이터 ${ALL_SOURCES.length}종`} />
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full text-left text-[12.5px]">
+            <thead>
+              <tr className="border-b border-line bg-card2/50 text-[11px] text-muted2">
+                <th className="px-3 py-2.5 font-semibold">지표</th>
+                <th className="px-3 py-2.5 font-semibold">분야</th>
+                <th className="px-3 py-2.5 font-semibold">실제 출처</th>
+                <th className="px-3 py-2.5 font-semibold">갱신</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ALL_SOURCES.map((src) => (
+                <tr key={src.id} className="border-b border-line/50 align-top">
+                  <td className="px-3 py-2.5 font-bold text-ink">{src.metric}</td>
+                  <td className="px-3 py-2.5 text-[11.5px] text-muted2">{src.axis ?? "—"}</td>
+                  <td className="px-3 py-2.5 text-muted">{src.source}</td>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-[11.5px] text-muted2">{src.cadence}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-3 text-[11.5px] leading-relaxed text-muted2">통계청 KOSIS · 소상공인시장진흥공단 · 국토교통부 · 한국문화정보원 · 한국부동산원 · 산업연구원(NABIS) · 네이버 · 공공데이터포털 등. 개별 점포·개인 식별 정보는 집계 형태로만 사용합니다.</p>
       </Panel>
     </PageShell>
   );
